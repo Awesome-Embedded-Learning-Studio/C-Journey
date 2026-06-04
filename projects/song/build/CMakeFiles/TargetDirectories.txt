@@ -1,3 +1,0 @@
-/home/hyl/test/song/build/CMakeFiles/music_player.dir
-/home/hyl/test/song/build/CMakeFiles/edit_cache.dir
-/home/hyl/test/song/build/CMakeFiles/rebuild_cache.dir
