@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/music_player.dir/main.c.o CMakeFiles/music_player.dir/lrc.c.o CMakeFiles/music_player.dir/start_mplayer.c.o CMakeFiles/music_player.dir/console/console.c.o -o music_player 
