@@ -1,6 +1,7 @@
 # 项目：迷你 C 标准库 (Tiny C Standard Library)
 
 > 对应 [ROADMAP](../../ROADMAP.md) · **阶段 3：数据结构与算法基础** / **阶段 4：工程化与模块化设计**
+> 📖 先读知识点：[用 C 造一个泛型容器：从 void* 到自己的 vector](../../documents/03-data-structures/0-generic-containers-in-c.md)
 
 用 C 从零实现常见数据结构与字符串库，是“自己造轮子理解底层”的练习。对应阶段 3 的 **C STL Mini** 与阶段 4 的 **C 基础库**。
 
