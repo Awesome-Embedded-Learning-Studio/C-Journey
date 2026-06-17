@@ -50,8 +50,8 @@ C-Journey/
 ├── README.md
 ├── ROADMAP.md          # 完整路线图设计
 ├── documents/          # 各阶段详细知识点笔记
-├── examples/           # 配套示例
-├── projects/           # 完整示例项目（如 song 歌词同步播放器）
+├── examples/           # 配套示例（按阶段：编译调试 / C 基础 / TCP socket …）
+├── projects/           # 完整项目（song、clib-utilities、tiny-c-stdlib、embedded-mcu、os-from-scratch）
 ├── exercises/          # 按难度分类的练习题（规划中）
 └── assets/             # 图片等资源（规划中）
 ```
