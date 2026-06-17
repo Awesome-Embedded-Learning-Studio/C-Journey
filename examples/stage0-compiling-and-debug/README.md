@@ -1,6 +1,7 @@
 # 阶段 0 示例：编译流程、调试与库
 
 > 对应 [ROADMAP](../../ROADMAP.md) · **阶段 0：开发环境与基础工具**
+> 📖 先读知识点：[编译流程、GDB 与库](../../documents/00-dev-environment/1-compiling-and-debugging.md)
 
 一组围绕“把 `.c` 变成可执行文件”全过程的小实验，覆盖预处理、汇编、链接、GDB 调试以及动 / 静态库的使用。
 
