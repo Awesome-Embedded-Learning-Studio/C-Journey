@@ -53,3 +53,7 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# 项目构建产物（song 播放器无扩展名可执行文件）
+/projects/song/play
+/projects/song/music_player
