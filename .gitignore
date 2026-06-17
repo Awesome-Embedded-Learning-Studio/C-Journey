@@ -57,3 +57,34 @@ dkms.conf
 # 项目构建产物（song 播放器无扩展名可执行文件）
 /projects/song/play
 /projects/song/music_player
+
+# ===== 旧代码整合补充：IDE / 构建系统目录 =====
+.vs/
+.vscode/
+.idea/
+build/
+cmake-build*/
+Debug/
+Release/
+x86/
+x64/
+
+# Visual Studio 缓存与预编译头
+*.ipch
+*.tlog
+*.lastbuildstate
+*.unsuccessfulbuild
+Browse.VC.db
+*.db
+
+# 镜像 / 介质构建产物
+*.img
+*.iso
+
+# Keil / 嵌入式 IDE 产物（保留 .uvproj/.uvopt 工程文件）
+Objects/
+Listings/
+Output/
+*.uvgui.*
+*.bak
+*.Administrator
