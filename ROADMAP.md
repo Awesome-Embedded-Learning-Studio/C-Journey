@@ -11,8 +11,10 @@ flowchart TD
     C --> D[阶段 2：指针、内存与数据布局]
     D --> E[阶段 3：数据结构与算法基础]
     E --> F[阶段 4：工程化与模块化设计]
-    F --> H[阶段 5：嵌入式 C 与硬件相关开发]
-    H --> J([达到：能写可维护的 C 工程])
+    F --> SYS[阶段 5：系统编程]
+    SYS --> G[阶段 6：嵌入式 C 与硬件相关开发]
+    G --> CAP[阶段 7：综合项目与开源协作]
+    CAP --> J([达到：能写可维护的 C 工程])
 ```
 
 ------
@@ -482,7 +484,92 @@ clib/
 
 ------
 
-# 阶段 5：嵌入式 C 与硬件相关开发
+# 阶段 5：系统编程
+
+> 建议周期：6 ~ 10 周
+> 目标：掌握 C 在操作系统层面的核心能力，能写出涉及进程、线程、网络与高并发的真实程序。
+
+## 核心知识点
+
+### 1. 进程与环境
+
+- `fork` / `exec` / `wait`
+- 进程退出 `exit` / `_exit` / `atexit`
+- 环境变量 `environ` / `getenv` / `setenv`
+- 守护进程（daemon）创建
+
+### 2. 进程间通信（IPC）
+
+- 管道 `pipe` / 命名管道 `mkfifo`
+- 消息队列 / 共享内存 / 信号量（System V 与 POSIX）
+- 信号 `signal` / `sigaction` / 信号屏蔽
+
+### 3. 文件与底层 IO
+
+- 文件描述符
+- `open` / `read` / `write` / `close`
+- 缓冲与无缓冲 IO 的区别
+- `dup` / `dup2` 与重定向
+- 文件锁
+
+### 4. 多线程
+
+- `pthread` 线程创建 / `join` / `detach`
+- 互斥锁 `mutex`
+- 条件变量 condition variable
+- 读写锁 / 自旋锁
+- 线程安全与可重入
+- 死锁的成因与规避
+
+### 5. IO 多路复用
+
+- `select`
+- `poll`
+- `epoll`（水平触发 / 边沿触发）
+- 非阻塞 IO
+- Reactor 事件驱动模型
+
+### 6. 网络编程
+
+- Socket API 基础
+- TCP 服务器 / 客户端
+- UDP 通信
+- 字节序转换与地址转换
+- HTTP 协议基础
+
+## 推荐项目
+
+### 项目 1：Mini Shell
+
+实现：
+
+- 命令解析
+- 管道 `|`
+- 输入输出重定向
+- `fork` / `exec` 执行外部命令
+- 内建命令（`cd`、`exit`）
+
+### 项目 2：并发 HTTP Server
+
+实现：
+
+- 基于 `epoll` 的事件循环
+- 线程池处理连接
+- 解析 HTTP 请求
+- 返回静态文件 / 简单动态响应
+
+### 项目 3：多人聊天室
+
+实现：
+
+- TCP 长连接
+- 多客户端广播
+- 客户端上线 / 离线通知
+- 基于 epoll 或多线程并发
+
+------
+
+# 阶段 6：嵌入式 C 与硬件相关开发
 
 > 建议周期：6 ~ 12 周
 > 目标：掌握 C 在嵌入式环境下的核心用法，理解寄存器、外设、内存和实时性。
@@ -500,6 +587,127 @@ clib/
 - 内存映射寄存器
 - 位操作
 - 宏封装寄存器
+
+### 2. 常见外设驱动
+
+- GPIO
+- UART
+- Timer / PWM
+- SPI
+- I2C
+- ADC
+- DMA
+
+### 3. 中断与实时性
+
+- 中断服务程序（ISR）
+- 临界区保护
+- 中断与主循环的通信
+- 优先级与中断嵌套
+
+### 4. 实时操作系统（RTOS）
+
+- FreeRTOS 任务（Task）
+- 队列（Queue）
+- 信号量 / 互斥量
+- 任务优先级与调度
+
+### 5. 分层架构设计
+
+- BSP（板级支持包）
+- Driver（驱动层）
+- Middleware（中间件）
+- App（应用层）
+- 各层之间的接口设计
+
+## 推荐项目
+
+### 项目 1：串口 Shell
+
+实现：
+
+- 通过 UART 接收命令
+- 命令注册与分发
+- 历史命令（可选）
+
+### 项目 2：Button 按键框架
+
+实现：
+
+- 消抖
+- 单击 / 双击 / 长按识别
+- 事件回调
+
+### 项目 3：嵌入式简易 GUI
+
+实现：
+
+- 基本图形原语（点、线、矩形）
+- 字符显示
+- 简单菜单 / 状态刷新
+
+------
+
+# 阶段 7：综合项目与开源协作
+
+> 建议周期：持续进行
+> 目标：把前面阶段的成果沉淀为可维护、可发布、可协作的真实项目，掌握现代开源工程的工作流。
+
+## 核心知识点
+
+### 1. 版本协作进阶
+
+- Git 分支策略（feature 分支、长期分支）
+- `rebase` / `cherry-pick`
+- PR（Pull Request）流程规范
+- Code Review 规范与要点
+
+### 2. 持续集成（CI）
+
+- GitHub Actions 基础
+- 自动编译 / 测试 / lint
+- 多平台矩阵构建（Linux / macOS）
+- 制品发布
+
+### 3. 质量保障自动化
+
+- 静态分析 `cppcheck` / `clang-tidy`
+- 覆盖率 `gcov` / `lcov`
+- 内存检测 `Valgrind` / ASan 集成到 CI
+
+### 4. 开源协作实践
+
+- Issue 模板 / PR 模板
+- `CONTRIBUTING.md` / `CODE_OF_CONDUCT`
+- 文档与发布：`CHANGELOG`、Tag、Release
+- 开源许可证选择
+
+## 推荐项目
+
+### 项目 1：把 clib 基础库发布为开源项目
+
+实现：
+
+- 完整的 CI（编译 / 测试 / 覆盖率）
+- Doxygen 文档自动发布
+- 规范的 README 与 CONTRIBUTING
+- 版本 Tag 与 Release
+
+### 项目 2：参与一个真实 C 开源项目
+
+实践：
+
+- 阅读项目结构与贡献指南
+- 从修复小 Issue 开始
+- 提交符合规范的 PR 并通过 Review
+
+### 项目 3：综合毕业项目（自选）
+
+融合系统编程 + 嵌入式 + 工程化能力，例如：
+
+- 一个完整的嵌入式网关
+- 一个带 Web 管理界面的后台服务
+- 一个跨平台工具库
 
 ------
 
@@ -555,7 +763,17 @@ flowchart TD
     F --> F6[README / Doxygen / 代码规范]
     F --> F7[项目：C 基础库 / 日志库 / 配置解析器]
 
-    F --> G[阶段 5：嵌入式 C 与硬件开发]
+    F --> SYS[阶段 5：系统编程]
+
+    SYS --> SYS1[fork / exec / wait / 守护进程]
+    SYS --> SYS2[IPC：管道 / 共享内存 / 信号 / 信号量]
+    SYS --> SYS3[文件描述符 / open / read / write / dup]
+    SYS --> SYS4[pthread / mutex / 条件变量 / 线程安全]
+    SYS --> SYS5[IO 多路复用：select / poll / epoll]
+    SYS --> SYS6[Socket / TCP / UDP / HTTP 基础]
+    SYS --> SYS7[项目：Mini Shell / HTTP Server / 聊天室]
+
+    SYS --> G[阶段 6：嵌入式 C 与硬件开发]
 
     G --> G1[裸机程序 / 启动文件 / 链接脚本]
     G --> G2[volatile / 内存映射寄存器 / 位操作]
@@ -566,8 +784,13 @@ flowchart TD
     G --> G7[BSP / Driver / Middleware / App 分层]
     G --> G8[项目：串口 Shell / Button 框架 / 嵌入式 GUI]
 
-    G --> H([目标：能独立维护 C 语言工程])
+    G --> CAP[阶段 7：综合项目与开源协作]
+
+    CAP --> CAP1[Git 分支策略 / rebase / PR / Code Review]
+    CAP --> CAP2[GitHub Actions / CI 自动化]
+    CAP --> CAP3[静态分析 / 覆盖率 / 内存检测集成]
+    CAP --> CAP4[CONTRIBUTING / 模板 / CHANGELOG / Release]
+    CAP --> CAP5[项目：发布 clib / 贡献开源项目 / 综合毕业项目]
+
+    CAP --> H([目标：能独立维护 C 语言工程])
 ```
-
-# 
-
