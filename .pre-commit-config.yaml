@@ -1,0 +1,30 @@
+# C-Journey pre-commit:在本地执行与 CI 一致的检查。
+# 首次使用: pip install pre-commit && pre-commit install
+# 之后每次 git commit 自动运行。CI(.github/workflows/ci.yml)是最终硬门。
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        exclude: \.md$ # Markdown 保留行尾两空格(硬换行)
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=1500]
+      - id: check-merge-conflict
+
+  - repo: local
+    hooks:
+      - id: clang-format-examples
+        name: clang-format (examples/)
+        entry: clang-format -i
+        language: system
+        files: ^examples/.*\.(c|h)$
+        require_serial: true
+
+      - id: validate-frontmatter
+        name: validate frontmatter (documents/)
+        entry: python3 scripts/validate_frontmatter.py
+        language: system
+        files: ^documents/.*\.md$
+        pass_filenames: false
