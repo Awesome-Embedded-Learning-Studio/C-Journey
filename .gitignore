@@ -69,6 +69,7 @@ dkms.conf
 .vscode/
 .idea/
 build/
+_build_ci/
 cmake-build*/
 Debug/
 Release/

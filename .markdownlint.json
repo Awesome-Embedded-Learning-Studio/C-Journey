@@ -1,0 +1,11 @@
+{
+  "comment": "C-Journey markdownlint 配置:默认全开,仅放开与中文(CJK)排版冲突或教学场景不需要的规则。",
+  "default": true,
+  "MD007": { "indent": 2 },
+  "MD013": false,
+  "MD024": { "siblings_only": true },
+  "MD033": false,
+  "MD036": false,
+  "MD040": false,
+  "MD041": false
+}
