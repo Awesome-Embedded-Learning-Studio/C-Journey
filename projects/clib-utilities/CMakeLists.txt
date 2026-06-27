@@ -5,7 +5,7 @@ project(CCSTD_UtilsLib
 
 message("Start Building")
 set(CCSTD_BasicUtils_INC_DIR "./Basic_Utils/Includes/")
-set(CCSTD_BasicDataStructure_INC_DIR "./BasicDataStructure./Includes/")
+set(CCSTD_BasicDataStructure_INC_DIR "./BasicDataStructure/Includes/")
 set(CCSTD_SystemRelated_INC_DIR "./SystemRelated/Includes/")
 set(CCSTD_Test_DIR  "./test/")
 
