@@ -23,7 +23,7 @@ int testDynamicArray()
 	CCDynamicArray_Iterate(arr, handles, NUL_PTR);
 
 	int res = 3;
-	CCSTD_Index_t resIndex = CCDynamicArray_Find(arr, &res, compareInt, 0, TIL_END);
+	CCSTD_Index_t resIndex = CCDynamicArray_Find(arr, &res, (CCSTD_CmpFuncType)compareInt, 0, TIL_END);
 	if (resIndex != -1) {
 		printf("find the elem:> %d in the arr pos:> %d\n", res, resIndex);
 	}
@@ -31,7 +31,7 @@ int testDynamicArray()
 		printf("no find the elem:> %d\n", res);
 	}
 
-	resIndex = CCDynamicArray_Find(arr, &res, compareInt, resIndex + 1,  TIL_END);
+	resIndex = CCDynamicArray_Find(arr, &res, (CCSTD_CmpFuncType)compareInt, resIndex + 1,  TIL_END);
 	if (resIndex != -1) {
 		printf("find the elem:> %d in the arr pos:> %d\n", res, resIndex);
 	}

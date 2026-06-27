@@ -16,9 +16,9 @@ import pathlib
 REPO = pathlib.Path(__file__).resolve().parent.parent
 BUILD_ROOT = pathlib.Path(os.environ.get("CJ_BUILD_ROOT", REPO / "_build_ci"))
 
-# 遗留项目:报告模式(失败不阻塞 CI),逐个整改后从此处移除
+# 遗留项目:报告模式(失败不阻塞 CI),逐个整改后从此处移除。
+# (clib-utilities 已完成 GCC16/POSIX 整改,转为硬门。)
 KNOWN_LEGACY = {
-    "projects/clib-utilities",   # GCC14+ 下 DENY_NUL/handleEnd 等待专项整改
     "projects/embedded-mcu",     # Keil 工程,宿主机无法构建
     "projects/os-from-scratch",  # bochs/汇编,需专属工具链与镜像
     "projects/tiny-c-stdlib",    # Visual Studio 工程
@@ -81,10 +81,12 @@ def main():
         if not build_one(cl, fatal=True):
             fatal_fail.append(cl.parent.relative_to(REPO))
 
-    print("\n== projects/  (报告模式,失败不致命) ==")
+    print("\n== projects/  (非遗留=硬门 / 遗留=报告模式) ==")
     for cl in sorted((REPO / "projects").glob("**/CMakeLists.txt")):
-        if not build_one(cl, fatal=False):
-            report_fail.append(cl.parent.relative_to(REPO))
+        rel_s = str(cl.parent.relative_to(REPO))
+        is_legacy = rel_s in KNOWN_LEGACY
+        if not build_one(cl, fatal=not is_legacy):
+            (report_fail if is_legacy else fatal_fail).append(cl.parent.relative_to(REPO))
 
     print("\n== 汇总 ==")
     print(f"examples 失败: {len(fatal_fail)}    projects 报告失败: {len(report_fail)}")

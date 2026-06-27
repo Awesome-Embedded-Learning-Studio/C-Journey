@@ -74,11 +74,63 @@ CCBOOL_t		CCDynamicLoader_FreeDynamicPlugin(CCDynamicLoader* loader)
 
 
 #else
-CCDynamicLoader* CCDynamicLoader_LoadDynamicPlugin(const char* path);
-CCBOOL_t			CCDynamicLoader_ReLoadDynamicPlugin(CCDynamicLoader* plugin, const char* path);
-CCBOOL_t			CCDynamicLoader_checkIfValidLoader(CCDynamicLoader* loader);
-CCBOOL_t			CCDynamicLoader_checkIfValidFunction(CCDynamicTarget* target);
-CCDynamicTarget* CCDynamicLoader_FetchFunctions(CCDynamicLoader* who, const char* symbol);
-CCBOOL_t			CCDynamicLoader_FreeDynamicPlugin(CCDynamicLoader* loader);
+#include <dlfcn.h>
+
+CCDynamicLoader* CCDynamicLoader_LoadDynamicPlugin(const char* path)
+{
+	CCSTD_MALLOC_ONE(loader, CCDynamicLoader);
+	loader->error		= initError();
+	loader->dllModule	= NULL;
+	void* handle = dlopen(path, RTLD_NOW | RTLD_LOCAL);
+	if (!handle) {
+		freshError(loader->error);
+		return loader;
+	}
+	loader->dllModule = handle;
+	return loader;
+}
+
+CCBOOL_t			CCDynamicLoader_ReLoadDynamicPlugin(CCDynamicLoader* plugin, const char* path)
+{
+	DEFAULT_DENY(plugin, False);
+	if (plugin->dllModule)
+		dlclose(plugin->dllModule);
+	plugin->dllModule = NULL;
+	void* handle = dlopen(path, RTLD_NOW | RTLD_LOCAL);
+	if (!handle) {
+		freshError(plugin->error);
+		return False;
+	}
+	plugin->dllModule = handle;
+	clearError(plugin->error);
+	return True;
+}
+
+CCBOOL_t			CCDynamicLoader_checkIfValidFunction(CCDynamicTarget* target)
+{
+	return target != NUL_PTR;
+}
+
+CCDynamicTarget* CCDynamicLoader_FetchFunctions(CCDynamicLoader* who, const char* symbol)
+{
+	DEFAULT_DENY(who, NULL);
+	DEFAULT_DENY(who->dllModule, NULL);
+	CCDynamicTarget* res = (CCDynamicTarget*)dlsym(who->dllModule, symbol);
+	if (!res) {
+		freshError(who->error);
+		return NUL_PTR;
+	}
+	return res;
+}
+CCBOOL_t			CCDynamicLoader_FreeDynamicPlugin(CCDynamicLoader* loader)
+{
+	DEFAULT_DENY(loader, True);
+	if (loader->dllModule)
+		dlclose(loader->dllModule);
+	loader->dllModule = NULL;
+	freeError(loader->error);
+	CCSTD_SAFE_FREE(loader);
+	return True;
+}
 
 #endif

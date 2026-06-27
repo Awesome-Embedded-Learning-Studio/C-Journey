@@ -21,10 +21,12 @@ typedef struct __CCMutex
 }CCMutex;
 
 #else
-/* Linux/POSIX 占位实现(与 Windows 分支一样产出 CCMutex typedef) */
+/* Linux/POSIX 实现:core_lock 用 void* 持有 pthread_mutex_t*,避免在头文件
+   里直接拉入 <pthread.h>(保持头文件轻量,与 Windows 分支同样不暴露细节)。 */
 typedef struct __CCMutex
 {
-	void* empty;
+	void*			core_lock;	/* pthread_mutex_t* */
+	CCMutexError	e;
 }CCMutex;
 
 #endif // Compiles according OS
