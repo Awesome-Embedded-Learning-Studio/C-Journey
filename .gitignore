@@ -1,5 +1,6 @@
-# AI Tools
-.claude
+# AI Tools(仅公开 writing-style.md 作者契约;settings/drafts/cache 仍私有)
+.claude/*
+!.claude/writing-style.md
 
 # Editor backups (如 os-from-scratch 里残留的 kernel.bin~)
 *~
