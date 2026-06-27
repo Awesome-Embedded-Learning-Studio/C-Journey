@@ -1,0 +1,38 @@
+---
+# C-Journey 的 C 代码风格(clang-format 22)。
+# 基础 LLVM:4 空格缩进、行宽 100、左贴指针(*)、Attach 大括号。
+# 目前在 examples/ 强制执行;projects/ 为各阶段遗留代码(多用 Tab / 厂商工程),
+# 暂不强制,按项目逐个整改后再纳入。
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+
+# 大括号与指针
+BreakBeforeBraces: Attach
+PointerAlignment: Left
+DerivePointerAlignment: false
+
+# 空格
+SpaceBeforeParens: ControlStatements
+SpaceAfterCStyleCast: true
+
+# 对齐
+AlignAfterOpenBracket: Align
+AlignTrailingComments: true
+AlignEscapedNewlines: Left
+
+# 短语句:一律展开,教学代码要可读
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+
+# include 不自动重排(避免打乱教学顺序)
+SortIncludes: Never
+
+# 空行
+MaxEmptyLinesToKeep: 2
+KeepEmptyLinesAtTheStartOfBlocks: false

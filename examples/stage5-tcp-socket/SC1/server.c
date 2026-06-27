@@ -2,8 +2,7 @@
 #define QUEUE_LENGTH 5
 
 
-int main(int argc, char** agrv)
-{
+int main(int argc, char** agrv) {
     int server_socket;
     int client_socket;
 
@@ -13,8 +12,8 @@ int main(int argc, char** agrv)
 
     const char message[] = "Hello, World\0";
 
-    if(argc != 2){
-        program_helper(agrv[0],"<port>\n");
+    if (argc != 2) {
+        program_helper(agrv[0], "<port>\n");
     }
 
     server_socket = Socket(PF_INET, SOCK_STREAM, 0);
