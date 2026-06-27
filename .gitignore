@@ -1,6 +1,9 @@
 # AI Tools
 .claude
 
+# Editor backups (如 os-from-scratch 里残留的 kernel.bin~)
+*~
+
 # Prerequisites
 *.d
 
@@ -83,6 +86,7 @@ Browse.VC.db
 # 镜像 / 介质构建产物
 *.img
 *.iso
+*.mp3
 
 # Keil / 嵌入式 IDE 产物（保留 .uvproj/.uvopt 工程文件）
 Objects/
