@@ -65,6 +65,10 @@ dkms.conf
 /projects/song/play
 /projects/song/music_player
 
+# Python 字节码缓存（运行 scripts/ 下的脚本会生成，不该入库）
+__pycache__/
+*.py[cod]
+
 # ===== 旧代码整合补充：IDE / 构建系统目录 =====
 .vs/
 .vscode/
