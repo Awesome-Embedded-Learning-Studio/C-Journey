@@ -1,0 +1,236 @@
+---
+chapter: 1
+c_standard:
+- 99
+- 11
+description: 掌握 C 预处理器的工作原理，学会使用宏、条件编译和头文件防护，构建模块化的多文件 C 工程，搞清楚编译单元与链接的关系
+difficulty: beginner
+order: 19
+platform: host
+prerequisites:
+- 动态内存管理
+reading_time_minutes: 6
+tags:
+- host
+- macro
+- linker
+title: 预处理器与多文件工程
+---
+# 预处理器与多文件工程
+
+如果你到目前为止所有的 C 程序都写在一个 `.c` 文件里，那迟早有一天你会撑不住的。实际工程中，我们把代码拆分到多个 `.c` 和 `.h` 文件中，每个模块各司其职，然后通过编译和链接把它们组装成完整的程序。
+
+但多文件工程带来的不仅仅是组织上的挑战，它还牵出了 C 语言中一个经常被误解的角色——**预处理器**（preprocessor）。理解预处理器的本质，是避免那些莫名其妙的编译错误、奇怪的宏展开行为和头文件循环包含的第一步。
+
+> **学习目标**
+>
+> 完成本章后，你将能够：
+>
+> - [ ] 理解编译四阶段中预处理阶段的角色
+> - [ ] 正确使用 `#include`、`#define`、条件编译等预处理指令
+> - [ ] 掌握宏的编写技巧和常见陷阱
+> - [ ] 使用头文件防护和 `#pragma once` 组织头文件
+> - [ ] 构建多文件 C 工程，理解编译单元与链接过程
+
+## 环境说明
+
+我们接下来的所有实验都在这个环境下进行：
+
+- 平台：Linux x86\_64（WSL2 也可以）
+- 编译器：GCC 13+ 或 Clang 17+
+- 编译选项：`-Wall -Wextra -std=c17`
+
+## 第一步——理解预处理器做什么
+
+C 程序从源代码变成可执行文件要经过四个阶段：预处理、编译、汇编和链接。预处理器是第一个工位，它对源文件进行**纯文本变换**——所有以 `#` 开头的行都是预处理指令。
+
+预处理器不懂 C 语言。它不知道什么是类型、什么是作用域，只会机械地执行替换、删除和条件选择。你可以用 `gcc -E -P demo.c` 查看预处理后的输出，感受预处理器有多"暴力"（一个只 include 了 `<stdio.h>` 的空 main，预处理后就有几百行文本）。
+
+## #include：最暴力的文本粘贴
+
+`#include` 的行为非常直接——把指定文件的全部内容原封不动地插入到当前位置。这就是为什么我们说它是文本粘贴，不是模块导入。
+
+尖括号 `<>` 在系统头文件目录中搜索，双引号 `""` 先搜索当前目录再搜索系统目录。嵌套 include 会导致严重的代码膨胀。
+
+## 第二步——掌握宏的编写技巧和陷阱
+
+### 对象宏：常量定义
+
+```c
+#define kMaxBufferSize 1024
+#define kVersionString "1.0.0"
+
+char buffer[kMaxBufferSize];
+```
+
+注意：宏定义末尾**不要加分号**。`#define kMaxBufferSize 1024;` 会把分号也作为替换文本的一部分。
+
+### 函数宏：带参数的文本替换
+
+括号是血泪教训的总结：
+
+```c
+#define SQUARE(x) ((x) * (x))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+```
+
+不加括号的后果：
+
+```c
+#define BAD_SQUARE(x) x * x
+int r = BAD_SQUARE(2 + 3);   // 展开为 2 + 3 * 2 + 3 = 11，而不是 25
+```
+
+（上面这段用 `gcc -Wall -std=c17` 实测，`r` 确实是 `11`。）
+
+但括号解决不了**重复求值**问题：
+
+```c
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+int x = 5;
+int r = MAX(x++, 10);
+// 展开为 ((x++) > (10) ? (x++) : (10))
+```
+
+这里有个很容易讲错的坑：展开后看起来 `x++` 出现了两次，但**三目运算符只对被选中的那个分支求值**。`x++` 先求值为 5（x 变成 6），`5 > 10` 为假，于是走假分支取 `(10)`，第二个 `x++` 根本没被执行。实测结果是 `r = 10`，`x = 6`。
+
+也就是说：带副作用的参数，在函数宏里行为是**不可预测**的——具体被求值几次，取决于宏怎么写、运行时走哪个分支。这就是函数宏比真函数危险的地方：真函数每个参数在调用前只求值一次，宏做不到这个保证。
+
+### 多行宏与 do-while(0) 惯用法
+
+```c
+#define SAFE_FREE(ptr)         \
+    do {                        \
+        if ((ptr) != NULL) {     \
+            free((ptr));         \
+            (ptr) = NULL;        \
+        }                       \
+    } while (0)
+```
+
+`do { ... } while(0)` 作为一个整体构成一条语句，不会在 `if-else` 的分支中出现悬挂问题。这个技巧在 Linux 内核代码中随处可见。
+
+## # 和 ## 运算符
+
+`#` 把宏参数变成字符串，`##` 把两个 token 粘合成一个新的 token：
+
+```c
+#define STRINGIFY(x) #x
+#define MAKE_VAR(prefix, num) prefix ## num
+
+int MAKE_VAR(value, 1) = 10;  // 展开为 int value1 = 10;
+```
+
+（实测：`STRINGIFY(hello)` 得到字符串 `"hello"`，`MAKE_VAR(value, 1)` 粘合成合法变量名 `value1`，能正常编译运行。）
+
+## 条件编译
+
+### 头文件防护
+
+传统做法用 `#ifndef` + `#define` 组合，现代编译器支持更简洁的 `#pragma once`：
+
+```c
+// math_utils.h
+#pragma once
+
+int add(int a, int b);
+int multiply(int a, int b);
+```
+
+`#pragma once` 不是 C 标准的一部分，但 GCC、Clang、MSVC 全都支持，在现代 C 工程里已经是事实上的标准做法。它让同一个头文件在一个编译单元里即使被 include 多次也只生效一次。
+
+### 典型用途
+
+Debug/Release 切换、平台适配、功能开关——这些全靠条件编译。
+
+## 第三步——学会组织头文件和多文件工程
+
+头文件放**声明**（declaration），源文件放**定义**（definition）。
+
+`extern` 的正确使用：在头文件中用 `extern` 声明，在**一个** `.c` 文件中定义：
+
+```c
+// config.h
+extern int kConfigMaxRetryCount;
+
+// config.c
+#include "config.h"
+int kConfigMaxRetryCount = 3;
+```
+
+注意：头文件里写 `int kConfigMaxRetryCount = 3;`（没有 `extern`）被多个 `.c` 文件 include，会在链接阶段报 `multiple definition` 错误——因为每个编译单元都生成了一份带初值的定义，链接器不允许同一个符号有多份强定义。
+
+## 多文件编译与链接
+
+每个 `.c` 文件加上它 `#include` 的所有头文件构成一个**编译单元**。编译器对每个编译单元独立处理，链接器负责把所有 `.o` 文件拼在一起。
+
+`static` 关键字限制符号可见性在当前编译单元内——链接器看不到它，其他 `.c` 文件也无法引用。
+
+## 静态库初步
+
+```bash
+# 编译为目标文件
+gcc -c math_utils.c
+# 创建静态库
+ar rcs libmath_utils.a math_utils.o
+# 使用静态库
+gcc -o demo main.c -L. -lmath_utils
+```
+
+## 小结
+
+预处理器虽然原始——只会做纯文本变换，不懂类型也不懂作用域——但在 C 语言的多文件工程中是不可或缺的粘合剂。理解它的本质（文本粘贴、机械替换、条件选择），才能解释那些诡异的编译错误、宏展开陷阱和 `multiple definition` 报错。
+
+关键要点 checklist：
+
+- [ ] 预处理 = 纯文本变换，可用 `gcc -E -P` 看结果
+- [ ] 函数宏每个参数都要加括号，但括号防不住重复求值
+- [ ] 带副作用的表达式不要塞进函数宏
+- [ ] `#pragma once` 是现代头文件防护的事实标准
+- [ ] 头文件放声明（`extern`），源文件放定义
+- [ ] 想限制符号只在编译单元内可见，用 `static`
+
+## 练习
+
+### 练习 1：构建多文件模块化项目
+
+```c
+// math_utils.h
+#pragma once
+// 练习： 声明 clamp_int 和 count_digits
+
+// math_utils.c
+#include "math_utils.h"
+// 练习： 实现 clamp_int（将 value 限制在 [min_val, max_val] 范围内）
+// 练习： 实现 count_digits（计算整数的十进制位数）
+
+// main.c
+#include <stdio.h>
+#include "math_utils.h"
+int main(void) {
+    // 练习： 调用两个函数，验证结果
+    return 0;
+}
+```
+
+提示：编译步骤是 `gcc -c math_utils.c`、`gcc -c main.c`、`gcc -o demo main.o math_utils.o`。打包静态库用 `ar rcs libmath_utils.a math_utils.o`。
+
+### 练习 2：零开销的 DEBUG_LOG 宏
+
+```c
+// debug_log.h
+#pragma once
+
+#ifdef NDEBUG
+// 练习： Release 模式——DEBUG_LOG 展开为空
+#else
+// 练习： Debug 模式——输出 [DEBUG] 文件名:行号: 格式化消息
+// 提示：使用 __FILE__、__LINE__、__VA_ARGS__
+#endif
+```
+
+提示：可变参数宏的写法是 `#define DEBUG_LOG(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)`。GCC 提供了 `##__VA_ARGS__` 扩展处理没有额外参数时的逗号问题。
+
+---
+
+*整理自作者 c_tutorials，按 C-Journey 写作规范适配。*
