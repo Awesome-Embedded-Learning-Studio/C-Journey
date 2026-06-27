@@ -6,10 +6,10 @@
 #include <sys/socket.h>
 
 // typedef
-typedef struct sockaddr_in  Sockaddr_in;
-typedef struct sockaddr     Sockaddr;
+typedef struct sockaddr_in Sockaddr_in;
+typedef struct sockaddr Sockaddr;
 // program helper
-void program_helper(const char* program_name,const char* message);
+void program_helper(const char* program_name, const char* message);
 
 // handle the error shell be a neccessity
 void error_handler(const char* message);

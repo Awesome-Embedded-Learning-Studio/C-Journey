@@ -2,6 +2,7 @@
 #ifndef __CCMutex__H_
 #define __CCMutex__H_
 #include "CCSTDLibs_MyCompiles.h"
+#include "CCSTDLib_Types.h"   /* CCBOOL_t */
 typedef enum __CCMutexError {
 	CCMutex_NO_ERROR,
 	CCMutex_NUL_Mutex,
@@ -20,9 +21,13 @@ typedef struct __CCMutex
 }CCMutex;
 
 #else
-struct CCMutex {
-	void* empty;
-};
+/* Linux/POSIX 实现:core_lock 用 void* 持有 pthread_mutex_t*,避免在头文件
+   里直接拉入 <pthread.h>(保持头文件轻量,与 Windows 分支同样不暴露细节)。 */
+typedef struct __CCMutex
+{
+	void*			core_lock;	/* pthread_mutex_t* */
+	CCMutexError	e;
+}CCMutex;
 
 #endif // Compiles according OS
 

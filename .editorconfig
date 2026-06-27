@@ -1,0 +1,27 @@
+root = true
+
+# C-Journey 编辑器默认:UTF-8、LF、去行尾空白、文末换行。
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# C / 头文件:与 .clang-format 一致,4 空格。
+[*.{c,h}]
+indent_size = 4
+
+# Markdown:保留行尾两空格(硬换行),不限行宽(CJK)。
+[*.{md,markdown}]
+trim_trailing_whitespace = false
+max_line_length = off
+
+# 配置 / 前端:2 空格。
+[*.{yml,yaml,json,jsonc,js,ts}]
+indent_size = 2
+
+# Makefile 必须用 Tab。
+[Makefile]
+indent_style = tab

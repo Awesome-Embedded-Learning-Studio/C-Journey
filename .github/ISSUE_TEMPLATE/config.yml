@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 学习疑问 / 讨论
+    url: https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/discussions
+    about: 学习中的疑问请到 Discussions 提问;Issue 留给具体的内容修正 / 建议。

@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feat/integrate-old-c-code]
+  pull_request:
+    branches: [main]
+
+# 同一 PR 的新一轮推送取消上一轮
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-examples:
+    name: 编译 examples (${{ matrix.cc }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装构建工具
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build
+      - name: 选择编译器
+        run: echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
+      - name: 编译所有 examples(硬门)
+        run: python3 scripts/build_examples.py
+
+  sanitize:
+    name: Sanitizer(ASan + UBSan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装构建工具
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang
+      - name: 用 -fsanitize 编译 examples
+        env:
+          CC: clang
+          CFLAGS: -fsanitize=address,undefined -fno-omit-frame-pointer -g
+          LDFLAGS: -fsanitize=address,undefined
+        run: python3 scripts/build_examples.py
+        # 注:目前仅覆盖 CMake 子项目(SC1-4);待 Phase 3 根 CMakeLists
+        # 统一构建后,所有 examples(含 stage1 的位运算等)都将纳入 sanitizer。
+
+  docs:
+    name: 文档(frontmatter + markdownlint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: 安装 PyYAML
+        run: pip install pyyaml
+      - name: 校验 frontmatter
+        run: python3 scripts/validate_frontmatter.py
+      - name: markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v18
+        with:
+          globs: 'documents/**/*.md'
+
+  format-check:
+    name: clang-format(examples)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装 clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+      - name: 检查 examples 格式
+        run: |
+          git ls-files 'examples/*.c' 'examples/*.h' | xargs clang-format --dry-run --Werror

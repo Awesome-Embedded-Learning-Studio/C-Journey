@@ -1,0 +1,18 @@
+{
+  "comment": "C-Journey markdownlint 配置:默认全开。本项目声音大量使用「>」密集 callout(内嵌代码块/列表/多段),且为中文(CJK)文档,故放开与之冲突的规则;其余(标题层级、行尾空白、文末换行等)全开。",
+  "default": true,
+  "MD007": { "indent": 2 },
+  "MD010": { "code_blocks": false },
+  "MD013": false,
+  "MD014": false,
+  "MD024": { "siblings_only": true },
+  "MD025": { "front_matter_title": "" },
+  "MD028": false,
+  "MD031": false,
+  "MD032": false,
+  "MD033": false,
+  "MD036": false,
+  "MD040": false,
+  "MD041": false,
+  "MD060": false
+}

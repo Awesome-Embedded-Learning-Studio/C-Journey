@@ -1,5 +1,9 @@
-# AI Tools
-.claude
+# AI Tools(仅公开 writing-style.md 作者契约;settings/drafts/cache 仍私有)
+.claude/*
+!.claude/writing-style.md
+
+# Editor backups (如 os-from-scratch 里残留的 kernel.bin~)
+*~
 
 # Prerequisites
 *.d
@@ -61,11 +65,16 @@ dkms.conf
 /projects/song/play
 /projects/song/music_player
 
+# Python 字节码缓存（运行 scripts/ 下的脚本会生成，不该入库）
+__pycache__/
+*.py[cod]
+
 # ===== 旧代码整合补充：IDE / 构建系统目录 =====
 .vs/
 .vscode/
 .idea/
 build/
+_build_ci/
 cmake-build*/
 Debug/
 Release/
@@ -83,6 +92,7 @@ Browse.VC.db
 # 镜像 / 介质构建产物
 *.img
 *.iso
+*.mp3
 
 # Keil / 嵌入式 IDE 产物（保留 .uvproj/.uvopt 工程文件）
 Objects/

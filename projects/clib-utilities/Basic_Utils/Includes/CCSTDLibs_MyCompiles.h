@@ -24,7 +24,7 @@
 #define CCSTD_USE_WINDOWS
 #elif defined(USE_LINUX) || defined(__linux__)
 // Use linux
-	#ifndef (__linux__)
+	#ifndef __linux__
 	#error "unable Mark the Exsiting Linux, detecting by checking the _WIN32!"
 	#endif
 #define CCSTD_USE_LINUX

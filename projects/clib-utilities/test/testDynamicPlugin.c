@@ -24,7 +24,7 @@ int testDynamicPlugin()
 	}
 
 	Func_Type func = CCDynamicLoader_FetchConcreteFunc(Func_Type, plugin, loadingName);
-	if (!CCDynamicLoader_checkIfValidFunction(func))
+	if (!CCDynamicLoader_checkIfValidFunction((CCDynamicTarget*)func))
 	{
 		fprintf(stderr, "Functions are un-find!\n");
 		CCDynamicLoader_FreeDynamicPlugin(plugin);

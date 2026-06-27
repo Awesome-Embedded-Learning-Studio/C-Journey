@@ -5,7 +5,7 @@ project(CCSTD_UtilsLib
 
 message("Start Building")
 set(CCSTD_BasicUtils_INC_DIR "./Basic_Utils/Includes/")
-set(CCSTD_BasicDataStructure_INC_DIR "./BasicDataStructure./Includes/")
+set(CCSTD_BasicDataStructure_INC_DIR "./BasicDataStructure/Includes/")
 set(CCSTD_SystemRelated_INC_DIR "./SystemRelated/Includes/")
 set(CCSTD_Test_DIR  "./test/")
 
@@ -41,6 +41,15 @@ message("CCSTD_COMPILE_ALL_SRC = \n${CCSTD_COMPILE_ALL_SRC}\n")
 add_executable(TEST_RES ${CCSTD_COMPILE_ALL_SRC} main.c)
 
 target_include_directories(TEST_RES PUBLIC ${CCSTD_COMPILE_HEADER_PATH})
+
+target_compile_features(TEST_RES PRIVATE c_std_11)
+target_compile_options(TEST_RES PRIVATE -Wall -Wextra)
+
+# Windows 之外(POSIX/Linux)需要 pthread(线程/互斥锁)与 dl(动态加载)。
+# 错误码路径走 errno+strerror,无需额外库。
+if(NOT WIN32)
+	target_link_libraries(TEST_RES PRIVATE pthread dl)
+endif()
 
 
 
