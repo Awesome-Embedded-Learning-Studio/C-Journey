@@ -1,3 +1,6 @@
+/* 注意:本文件与 SC1/server.c 内容一致。SC2 的"改进"在客户端
+ * (SC2/client.c 改为逐字节读取并统计读取次数),服务端无需改动,
+ * 此处保留一份让 SC2 能独立编译运行。 */
 #include "../Utils/SC_Utils.h"
 #define QUEUE_LENGTH 5
 
