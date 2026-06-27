@@ -1,7 +1,7 @@
 // src
 //
 #include <stdio.h>
-int printMsg(const char* msg){
+void printMsg(const char* msg){
 	printf("%s\n", msg);
 }
 
