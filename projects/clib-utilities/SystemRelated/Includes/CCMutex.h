@@ -2,6 +2,7 @@
 #ifndef __CCMutex__H_
 #define __CCMutex__H_
 #include "CCSTDLibs_MyCompiles.h"
+#include "CCSTDLib_Types.h"   /* CCBOOL_t */
 typedef enum __CCMutexError {
 	CCMutex_NO_ERROR,
 	CCMutex_NUL_Mutex,
@@ -20,9 +21,11 @@ typedef struct __CCMutex
 }CCMutex;
 
 #else
-struct CCMutex {
+/* Linux/POSIX 占位实现(与 Windows 分支一样产出 CCMutex typedef) */
+typedef struct __CCMutex
+{
 	void* empty;
-};
+}CCMutex;
 
 #endif // Compiles according OS
 
