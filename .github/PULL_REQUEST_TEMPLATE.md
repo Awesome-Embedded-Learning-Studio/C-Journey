@@ -1,0 +1,20 @@
+## 改动说明
+
+<!-- 这个 PR 做了什么、为什么。大改动请先关联相关 Issue。 -->
+
+## 类型
+
+- [ ] 修 bug
+- [ ] 新增示例 / 文档
+- [ ] 改进现有内容
+- [ ] 工程化 / CI / 工具
+- [ ] 其他
+
+## 自检
+
+- [ ] `python3 scripts/build_examples.py` 通过(若改了 `examples/`)
+- [ ] `python3 scripts/validate_frontmatter.py` 通过(若改了 `documents/`)
+- [ ] examples 代码已 `clang-format`
+- [ ] 文档贴了真实输出,未编造;断言 C 行为处有编译验证
+- [ ] commit 信息未带 `Co-Authored-By`
+- [ ] 新文档 frontmatter 的 tags 取自 `scripts/tags.py`

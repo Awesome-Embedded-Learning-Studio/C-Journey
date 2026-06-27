@@ -1,0 +1,27 @@
+name: 内容建议
+description: 建议新增 / 补充某个主题或示例
+labels: ["content-proposal"]
+body:
+  - type: textarea
+    id: topic
+    attributes:
+      label: 想要的内容
+      description: 想补哪个阶段 / 主题,解决什么问题
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: 所属阶段
+      options:
+        - 阶段 0:开发环境
+        - 阶段 1:C 基础
+        - 阶段 2:指针 / 内存
+        - 阶段 3:数据结构
+        - 阶段 4:工程化
+        - 阶段 5:系统编程
+        - 阶段 6:嵌入式
+        - 阶段 7:综合项目
+        - 跨阶段 / 其他
+    validations:
+      required: false

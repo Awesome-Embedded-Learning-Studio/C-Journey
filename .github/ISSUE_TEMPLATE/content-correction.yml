@@ -1,0 +1,25 @@
+name: 内容修正
+description: 报告文档或代码里的错误
+labels: ["content-correction"]
+body:
+  - type: textarea
+    id: where
+    attributes:
+      label: 位置
+      description: 文件路径 / 章节 / 行号
+      placeholder: "documents/02-pointers-memory/0-pointers-memory-and-bitops.md 第 XX 行"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题
+      description: 哪里错了、为什么(如有编译 / 运行证据请贴上)
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 建议改法
+    validations:
+      required: false
