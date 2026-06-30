@@ -90,7 +90,7 @@ $ nm foo.o
 
 这里最值得停一下的是 `helper`——它是**小写 `t`**，因为加了 `static`。这意味着：
 
-> **踩坑预警**：`static` 函数/全局是 `.o` 里的**局部符号**（小写字母），**链接器跨文件时看不到它**。你在 `main.c` 里声明 `extern int helper(int);` 然后调它，链接器翻遍所有 `.o` 都找不到一个全局的 `helper`，报 `undefined reference to 'helper'`——尽管 `foo.o` 里明明有个叫 `helper` 的函数，但它是 `static`、对链接器隐形。`static` 的本意就是「这是我这个文件私有的」，跨文件要用就得去掉 `static`。
+这里有个分水岭：`static` 函数/全局是 `.o` 里的**局部符号**（小写字母），**链接器跨文件时看不到它**。你在 `main.c` 里声明 `extern int helper(int);` 然后调它，链接器翻遍所有 `.o` 都找不到一个全局的 `helper`，报 `undefined reference to 'helper'`——尽管 `foo.o` 里明明有个叫 `helper` 的函数，但它是 `static`、对链接器隐形。`static` 的本意就是「这是我这个文件私有的」，跨文件要用就得去掉 `static`。
 
 ## UND：自己没有、等链接器填的符号
 
@@ -163,7 +163,7 @@ $ nm prog | grep -iE 'visible_fn| main$| counter| tally| helper| printf'
 
 这个 `printf@GLIBC` 留着 `U` 的现象，正是**静态链接 vs 动态链接**的分水岭，也是第 7 章（动态库与 `dlopen`）的入口。先记住这个画面，后面会接上。
 
-> **踩坑预警**：别拿 C++ 的经验套纯 C。C++ 有 name mangling（`int foo(int)` 编译后符号叫 `_Z3fooi`），所以 C++ 工程里 `nm` 看到的是一堆乱码符号；**纯 C 的符号不 mangle**（`visible_fn` 就是 `visible_fn`）。混语言时要用 `extern "C"`（C++ 那边）让符号退回 C 的平坦命名，否则链接器对不上名。另外，符号可见性 `-fvisibility=hidden` 会把本来全局的符号变成局部（影响动态库导出哪些符号），第 7 章细讲。
+顺带提一句，别拿 C++ 的经验套纯 C。C++ 有 name mangling（`int foo(int)` 编译后符号叫 `_Z3fooi`），所以 C++ 工程里 `nm` 看到的是一堆乱码符号；**纯 C 的符号不 mangle**（`visible_fn` 就是 `visible_fn`）。混语言时要用 `extern "C"`（C++ 那边）让符号退回 C 的平坦命名，否则链接器对不上名。另外，符号可见性 `-fvisibility=hidden` 会把本来全局的符号变成局部（影响动态库导出哪些符号），第 7 章细讲。
 
 ## 小结
 

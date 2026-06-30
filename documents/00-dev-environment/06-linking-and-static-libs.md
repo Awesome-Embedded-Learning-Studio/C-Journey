@@ -102,7 +102,7 @@ collect2: error: ld returned 1 exit status
 
 `main` 这个符号有两个强定义，链接器不知道该用哪个，直接拦下。语言层这违反了 §6.9¶5（一个外部链接标识符只能有一次外部定义），是 UB；实践中链接器把它当硬错误。
 
-> **踩坑预警（拼装旧代码必中）**：本仓库整合旧代码时就撞过这个——旧目录里 `error.c` 和 `main.c` 各有一个 `main`，一句 `gcc *.c` 一锅端就 `multiple definition`。拼装多份旧代码前，先全局搜一遍 `main`、全局变量名，把重名的改掉或归并。临时绕过有 `-Wl,--allow-multiple-definition`（把后来的弱化处理），但**那是兜底，不是正解**——正解是消除重复定义。
+这坑本仓库整合旧代码时就撞过——旧目录里 `error.c` 和 `main.c` 各有一个 `main`，一句 `gcc *.c` 一锅端就 `multiple definition`。所以拼装多份旧代码前，先全局搜一遍 `main`、全局变量名，把重名的改掉或归并。临时绕过有 `-Wl,--allow-multiple-definition`（把后来的弱化处理），但**那是兜底，不是正解**——正解是消除重复定义。
 
 ## 把 `.o` 打包成静态库：`ar rcs` 与 `libxxx.a`
 
@@ -120,7 +120,7 @@ $ nm libmymath.a | grep ' T '
 
 `ar rcs` 的三个字母：`r` = 把成员**插入/替换**进归档，`c` = **创建**归档（不存在就建），`s` = 写**符号索引**（这个关键，见下面的坑）。命名约定：静态库叫 `lib<名字>.a`（这里是 `libmymath.a`），这样链接时用 `-l<名字>`（`-lmymath`）就能找到它，再用 `-L<目录>` 告诉链接器去哪找（`-L.` 表示当前目录）。
 
-> **踩坑预警**：`ar` 的 `s` 选项是写**符号索引**（早期要单独跑 `ranlib` 生成）。**缺索引的 `.a`，链接器在里面翻不到符号**，老的归档就会报 `archive has no index; run ranlib to add one`。现在 `ar rcs` 默认就带索引，但你要是看到这个报错，就知道是索引的事，`ranlib libmymath.a` 补一下即可。
+这里要注意 `ar` 的 `s` 选项是写**符号索引**（早期要单独跑 `ranlib` 生成）。**缺索引的 `.a`，链接器在里面翻不到符号**，老的归档就会报 `archive has no index; run ranlib to add one`。现在 `ar rcs` 默认就带索引，但你要是看到这个报错，就知道是索引的事，`ranlib libmymath.a` 补一下即可。
 
 ## 库顺序陷阱：为什么 `-lm` 的位置要命
 
@@ -144,7 +144,7 @@ collect2: error: ld returned 1 exit status
 
 记住这条肌肉记忆：**被依赖的放右边，提供依赖的放左边；对象在前，库在后；库之间也要按依赖顺序排**（A 库依赖 B 库，就 `... -lA -lB`）。最臭名昭著的例子是数学库：`gcc foo.c -lm -o foo` 对（`-lm` 在 `foo.c` 之后），写反就可能炸。如果库之间互相依赖、顺序排不过来，`-Wl,--start-group ... -Wl,--end-group` 让链接器在组内多趟扫描（代价是变慢）。
 
-> **踩坑预警**：库顺序陷阱的报错信息（`undefined reference`）和"漏链 `.o`"的报错**一模一样**，极易误判成"我代码写错了"。**碰到 `undefined reference`，先别改代码，先看链接命令行里库和对象的相对顺序**——这是新手和老兵的分水岭。
+最后这条是新手和老兵的分水岭：库顺序陷阱的报错信息（`undefined reference`）和「漏链 `.o`」的报错**一模一样**，极易误判成「我代码写错了」。**碰到 `undefined reference`，先别改代码，先看链接命令行里库和对象的相对顺序**。
 
 ## 小结
 
