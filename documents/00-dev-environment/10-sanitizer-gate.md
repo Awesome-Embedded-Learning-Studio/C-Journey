@@ -19,8 +19,6 @@ related:
   - "第 16 章：GitHub Actions（把 sanitizer 当 CI 硬门）"
 ---
 
-> 🟡 状态：待审核（2026-06-30）
-
 # Sanitizer 门禁：让 UB 与内存错误在运行期当场现形
 
 ## 引言：警告抓不到的，让运行期插桩来抓
@@ -124,7 +122,7 @@ SUMMARY: AddressSanitizer: stack-buffer-overflow /tmp/cj/ch10/oob.c:6 in main
 #include <stdlib.h>
 
 int main(void) {
-    int *p = malloc(sizeof(int));
+    int* p = malloc(sizeof(int));
     *p = 42;
     free(p);
     printf("%d\n", *p); /* use-after-free */

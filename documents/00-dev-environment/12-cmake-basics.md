@@ -19,8 +19,6 @@ related:
   - "第 17 章：格式化与质量门（在 CMake 里挂 clang-format、sanitizer、测试）"
 ---
 
-> 🟡 状态：待审核（2026-06-30）
-
 # CMake 入门：在 make 之上声明「要构建什么」
 
 ## 引言：make 够用，但工程一大就吃力

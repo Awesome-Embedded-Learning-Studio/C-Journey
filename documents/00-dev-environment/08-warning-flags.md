@@ -33,7 +33,9 @@ related:
 先看一个 `-Wall` 完全没声音、但 `-Wextra` 一抓一个准的例子：
 
 ```c
-int f(int x, int y) { return x; }   /* y 根本没用上 */
+int f(int x, int y) {
+    return x;
+} /* y 根本没用上 */
 ```
 
 只开 `-Wall`，编译器一声不吭：
@@ -56,7 +58,11 @@ d1.c:1:18: warning: unused parameter 'y' [-Wunused-parameter]
 再说一个 `-Wall` 本来就能抓、而且是真坑的典型——把 `==` 写成 `=`：
 
 ```c
-int g(int x) { if (x = 5) return 1; return 0; }   /* 本来想写 x == 5 */
+int g(int x) {
+    if (x = 5)
+        return 1;
+    return 0;
+} /* 本来想写 x == 5 */
 ```
 ```text
 $ gcc -std=c11 -Wall -c d2.c -o d2.o
@@ -83,7 +89,7 @@ d2.c:1:20: error: suggest parentheses around assignment used as truth value [-We
 gcc 默认是挺纵容的——哪怕你指定了 `-std=c89`，它还是会**悄悄放行很多 C89 之后才有的、或者根本是 GNU 扩展的写法**。来看 `long long`（C99 才有，C89 里没有）：
 
 ```c
-long long x = 0;   /* C99 起,C89 没有这个类型 */
+long long x = 0; /* C99 起,C89 没有这个类型 */
 ```
 ```text
 $ gcc -std=c89 -c d4.c -o d4.o
@@ -101,7 +107,9 @@ d4.c:1:6: warning: ISO C90 does not support 'long long' [-Wlong-long]
 下面这种「把大类型塞进小类型」的隐式截断，`-Wall -Wextra` 全开了也未必理你：
 
 ```c
-int narrow(long big) { return big; }   /* long 截成 int,可能丢数据 */
+int narrow(long big) {
+    return big;
+} /* long 截成 int,可能丢数据 */
 ```
 ```text
 $ gcc -std=c11 -Wall -Wextra -c d5.c -o d5.o
@@ -117,7 +125,10 @@ d5.c:1:31: warning: conversion from 'long int' to 'int' may change value [-Wconv
 读未初始化的变量是 UB，`-Wuninitialized`（`-Wall` 含）本来该抓。简单的直读它确实抓得到——而且这台 gcc 16 上 `-O0`、`-O2` 都抓：
 
 ```c
-int use_u(void) { int u; return u; }   /* 直接读未初始化 */
+int use_u(void) {
+    int u;
+    return u;
+} /* 直接读未初始化 */
 ```
 ```text
 $ gcc -std=c11 -Wall -O0 -c d6.c -o d6.o
@@ -131,8 +142,9 @@ d6.c:1:33: warning: 'u' is used uninitialized [-Wuninitialized]
 ```c
 int cond(int flag) {
     int u;
-    if (flag) u = 10;   /* flag==0 时 u 没被赋值 */
-    return u;           /* 这条路径上读的是未初始化的 u */
+    if (flag)
+        u = 10; /* flag==0 时 u 没被赋值 */
+    return u;   /* 这条路径上读的是未初始化的 u */
 }
 ```
 ```text

@@ -17,8 +17,6 @@ related:
   - "第 6 章：位运算与移位（& | ^ ~ << >>，另一类运算符）"
 ---
 
-> 🟡 状态：待审核（2026-06-30）
-
 # 运算符基础：优先级、自增自减与短路求值
 
 ## 引言：C 的运算符一箩筐，坑就在细节里
@@ -36,7 +34,7 @@ C 的运算符多得出名——算术、关系、逻辑、位、赋值、自增
 ```c
 #include <stdio.h>
 
-int side_effect(const char *who) {
+int side_effect(const char* who) {
     printf("  → %s 被求值了\n", who);
     return 1;
 }

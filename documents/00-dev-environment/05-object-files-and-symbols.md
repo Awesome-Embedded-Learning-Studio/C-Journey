@@ -41,13 +41,13 @@ related:
 
 ```c
 /* foo.c —— 提供定义 */
-int counter = 7;            /* 已初始化全局 */
-int tally;                  /* 零初始化全局 */
-static int helper(int);     /* 前向声明:static 函数 */
-int visible_fn(int x) {     /* 全局函数 */
+int counter = 7;        /* 已初始化全局 */
+int tally;              /* 零初始化全局 */
+static int helper(int); /* 前向声明:static 函数 */
+int visible_fn(int x) { /* 全局函数 */
     return helper(x) + counter;
 }
-static int helper(int x) {  /* static 函数:只在 foo.c 内可见 */
+static int helper(int x) { /* static 函数:只在 foo.c 内可见 */
     return x * 2;
 }
 ```
@@ -55,7 +55,7 @@ static int helper(int x) {  /* static 函数:只在 foo.c 内可见 */
 ```c
 /* main.c —— 使用定义 */
 #include <stdio.h>
-int visible_fn(int);        /* 声明:本文件没定义,要用别人的 */
+int visible_fn(int); /* 声明:本文件没定义,要用别人的 */
 int main(void) {
     printf("r=%d\n", visible_fn(5));
     return 0;

@@ -19,8 +19,6 @@ related:
   - "第 4 章：编译阶段看汇编（-O2 下 <optimized out>，所以调试回 -O0）"
 ---
 
-> 🟡 状态：待审核（2026-06-30）
-
 # GDB 基础：在程序崩掉的地方停下来看现场
 
 ## 引言：程序段错误了，然后呢
@@ -47,7 +45,7 @@ int compute(int n) {
 }
 
 int main(void) {
-    int *p = NULL;
+    int* p = NULL;
     int x = compute(5);
     printf("5! = %d\n", x);
     *p = x; /* NULL 解引用 → SIGSEGV */

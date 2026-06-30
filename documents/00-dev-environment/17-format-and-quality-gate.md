@@ -19,8 +19,6 @@ related:
   - "AGENTS.md / .claude/writing-style.md（代码与文档两侧的规范）"
 ---
 
-> 🟡 状态：待审核（2026-06-30）
-
 # 格式化与质量门：用 .clang-format 守住代码外观
 
 ## 引言：为什么要在意「格式」这种小事
@@ -53,12 +51,12 @@ AllowShortIfStatementsOnASingleLine: Never   # 短 if 也强制展开成多行
 
 ```c
 #include <stdio.h>
-int main(void){
-int x=42;
-    if(x==42){
-        printf("%d\n",x);
+int main(void) {
+    int x = 42;
+    if (x == 42) {
+        printf("%d\n", x);
     }
-  return 0;
+    return 0;
 }
 ```
 

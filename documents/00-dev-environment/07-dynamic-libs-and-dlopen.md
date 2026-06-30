@@ -34,10 +34,14 @@ related:
 我们拿第 6 章那对老朋友接着用：
 
 ```c
-/* add.c */ int add(int a, int b) { return a + b; }
+/* add.c */ int add(int a, int b) {
+    return a + b;
+}
 ```
 ```c
-/* mul.c */ int mul(int a, int b) { return a * b; }
+/* mul.c */ int mul(int a, int b) {
+    return a * b;
+}
 ```
 ```text
 $ gcc -std=c11 -fPIC -shared -o libmymath.so add.c mul.c
@@ -68,12 +72,12 @@ $                      ← 静默成功,没报 "recompile with -fPIC"
 typedef int (*binop_fn)(int, int);
 
 int main(void) {
-    void *h = dlopen("./libmymath.so", RTLD_NOW);   /* 注意:相对路径 */
+    void* h = dlopen("./libmymath.so", RTLD_NOW); /* 注意:相对路径 */
     if (!h) {
         fprintf(stderr, "dlopen failed: %s\n", dlerror());
         return 1;
     }
-    binop_fn add = (binop_fn) dlsym(h, "add");      /* void* 转 函数指针 */
+    binop_fn add = (binop_fn) dlsym(h, "add"); /* void* 转 函数指针 */
     if (!add) {
         fprintf(stderr, "dlsym failed: %s\n", dlerror());
         return 1;

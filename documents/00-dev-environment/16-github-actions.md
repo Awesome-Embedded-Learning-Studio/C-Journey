@@ -20,8 +20,6 @@ related:
   - "第 17 章：格式化与质量门（format-check job 的 clang-format 详解）"
 ---
 
-> 🟡 状态：待审核（2026-06-30）
-
 # GitHub Actions：把质量门自动化挂在每次提交上
 
 ## 引言：靠人记得跑质量门，是不现实的

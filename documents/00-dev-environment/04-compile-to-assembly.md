@@ -48,12 +48,11 @@ related:
 ```c
 #include <stdio.h>
 
-int init_global = 42;            /* 进 .data */
-int zero_global;                 /* 进 .bss(零初始化,不占文件空间) */
-const char *msg = "in rodata";   /* 指针进 .data,字符串字面量进 .rodata */
+int init_global = 42;          /* 进 .data */
+int zero_global;               /* 进 .bss(零初始化,不占文件空间) */
+const char* msg = "in rodata"; /* 指针进 .data,字符串字面量进 .rodata */
 
-__attribute__((noinline))
-int sum6(int a, int b, int c, int d, int e, int f, int g) {
+__attribute__((noinline)) int sum6(int a, int b, int c, int d, int e, int f, int g) {
     return a + b + c + d + e + f + g;
 }
 
@@ -149,8 +148,7 @@ sum6:
 最后看一个会让你调试时血压拉满的现象。写个简单函数，两个局部变量：
 
 ```c
-__attribute__((noinline))
-int compute(int x) {
+__attribute__((noinline)) int compute(int x) {
     int a = x * 3;
     int b = a + 1;
     return b;
@@ -202,8 +200,8 @@ compute:
 #include <stdio.h>
 
 int main(void) {
-    char *s = "hello";   /* "hello" 落在 .rodata(只读) */
-    s[0] = 'H';          /* 写只读段 -> ? */
+    char* s = "hello"; /* "hello" 落在 .rodata(只读) */
+    s[0] = 'H';        /* 写只读段 -> ? */
     printf("%s\n", s);
     return 0;
 }

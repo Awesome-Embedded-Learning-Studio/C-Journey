@@ -18,8 +18,6 @@ related:
   - "第 3 章：整型提升（位运算里 char/short 也先提升成 int）"
 ---
 
-> 🟡 状态：待审核（2026-06-30）
-
 # 位运算与移位：直接操作每一个比特
 
 ## 引言：位运算是 C 的看家本领
@@ -94,11 +92,11 @@ $ gcc -std=c11 -Wall shift2.c -o sh && ./sh
 #define FLAG_A (1u << 0)
 #define FLAG_B (1u << 1)
 
-flags |= FLAG_A;     /* 置位:把 FLAG_A 那一位变成 1 */
+flags |= FLAG_A;      /* 置位:把 FLAG_A 那一位变成 1 */
 if (flags & FLAG_A) { /* 测试:FLAG_A 那一位是不是 1 */
     /* ... */
 }
-flags &= ~FLAG_A;    /* 清位:把 FLAG_A 那一位变成 0 */
+flags &= ~FLAG_A; /* 清位:把 FLAG_A 那一位变成 0 */
 ```
 
 `flags |= FLAG_A` 用按位或「把那一位置 1」（其它位不变）；`flags & FLAG_A` 用按位与「单独测那一位」（结果非 0 表示该位是 1）；`flags &= ~FLAG_A` 用「按位与上取反」清掉那一位（`~FLAG_A` 是「除了那一位都为 1」的掩码，与一下就把那一位清 0、其它位保留）。这套在内核、驱动、协议解析里到处都是，是位运算最实用的收成。

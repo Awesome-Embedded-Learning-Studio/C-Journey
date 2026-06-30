@@ -44,11 +44,11 @@ related:
 
 ```c
 #include <stdio.h>
-#define SQ_BAD(x)  x * x
+#define SQ_BAD(x) x* x
 #define SQ_GOOD(x) ((x) * (x))
 int main(void) {
-    printf("SQ_BAD(2+3)  = %d\n", SQ_BAD(2+3));
-    printf("SQ_GOOD(2+3) = %d\n", SQ_GOOD(2+3));
+    printf("SQ_BAD(2+3)  = %d\n", SQ_BAD(2 + 3));
+    printf("SQ_GOOD(2+3) = %d\n", SQ_GOOD(2 + 3));
     return 0;
 }
 ```

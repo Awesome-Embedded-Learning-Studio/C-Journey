@@ -19,8 +19,6 @@ related:
   - "第 16 章：GitHub Actions（CI 里调用构建）"
 ---
 
-> 🟡 状态：待审核（2026-06-30）
-
 # make 入门：让多文件构建只重编该重编的
 
 ## 引言：从敲一行 gcc 到管理一堆文件
@@ -57,14 +55,14 @@ Makefile.bad:2: *** missing separator.  Stop.
 /* greet.h */
 #ifndef GREET_H
 #define GREET_H
-void greet(const char *name);
+void greet(const char* name);
 #endif
 ```
 ```c
 /* greet.c */
 #include "greet.h"
 #include <stdio.h>
-void greet(const char *name) {
+void greet(const char* name) {
     printf("hello, %s!\n", name);
 }
 ```

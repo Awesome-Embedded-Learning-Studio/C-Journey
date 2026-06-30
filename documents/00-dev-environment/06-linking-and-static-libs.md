@@ -44,11 +44,15 @@ related:
 
 ```c
 /* add.c */
-int add(int a, int b) { return a + b; }
+int add(int a, int b) {
+    return a + b;
+}
 ```
 ```c
 /* mul.c */
-int mul(int a, int b) { return a * b; }
+int mul(int a, int b) {
+    return a * b;
+}
 ```
 ```c
 /* app.c —— 只声明、不定义,要用 add 和 mul */
@@ -86,10 +90,14 @@ add=5 mul=6
 反过来，如果一个符号**被定义了不止一次**，链接器也会炸。最常见的就是「两个文件各写了一个 `main`」——这在拼装旧代码时特别容易发生：
 
 ```c
-/* m1.c */ int main(void) { return 0; }
+/* m1.c */ int main(void) {
+    return 0;
+}
 ```
 ```c
-/* m2.c */ int main(void) { return 0; }
+/* m2.c */ int main(void) {
+    return 0;
+}
 ```
 ```text
 $ gcc m1.c m2.c -o dup

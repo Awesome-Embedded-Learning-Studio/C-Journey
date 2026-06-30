@@ -19,8 +19,6 @@ related:
   - "第 9 章：作用域、存储期与 static（static 的深入，含跨翻译单元隔离）"
 ---
 
-> 🟡 状态：待审核（2026-06-30）
-
 # 程序结构与编译四阶段：C 语言视角
 
 ## 引言：从「工具链怎么编」到「C 程序怎么组装」
@@ -32,8 +30,12 @@ related:
 C 程序从 `main` 开始执行，这是标准规定的（ISO/IEC 9899 §5.1.2.2.1）。`main` 有两种标准签名：
 
 ```c
-int main(void) { ... }                    /* 不接命令行参数 */
-int main(int argc, char *argv[]) { ... }  /* 接命令行参数 */
+int main(void) {
+    ...
+} /* 不接命令行参数 */
+int main(int argc, char* argv[]) {
+    ...
+} /* 接命令行参数 */
 ```
 
 注意返回类型是 `int`——它把程序的退出码返回给操作系统（第 13 章讲 GDB 时你见过，段错误是 139，正常退出是 0）。这里有一个很多人没意识到的版本差异：**`main` 不写 `return`，行为在 C89 和 C99 之后是不一样的**。我们真跑一个故意不写 `return` 的 `main`：
@@ -43,7 +45,7 @@ int main(int argc, char *argv[]) { ... }  /* 接命令行参数 */
 
 int main(void) {
     printf("hello\n");
-}   /* 注意:没有 return 0; */
+} /* 注意:没有 return 0; */
 ```
 
 ```text
@@ -69,14 +71,14 @@ hello
 /* counter.h */
 #ifndef COUNTER_H
 #define COUNTER_H
-extern int counter;   /* 声明:counter 在别处定义,这里不分配存储 */
-void inc(void);       /* 函数原型:声明 */
+extern int counter; /* 声明:counter 在别处定义,这里不分配存储 */
+void inc(void);     /* 函数原型:声明 */
 #endif
 ```
 ```c
 /* counter.c */
 #include "counter.h"
-int counter = 0;      /* 定义:在这里分配存储 */
+int counter = 0; /* 定义:在这里分配存储 */
 void inc(void) {
     counter++;
 }
@@ -127,8 +129,8 @@ $ nm main.o | grep -E 'counter|inc'
 `counter.o` 里 `counter` 是大写 `B`、`inc` 是大写 `T`——**大写表示 external 链接**（对外可见）；`main.o` 里它们是 `U`（undefined），表示「我引用了它、但定义在别处」，链接器负责把这个 `U` 填成 `counter.o` 里那个真实的地址。如果加上 `static`，就变成第二种 **internal 链接**——只在本翻译单元可见、别的翻译单元引用不到。对比一下:
 
 ```c
-static int secret = 42;   /* static:internal 链接,别的翻译单元看不到 */
-int visible = 7;          /* 外部链接:别的翻译单元可 extern 引用 */
+static int secret = 42; /* static:internal 链接,别的翻译单元看不到 */
+int visible = 7;        /* 外部链接:别的翻译单元可 extern 引用 */
 ```
 
 ```text
