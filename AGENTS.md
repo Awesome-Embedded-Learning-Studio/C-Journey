@@ -12,7 +12,7 @@
 
 - `.claude/review-queue.md`(本地,进度 + 每章状态 + 约定 + 执行坑)—— 当前 **8/29**,下一章 阶段0·第9章 标准与优化;
 - `.claude/writing-style.md`(**声音规矩已强化**:坑就地插、不套「踩坑预警」框 / 不开「常见坑」列表 / 不「坑N」枚举;几乎不用列表;小结走散文);
-- **声音范本**(照着写):`documents/00-dev-environment/07-dynamic-libs-and-dlopen.md`、`08-warning-flags.md`;
+- **声音标杆**(Ch01-08,已审核定稿,照着写):`documents/00-dev-environment/01`–`08-*.md`,最新腔看 `07-dynamic-libs-and-dlopen.md`、`08-warning-flags.md`;
 - memory `cjourney-rewrite-execution` 是跨会话续接主指针。
 
 **过程约束(用户钦定)**:不拍 Agent / 不用 Workflow、纯顺序亲笔;每条 C 断言 gcc16+clang22+sanitizer 真跑、贴真实输出 + ISO 条款;每章过两道质量门 + clang-format,加 `> 🟡 状态:待审核` banner,更 review-queue,`next` 上独立 commit(**不 push、不带 Co-Authored-By**)。
