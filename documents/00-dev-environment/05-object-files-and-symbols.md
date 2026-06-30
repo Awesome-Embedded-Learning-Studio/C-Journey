@@ -167,14 +167,7 @@ $ nm prog | grep -iE 'visible_fn| main$| counter| tally| helper| printf'
 
 ## 小结
 
-到这，`.o` 这个黑盒就被我们撬开了。请你记住这几条：
-
-- **`.o` 是可重定位的**：地址都是临时的，靠随身带的**符号表 + 重定位表**等链接器回填。
-- **`nm` 字母**：`T/t`（text 函数，大写全局/小写 static）、`D/d`（data）、`B/b`（bss）、`U`（未定义）。**大写 = 外部链接（全局），小写 = 内部链接（`static`）**，对应 ISO C §6.2.2 链接性。
-- **`U` = 我没有、等链接器找**：`readelf -s` 里显示 `UND`，必伴随 `readelf -r` 里的重定位条目。
-- **`static` 符号链接器跨文件看不见**：跨文件调 `static` 函数 → `undefined reference`。
-- **链接把 `U` 填成真实地址**；但来自动态库的符号（如 `printf@GLIBC`）仍留 `U`，运行期由动态链接器解析——这是下一章的引子。
-- **纯 C 不 name-mangle**，别拿 C++ 的 mangled 符号经验往 C 上套。
+到这，`.o` 这个黑盒就被我们撬开了。一句话：`.o` 是可重定位的，里面地址都是临时的，靠随身带的符号表加重定位表等链接器回填。读它靠 `nm` 的那几个字母——`T/t` 是 text 函数（大写全局、小写 static），`D/d` 是 data，`B/b` 是 bss，`U` 是未定义，规律是**大写对应外部链接（全局）、小写对应内部链接（`static`）**，这正是 ISO C §6.2.2 链接性在工具层的映射。`U` 的意思是「我没有、等链接器找」，在 `readelf -s` 里显示 `UND`、必然伴随 `readelf -r` 里的重定位条目；而 `static` 符号是小写的局部符号，链接器跨文件看不见，所以跨文件调 `static` 函数会吃 `undefined reference`。链接会把 `U` 填成真实地址，但来自动态库的符号（比如 `printf@GLIBC`）仍然留着 `U`、等运行期由动态链接器解析——这正是下一章的引子。最后别忘了，纯 C 不做 name mangling，别拿 C++ 那套 mangled 符号的经验往 C 上套。
 
 下一章我们正式打开「链接」这一步：亲手制造并诊断 `undefined reference` 和 `multiple definition`，搞懂链接器按命令行顺序找符号的规则，再把几个 `.o` 打包成静态库 `.a`。
 
