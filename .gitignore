@@ -108,3 +108,4 @@ documents/.vitepress/dist/
 documents/.vitepress/cache/
 *.local
 pnpm-debug.log*
+_tmp_/
