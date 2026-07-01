@@ -20,8 +20,6 @@ related:
   - "阶段 0·第10章：Sanitizer 门禁（ASan 抓栈越界/UAF/double-free/leak 的全景）"
 ---
 
-> 🟡 状态:待审核(2026-06-30)
-
 # 动态内存的坑：UAF / double-free / 越界 / 泄漏，ASan 逐个抓
 
 ## 引言：第 6 章那条规矩的「违反面」

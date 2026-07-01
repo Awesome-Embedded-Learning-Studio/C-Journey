@@ -18,8 +18,6 @@ related:
   - "阶段 5：系统编程（文件 IO：fopen/fread/fwrite/fprintf，stdin/stdout 是文件流）"
 ---
 
-> 🟡 状态:待审核(2026-06-30)
-
 # 基础 IO：printf / scanf 的格式化江湖与那些静悄悄的坑
 
 ## 引言：<stdio.h> 与三个标准流
