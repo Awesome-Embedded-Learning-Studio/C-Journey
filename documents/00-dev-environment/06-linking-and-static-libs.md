@@ -143,7 +143,7 @@ app.c:(.text+0x25): undefined reference to `add'
 collect2: error: ld returned 1 exit status
 ```
 
-为什么？因为**链接器是按命令行从左到右、单趟扫描的**。它处理到 `libmymath.a` 时，会问："我现在手头有没有未解析的符号，正好是这库里能提供的？" 
+为什么？因为**链接器是按命令行从左到右、单趟扫描的**。它处理到 `libmymath.a` 时，会问："我现在手头有没有未解析的符号，正好是这库里能提供的？"
 
 - 正确顺序里，`app.o` 先被处理，它登记了"我缺 `add`、`mul`"；接着处理 `libmymath.a`，库里正好有 → 抽取 `add.o`、`mul.o` 来满足。✅
 - 错误顺序里，`libmymath.a` 先被处理，**这时 `app.o` 还没轮到、没人声明需要 `add`/`mul`**，所以链接器认为"这库暂时没用"，一个成员都不抽；等轮到 `app.o` 发现需要 `add`/`mul` 时，库**已经扫过去了、不会回头**——于是 `undefined reference`。
