@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: C-Journey
-  text: 亲手踩坑的纯 C 系统编程教程
+  text: 亲手踩坑<br>的纯 C 系统编程教程
   tagline: 每章真跑 gcc 16 + clang 22、引 ISO/IEC 9899 条款,四阶段带你走通纯 C 系统编程
   actions:
     - theme: brand
