@@ -1,0 +1,90 @@
+/**
+ * C-Journey 自定义样式
+ * 移植自 ~/Tutorial_AwesomeModernCPP/site/.vitepress/theme/custom.css
+ * 首页 features 卡片的六重 Hover 动画(边框/阴影/上移/图标放大/标题变色/箭头平移)
+ * VitePress 默认主题的卡片没有这些,默认很呆板——这里补上
+ */
+
+/* ── 首页 Features 容器 ─────────────────────────────────────── */
+
+.VPFeatures {
+  padding-top: 16px;
+  padding-bottom: 48px;
+}
+
+/* ── 单个卡片:基础样式 + Hover 上移/边框/大阴影 ──────────────── */
+
+.VPFeature {
+  border: 1px solid var(--vp-c-divider) !important;
+  border-radius: 14px !important;
+  background-color: var(--vp-c-bg) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: border-color 0.39s ease,
+    box-shadow 0.39s ease,
+    transform 0.39s ease;
+}
+
+.VPFeature.link:hover {
+  border-color: var(--vp-c-brand-1) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1),
+    0 4px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-4px);
+}
+
+.VPFeature .box {
+  padding: 28px 24px !important;
+}
+
+/* ── 图标:渐变背景 + Hover 放大 ─────────────────────────────── */
+
+.VPFeature .icon {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg,
+      var(--vp-c-brand-soft) 0%,
+      var(--vp-c-indigo-soft) 100%) !important;
+  color: var(--vp-c-brand-1) !important;
+  font-size: 22px !important;
+  transition: background 0.39s ease,
+    color 0.39s ease,
+    transform 0.39s ease;
+}
+
+.VPFeature.link:hover .icon {
+  transform: scale(1.1);
+}
+
+/* ── 标题:Hover 变品牌色 ───────────────────────────────────── */
+
+.VPFeature .title {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  color: var(--vp-c-text-1) !important;
+  transition: color 0.39s ease;
+}
+
+.VPFeature.link:hover .title {
+  color: var(--vp-c-brand-1) !important;
+}
+
+/* ── 详情文字 ───────────────────────────────────────────────── */
+
+.VPFeature .details {
+  font-size: 13px !important;
+  line-height: 1.7 !important;
+  color: var(--vp-c-text-2) !important;
+  font-weight: 400 !important;
+}
+
+/* ── 「了解更多」箭头:Hover 右移 ────────────────────────────── */
+
+.VPFeature .link-text-icon {
+  transition: transform 0.39s ease;
+}
+
+.VPFeature.link:hover .link-text-icon {
+  transform: translateX(4px);
+}

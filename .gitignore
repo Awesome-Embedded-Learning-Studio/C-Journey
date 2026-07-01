@@ -106,6 +106,7 @@ Output/
 node_modules/
 documents/.vitepress/dist/
 documents/.vitepress/cache/
+documents/.vitepress/.build-cache/
 *.local
 pnpm-debug.log*
 _tmp_/
