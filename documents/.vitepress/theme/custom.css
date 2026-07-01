@@ -218,3 +218,444 @@ body.rs-resizing {
     display: block;
   }
 }
+
+/* ================================================================
+   首页 OnlineCompilerDemo 容器(home-features-after 插槽内)
+   ================================================================ */
+.home-compiler-demo-wrap {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 48px 24px 24px;
+}
+.home-compiler-demo-title {
+  margin: 0 0 12px !important;
+  border-top: 0 !important;
+  padding-top: 0 !important;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+  text-align: center;
+}
+.home-compiler-demo-lead {
+  margin: 0 auto 24px !important;
+  max-width: 640px;
+  color: var(--vp-c-text-2);
+  font-size: 14px;
+  line-height: 1.7;
+  text-align: center;
+}
+@media (max-width: 640px) {
+  .home-compiler-demo-wrap {
+    padding: 32px 16px 16px;
+  }
+  .home-compiler-demo-title {
+    font-size: 20px;
+  }
+}
+
+/* ================================================================
+   OnlineCompilerDemo —— 在线编译器组件(移植自 Tutorial_AwesomeModernCPP)
+   读者在浏览器里改 C 代码、点「运行」/「看 x86-64 汇编」调 godbolt API 看输出。
+   样式从标杆 custom.css 同名区块搬来,保持视觉一致。
+   ================================================================ */
+   读者在浏览器里改 C 代码、点「运行」/「看 x86-64 汇编」调 godbolt API 看输出。
+   样式从标杆 custom.css 同名区块搬来,保持视觉一致。
+   ================================================================ */
+
+.online-compiler-demo {
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+}
+
+.online-compiler-demo__split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+  align-items: start;
+}
+
+.online-compiler-demo__source-pane,
+.online-compiler-demo__control-pane {
+  min-width: 0;
+}
+
+.online-compiler-demo__source-code {
+  margin: 0;
+  min-height: 260px;
+  max-height: 460px;
+  padding: 14px;
+  border-radius: 8px;
+  background: var(--vp-code-block-bg);
+  color: var(--vp-code-block-color);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre;
+  overflow: auto;
+}
+
+.online-compiler-demo__source-code code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  white-space: pre;
+}
+
+.online-compiler-demo__source-view {
+  min-width: 0;
+}
+
+.online-compiler-demo__source-highlight .shiki {
+  margin: 0;
+  min-height: 260px;
+  max-height: 460px;
+  padding: 14px;
+  border-radius: 8px;
+  background: var(--vp-code-block-bg);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow: auto;
+}
+
+.online-compiler-demo__source-highlight .shiki code {
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent;
+}
+
+.online-compiler-demo__source-highlight .shiki,
+.online-compiler-demo__source-highlight .shiki span {
+  color: var(--shiki-light);
+}
+
+html.dark .online-compiler-demo__source-highlight .shiki,
+html.dark .online-compiler-demo__source-highlight .shiki span {
+  color: var(--shiki-dark) !important;
+}
+
+.online-compiler-demo__source-hint {
+  margin: 8px 0 0 !important;
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+}
+
+.online-compiler-demo__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.online-compiler-demo__eyebrow {
+  margin: 0 0 4px !important;
+  color: var(--vp-c-brand-1);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.online-compiler-demo h3 {
+  margin: 0 !important;
+  border-top: 0 !important;
+  padding-top: 0 !important;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.online-compiler-demo__description {
+  margin: 8px 0 0 !important;
+  color: var(--vp-c-text-2);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.online-compiler-demo__source {
+  flex: 0 1 320px;
+  padding: 4px 0;
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: right;
+  word-break: break-all;
+}
+
+.online-compiler-demo__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.online-compiler-demo__meta span {
+  padding: 4px 8px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.online-compiler-demo__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.online-compiler-demo__button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--vp-c-brand-1);
+  border-radius: 6px;
+  background: var(--vp-c-brand-1);
+  color: var(--vp-c-white);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.online-compiler-demo__button:hover:not(:disabled) {
+  border-color: var(--vp-c-brand-2);
+  background: var(--vp-c-brand-2);
+}
+
+.online-compiler-demo__button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.online-compiler-demo__button--secondary {
+  border-color: var(--vp-c-divider);
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+}
+
+.online-compiler-demo__button--secondary:hover:not(:disabled) {
+  border-color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg);
+}
+
+.online-compiler-demo__error {
+  margin: 14px 0 0 !important;
+  padding: 10px 12px;
+  border: 1px solid rgba(215, 58, 73, 0.35);
+  border-radius: 6px;
+  background: rgba(215, 58, 73, 0.08);
+  color: var(--vp-c-danger-1);
+  font-size: 13px;
+}
+
+.online-compiler-demo__options {
+  margin-top: 14px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg);
+  overflow: hidden;
+}
+
+.online-compiler-demo__options-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+}
+
+.online-compiler-demo__options-header strong {
+  color: var(--vp-c-text-1);
+}
+
+.online-compiler-demo__option-list {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.online-compiler-demo__option-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 140px) minmax(96px, 150px) minmax(240px, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.online-compiler-demo__option-label {
+  padding-top: 8px;
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.online-compiler-demo__input,
+.online-compiler-demo__options-textarea {
+  width: 100%;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  outline: none;
+}
+
+.online-compiler-demo__input {
+  height: 34px;
+  padding: 0 10px;
+}
+
+.online-compiler-demo__options-textarea {
+  min-height: 58px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.online-compiler-demo__input:focus,
+.online-compiler-demo__options-textarea:focus {
+  border-color: var(--vp-c-brand-1);
+  box-shadow: 0 0 0 2px var(--vp-c-brand-soft);
+}
+
+.online-compiler-demo__textarea {
+  display: block;
+  width: 100%;
+  min-height: 360px;
+  padding: 14px;
+  border: 0;
+  background: var(--vp-code-block-bg);
+  color: var(--vp-code-block-color);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  resize: vertical;
+  outline: none;
+  tab-size: 4;
+  white-space: pre;
+  overflow: auto;
+}
+
+.online-compiler-demo__textarea:focus {
+  box-shadow: inset 0 0 0 2px var(--vp-c-brand-1);
+}
+
+.online-compiler-demo__editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+.online-compiler-demo__result {
+  margin-top: 14px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-code-block-bg);
+  overflow: hidden;
+}
+
+.online-compiler-demo__result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+}
+
+.online-compiler-demo__result-header span {
+  font-family: var(--vp-font-family-mono);
+  text-align: right;
+}
+
+.online-compiler-demo__result pre {
+  max-height: 420px;
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.online-compiler-demo__result code {
+  padding: 0;
+  background: transparent;
+  color: var(--vp-code-block-color);
+  white-space: pre;
+}
+
+.online-compiler-demo__noscript {
+  margin: 12px 0 0 !important;
+  color: var(--vp-c-text-2);
+  font-size: 13px;
+}
+
+@media (max-width: 911px) {
+  .online-compiler-demo__split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .online-compiler-demo {
+    padding: 14px;
+  }
+
+  .online-compiler-demo__header {
+    display: block;
+  }
+
+  .online-compiler-demo__source {
+    display: block;
+    margin-top: 10px;
+    text-align: left;
+  }
+
+  .online-compiler-demo__button {
+    flex: 1 1 140px;
+  }
+
+  .online-compiler-demo__result-header {
+    display: block;
+  }
+
+  .online-compiler-demo__options-header {
+    display: block;
+  }
+
+  .online-compiler-demo__options-header span {
+    display: block;
+    margin-top: 4px;
+  }
+
+  .online-compiler-demo__option-row {
+    grid-template-columns: 1fr;
+  }
+
+  .online-compiler-demo__option-label {
+    padding-top: 0;
+  }
+
+  .online-compiler-demo__textarea {
+    min-height: 300px;
+  }
+
+  .online-compiler-demo__result-header span {
+    display: block;
+    margin-top: 4px;
+    text-align: left;
+  }
+}

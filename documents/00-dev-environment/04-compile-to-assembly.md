@@ -190,6 +190,30 @@ compute:
 
 代价是调试：你在 `-O2` 下用 gdb 调这个函数，`print a` 大概率收获一句 `<optimized out>`，断点停的行号也会乱跳（因为代码已经被重排、合并）。**这就是为什么本课程调试一律回到 `-O0 -g`，做性能基准才上 `-O2`。**
 
+> 上面是书里真跑的 `-O2` 汇编。想自己改 C 代码、当场看它变成什么汇编？试试这个(默认 `-O2`,点「看 x86-64 汇编」就行;改改算式或优化级别,看 `lea`/`mov`/`ret` 怎么变):
+
+<OnlineCompilerDemo
+  title="亲手玩:改 C 代码,看它编成什么 x86-64 汇编"
+  description="这就是上面那段 compute 函数。-O2 下被塌成一条 lea。改改算式(比如 *5、+7)、或把 -O2 改成 -O0 看局部变量怎么回到栈上,体会 as-if 规则和优化的关系。"
+  allow-run="true"
+  allow-x86-asm="true"
+  run-options="-std=c11 -O0 -g"
+  x86-options="-std=c11 -O2"
+>
+#include &lt;stdio.h&gt;
+
+__attribute__((noinline)) int compute(int x) {
+    int a = x * 3;
+    int b = a + 1;
+    return b;
+}
+
+int main(void) {
+    printf("compute(7) = %d\n", compute(7));
+    return 0;
+}
+</OnlineCompilerDemo>
+
 这里得提醒一句：`-O2` 不只是「让程序变快」，它会**改变可观察行为的边界**——尤其碰到未定义行为（UB）的时候。一段依赖 UB 的代码（比如有符号溢出、越界），在 `-O0` 下可能「看起来正常」，一上 `-O2`，优化器「假定它不会 UB」就直接把你的溢出检查整段删掉，输出变得完全错误。这正是后面为什么要上 sanitizer 的根本原因，第 10 章会专讲。
 
 ## 最阴的一个坑：写字符串字面量，C 连警告都不给

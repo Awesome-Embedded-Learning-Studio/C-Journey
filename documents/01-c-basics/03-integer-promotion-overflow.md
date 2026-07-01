@@ -90,6 +90,24 @@ overflow.c:9:5: runtime error: signed integer overflow: 2147483647 + 1 cannot be
 
 `runtime error: signed integer overflow`——UBSan 在那条 `si + 1` 真溢出的那一刻报了警，精确到行列。所以涉及到「可能溢出的有符号算术」，**别赌回绕、上 UBSan 测、或者干脆换成下面这种确定回绕的写法**。
 
+> 上面是书里的真跑。想自己改数字、当场看 UBSan 怎么抓溢出?试试这个(运行默认带 `-fsanitize=undefined`,点「运行」就行;把 `INT_MAX` 改成别的数、或把 `+ 1` 改成 `* 2`,看 UBSan 什么时候报警、什么时候静默):
+
+<OnlineCompilerDemo
+  title="亲手玩:有符号溢出,UBSan 当场抓"
+  description="si + 1 在 si = INT_MAX 时是有符号溢出(UB)。运行默认带 -fsanitize=undefined,UBSan 会精确到行列地报 signed integer overflow。改改 si 的值或运算符,看 UBSan 什么时候报、什么时候不报。"
+  allow-run="true"
+  run-options="-std=c11 -Wall -Wextra -O0 -fsanitize=undefined"
+>
+#include &lt;limits.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(void) {
+    int si = INT_MAX;
+    printf("INT_MAX + 1 = %d\n", si + 1);  /* UB:有符号溢出 */
+    return 0;
+}
+</OnlineCompilerDemo>
+
 ## 第三座山：无符号溢出确定回绕（合法！）
 
 和无符号溢出形成鲜明对比：**无符号整数的溢出不是 UB，而是「确定地按模 2^N 回绕」**（ISO/IEC 9899 §6.2.5 第 9 段：无符号整数的算术是模 2^N 的）。所以 `UINT_MAX + 1` 一定是 `0`、`0 - 1`（`unsigned`）一定是 `UINT_MAX`，这在所有平台、所有编译器上都一样，是**你可以放心依赖**的行为——上面真跑出来 `UINT_MAX + 1 = 0` 就是铁证。
