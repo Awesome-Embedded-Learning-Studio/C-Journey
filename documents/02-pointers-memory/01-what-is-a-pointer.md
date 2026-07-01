@@ -73,19 +73,8 @@ p  = 0x7ffe588a669c
   description="int* p = &n 之后,*p 就是 n 的别名:读 *p 得 n 的值、改 *p 就是改 n。改改 *p 的值、或让 p 指向另一个变量,看 n 怎么跟着变。"
   allow-run="true"
   run-options="-std=c11 -Wall -Wextra -O0 -g"
->
-#include &lt;stdio.h&gt;
-
-int main(void) {
-    int n = 42;
-    int* p = &amp;n;     /* p 指向 n */
-
-    printf("改之前: n = %d, *p = %d\n", n, *p);
-    *p = 100;        /* 通过指针改 n */
-    printf("改之后: n = %d, *p = %d\n", n, *p);
-    return 0;
-}
-</OnlineCompilerDemo>
+  sourcePath="/demos/pointer_alias.c"
+/>
 
 `*` 和 `&` 是互逆的一对：`&` 把变量变成指向它的指针、`*` 把指针变回它指的变量。所以 `*&x` 这种怪写法，就是「取 `x` 的地址、再顺着地址取回那个对象」，等于 `x` 本身：
 

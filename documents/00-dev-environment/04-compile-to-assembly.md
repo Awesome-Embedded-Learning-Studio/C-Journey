@@ -199,20 +199,8 @@ compute:
   allow-x86-asm="true"
   run-options="-std=c11 -O0 -g"
   x86-options="-std=c11 -O2"
->
-#include &lt;stdio.h&gt;
-
-__attribute__((noinline)) int compute(int x) {
-    int a = x * 3;
-    int b = a + 1;
-    return b;
-}
-
-int main(void) {
-    printf("compute(7) = %d\n", compute(7));
-    return 0;
-}
-</OnlineCompilerDemo>
+  sourcePath="/demos/compute_asm.c"
+/>
 
 这里得提醒一句：`-O2` 不只是「让程序变快」，它会**改变可观察行为的边界**——尤其碰到未定义行为（UB）的时候。一段依赖 UB 的代码（比如有符号溢出、越界），在 `-O0` 下可能「看起来正常」，一上 `-O2`，优化器「假定它不会 UB」就直接把你的溢出检查整段删掉，输出变得完全错误。这正是后面为什么要上 sanitizer 的根本原因，第 10 章会专讲。
 

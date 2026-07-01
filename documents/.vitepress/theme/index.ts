@@ -57,7 +57,7 @@ export default {
                         description: 'int* p = &n 让 p 指向 n;*p = 42 通过地址把 n 改成 42。把 42 改成别的数、或让 p 指向另一个变量,看 n 怎么变。',
                         allowRun: true,
                         allowX86Asm: true,
-                        code: '#include <stdio.h>\n\nint main(void) {\n    int n = 10;\n    int* p = &n;   /* p 指向 n */\n    *p = 42;       /* 通过指针改 n */\n    printf("n = %d\\n", n);\n    return 0;\n}\n',
+                        sourcePath: '/demos/hero_demo.c',
                     }),
                 ]),
             ]),

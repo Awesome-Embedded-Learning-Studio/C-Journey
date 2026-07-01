@@ -97,16 +97,8 @@ overflow.c:9:5: runtime error: signed integer overflow: 2147483647 + 1 cannot be
   description="si + 1 在 si = INT_MAX 时是有符号溢出(UB)。运行默认带 -fsanitize=undefined,UBSan 会精确到行列地报 signed integer overflow。改改 si 的值或运算符,看 UBSan 什么时候报、什么时候不报。"
   allow-run="true"
   run-options="-std=c11 -Wall -Wextra -O0 -fsanitize=undefined"
->
-#include &lt;limits.h&gt;
-#include &lt;stdio.h&gt;
-
-int main(void) {
-    int si = INT_MAX;
-    printf("INT_MAX + 1 = %d\n", si + 1);  /* UB:有符号溢出 */
-    return 0;
-}
-</OnlineCompilerDemo>
+  sourcePath="/demos/int_overflow.c"
+/>
 
 ## 第三座山：无符号溢出确定回绕（合法！）
 
