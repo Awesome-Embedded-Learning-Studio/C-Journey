@@ -44,9 +44,6 @@ export default defineConfig({
     lang: 'zh-CN',
     lastUpdated: true,
     cleanUrls: true,
-    /* MVP 阶段:章节互引的相对路径可能不规范,先忽略死链校验;
-       后续把正文链接统一成 VitePress 路径后去掉此项 */
-    ignoreDeadLinks: true,
     /* 旧内容不上线(待 rewrite 或待补新章) */
     srcExclude: [
         '04-engineering/**',
