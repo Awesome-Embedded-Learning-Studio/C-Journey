@@ -1,419 +1,158 @@
 ---
+title: "程序结构与编译四阶段：C 语言视角"
+description: "阶段 0 讲了工具链怎么把 .c 变成可执行，这一章从 C 语言本身看「程序到底是怎么组装的」。从一个最小的 main 开始：它的两种标准签名、它的返回值在 C99 之后发生了什么（不写 return 也隐式返回 0，但 C89 下会给你一个垃圾退出码——真跑给你看）。再把「翻译单元」「声明 vs 定义」「链接」这三个 C 工程的骨架概念讲透：一个 .c 加上它展开的头文件就是一个翻译单元，函数原型和 extern 只声明不分配、定义才分配存储，全局符号是 external 链接（nm 里大写 T/B）、加 static 就变 internal 链接（小写 t/b、别的翻译单元看不到）。全程 gcc 真编译 + nm 看符号，并回扣阶段 0 的编译四阶段。"
 chapter: 1
-c_standard:
-- 99
-- 11
-description: 理解 C 程序的基本结构、编译四阶段流程、头文件机制和基本 I/O，从一开始就把"代码怎么变成能跑的二进制"这件事理清楚
-difficulty: beginner
 order: 1
-platform: host
-prerequisites:
-- 无（本系列第一篇）
-reading_time_minutes: 13
 tags:
-- host
-- toolchain
-- build
-title: 程序结构与编译基础
+  - host
+  - syntax
+  - toolchain
+difficulty: beginner
+reading_time_minutes: 13
+platform: host
+c_standard: [11, 99, 89]
+prerequisites:
+  - "阶段 0 · 第 1 章：工具链体检"
+  - "阶段 0 · 第 2 章：编译四阶段全景（-save-temps）"
+related:
+  - "阶段 0 · 第 2 章：编译四阶段全景（这一章只回顾，不重复）"
+  - "第 9 章：作用域、存储期与 static（static 的深入，含跨翻译单元隔离）"
 ---
 
-# 程序结构与编译基础
+# 程序结构与编译四阶段：C 语言视角
 
-如果你之前写过一些 C 代码，大概率是在 IDE 里点一下"运行"就完事了——代码怎么从 `.c` 文件变成一个能跑的二进制，这个中间过程可能从来没关心过。但说实话，理解编译模型这件事，在你后续写任何像样的 C 工程时都会变得非常关键：多文件怎么组装、头文件怎么组织、链接报的 `undefined reference` 到底在说什么，如果不懂编译的基本流程，基本上就是在黑箱操作。所以我们从一开始就把这件事理清楚。
+## 引言：从「工具链怎么编」到「C 程序怎么组装」
 
-> **学习目标**
->
-> - 完成本章后，你将能够：
-> - [ ] 理解 C 程序的基本结构（main 函数、头文件包含）
-> - [ ] 掌握编译四阶段的原理和手动操作方法
-> - [ ] 了解头文件搜索机制和 `<>` vs `""` 的区别
-> - [ ] 熟练使用 printf/scanf 的常用格式说明符
-> - [ ] 独立完成多文件程序的编译与链接
+阶段 0 我们花了整整一大阶段，把「`.c` 怎么一步步变成能跑的可执行」这件事从工具链的角度摸透了——预处理、编译、汇编、链接，以及 gcc 的各种旗标、make、CMake、GDB、sanitizer、CI。现在我们换个视角：从 **C 语言本身**看，一个程序到底是由什么组装起来的、它的骨架是什么。你会发现，前面那些工具链行为（链接报的 `undefined reference`、多文件怎么拼、`.o` 里那些符号），背后对应的都是 C 语言里几个根本概念：**翻译单元、声明 vs 定义、链接**。搞清这几个，你写多文件工程时就不会再「凭感觉」。
 
-## 环境说明
+## `main`：程序的唯一入口
 
-本篇的所有命令和代码在以下环境下验证通过：
-
-- **操作系统**：Linux（Ubuntu 22.04+） / WSL2 / macOS
-- **编译器**：GCC 11+（通过 `gcc --version` 确认版本）
-- **编译选项**：`gcc -Wall -Wextra -std=c11`（开警告、指定 C11 标准）
-- **辅助工具**：`objdump`、`nm`（GCC 自带，用于查看目标文件）
-
-如果你使用 Windows 但没有 WSL，MinGW-w64 或 MSVC 也可以编译运行，但部分工具命令（如 `nm`、`objdump`）的输出格式会有差异。
-
-## 第一步——认识 C 程序的骨架
-
-一个 C 程序的入口永远是 `main` 函数，这不是约定俗成的——这是 C 标准规定的。C 标准定义了两种合法的 `main` 签名：
+C 程序从 `main` 开始执行，这是标准规定的（ISO/IEC 9899 §5.1.2.2.1）。`main` 有两种标准签名：
 
 ```c
-// 无命令行参数版本
 int main(void) {
-    return 0;
-}
-
-// 带命令行参数版本
-int main(int argc, char *argv[]) {
-    // argc: 参数个数（至少为 1，即程序自身）
-    // argv: 参数字符串数组，argv[0] 是程序名
-    return 0;
-}
+    ...
+} /* 不接命令行参数 */
+int main(int argc, char* argv[]) {
+    ...
+} /* 接命令行参数 */
 ```
 
-`main` 的返回类型必须是 `int`——在某些老旧编译器上写 `void main()` 也能跑，但那是非标准行为。`return 0` 表示正常退出，非零值表示异常，shell 通过 `$?` 拿到这个值来判断程序是否正常执行。
-
-> ⚠️ **踩坑预警**：不要使用 `void main()`。虽然某些老编译器接受它，但 C 标准只承认 `int main`。在 Linux 上，shell 脚本和 CI/CD 流水线经常通过 `$?` 获取程序的返回值——如果你的 `main` 不返回有意义的值，上游的判断逻辑就可能出错。
-
-`argc` 和 `argv` 让程序在启动时接收外部参数。比如执行 `./myprogram hello world`，那么 `argc` 为 3，`argv[0]` 是 `"./myprogram"`，`argv[1]` 是 `"hello"`，`argv[2]` 是 `"world"`。
-
-一个最小的完整 C 程序：
+注意返回类型是 `int`——它把程序的退出码返回给操作系统（第 13 章讲 GDB 时你见过，段错误是 139，正常退出是 0）。这里有一个很多人没意识到的版本差异：**`main` 不写 `return`，行为在 C89 和 C99 之后是不一样的**。我们真跑一个故意不写 `return` 的 `main`：
 
 ```c
 #include <stdio.h>
 
 int main(void) {
-    printf("Hello, World!\n");
-    return 0;
+    printf("hello\n");
+} /* 注意:没有 return 0; */
+```
+
+```text
+$ gcc -std=c11 mainret.c -o mr && ./mr ; echo "退出码=$?"
+hello
+退出码=0                  ← C11:main 隐式返回 0(ISO §5.1.2.2.3)
+
+$ gcc -std=c89 -Wall mainret.c -o mr && ./mr ; echo "退出码=$?"
+mainret.c:7:1: warning: control reaches end of non-void function [-Wreturn-type]
+hello
+退出码=6                  ← C89:没这个规定,返回的是寄存器里的垃圾值!
+```
+
+**C99 起，标准给了 `main` 一个特权**（§5.1.2.2.3）：如果 `main` 走到 `}` 都没 `return`，就当它 `return 0`——所以 C11 下退出码干干净净是 0。但 **C89 没有这条规定**，不写 `return` 的 `main` 等于在一个返回 `int` 的函数里没返回值，gcc 用 `-Wall` 会警告你 `control reaches end of non-void function`，而退出码是 `6`（寄存器里残留的垃圾值）。所以「`main` 不写 return 也能返回 0」是 C99 之后才有的待遇，写要兼容老标准的代码时别依赖它，老老实实 `return 0`（或 `return EXIT_SUCCESS`）。本课程一律显式写 `return`。
+
+## 翻译单元：一个 `.c` 就是一个翻译单元
+
+一个 C 程序可以拆成多个 `.c` 文件，**每个 `.c` 文件（加上它 `#include` 的所有头文件展开后的内容）构成一个「翻译单元」（translation unit）**（ISO/IEC 9899 §5.1.1.1）。编译器是「一个翻译单元一个翻译单元地」编译的——你 `gcc -c counter.c` 编出来的 `counter.o`，对应的就是 `counter.c` 这个翻译单元编译后的产物；它对 `main.c` 那个翻译单元里有什么**一无所知**。把多个翻译单元拼成一个程序，是「链接」那一阶段干的活（阶段 0 第 2、6 章讲过）。
+
+我们写一个最小的两翻译单元程序来看清这件事。一个头文件 `counter.h` 放共享的声明、`counter.c` 放定义、`main.c` 使用它们：
+
+```c
+/* counter.h */
+#ifndef COUNTER_H
+#define COUNTER_H
+extern int counter; /* 声明:counter 在别处定义,这里不分配存储 */
+void inc(void);     /* 函数原型:声明 */
+#endif
+```
+```c
+/* counter.c */
+#include "counter.h"
+int counter = 0; /* 定义:在这里分配存储 */
+void inc(void) {
+    counter++;
 }
 ```
-
-运行结果：
-
-```text
-Hello, World!
-```
-
-第一行的 `#include <stdio.h>` 是预处理指令，它把标准 I/O 库的头文件内容原样插入到当前位置。如果不包含这个头文件，编译器不知道 `printf` 是什么，会给出警告甚至报错。
-
-## 第二步——拆解编译的四个阶段
-
-现在我们来拆解一个 `.c` 文件是如何变成可执行文件的。整个过程分为预处理 → 编译 → 汇编 → 链接四个阶段，我们可以用 gcc 的选项来手动触发每个阶段，观察中间产物。
-
-### 阶段一：预处理
-
-预处理器处理所有以 `#` 开头的指令——展开宏、插入头文件内容、处理条件编译：
-
-```bash
-# 只运行预处理，输出到文件方便查看
-gcc -E hello.c -o hello.i
-```
-
-预处理后的 `.i` 文件会非常大——一个 `#include <stdio.h>` 就会把整个标准 I/O 头文件及其间接包含的所有头文件全部展开进来。你可以打开 `hello.i` 看看，头几行是注释，后面跟着成百上千行的头文件内容，最后才是你自己写的几行代码。
-
-预处理器做的事情说起来简单——纯文本替换，但这个机制是 C 语言灵活性的重要来源，也是后续理解宏、条件编译和模块化组织的基础。
-
-### 阶段二：编译
-
-编译器将预处理后的 C 代码翻译成汇编代码，经过词法分析、语法分析、语义分析、中间代码生成和优化：
-
-```bash
-gcc -S hello.c -o hello.s
-```
-
-打开 `hello.s`，你会看到类似这样的 x86-64 汇编（不同编译器版本和平台输出会有差异，下面是一份典型输出）：
-
-```asm
-    .file   "hello.c"
-    .section .rodata
-.LC0:
-    .string "Hello, World!"
-    .text
-    .globl  main
-main:
-    pushq   %rbp
-    movq    %rsp, %rbp
-    leaq    .LC0(%rip), %rdi
-    call    puts@PLT
-    movl    $0, %eax
-    popq    %rbp
-    ret
-```
-
-有个有趣的细节：我们写的 `printf("Hello, World!\n")` 被编译器优化成了 `puts` 调用——因为格式串里只有一个字符串且以 `\n` 结尾，没有任何格式占位符，编译器知道 `puts` 更高效就直接替换了。
-
-### 阶段三：汇编
-
-汇编器将汇编代码翻译成机器码，生成目标文件（object file）：
-
-```bash
-gcc -c hello.c -o hello.o
-```
-
-`.o` 文件是二进制格式（Linux 上是 ELF），包含机器指令、符号表和重定位信息。你可以用 `objdump` 查看反汇编，用 `nm` 查看符号表：
-
-```bash
-objdump -d hello.o    # 反汇编查看
-nm hello.o            # 查看符号表
-```
-
-目标文件里的函数调用（比如对 `printf` 的调用）此时地址还是留空的，等着链接阶段来填补。
-
-### 阶段四：链接
-
-链接器将一个或多个目标文件以及所需的库文件组合成最终的可执行文件，解析所有外部符号的引用：
-
-```bash
-# 完整编译（四阶段一步到位）
-gcc hello.c -o hello
-
-# 也可以分步
-gcc -c hello.c -o hello.o
-gcc hello.o -o hello
-```
-
-这个阶段是理解多文件编程的关键。每个 `.c` 文件先独立编译成 `.o`，然后链接器把它们组装在一起。这种分离编译模型是 C 的核心设计——它允许我们只重新编译修改过的文件，而不需要重新编译整个项目。
-
-### 编译流水线一图总结
-
-```text
-hello.c → [预处理] → hello.i → [编译] → hello.s → [汇编] → hello.o → [链接] → hello
-              ↑                                              ↑
-         #include 展开                                   合并 .o + 库
-         #define 替换                                    解析外部符号
-         条件编译                                        生成可执行文件
-```
-
-## 第三步——搞清楚头文件怎么工作
-
-`#include` 有两种语法形式，搜索路径不同：
-
 ```c
-#include <stdio.h>    // 尖括号：只在系统/标准库目录搜索
-#include "myheader.h" // 引号：先搜索当前文件所在目录，找不到再搜索系统目录
-```
-
-逻辑很直观——尖括号是给"系统提供的东西"用的，引号是给"你自己写的东西"用的。编译器有一组默认的搜索路径（可以用 `gcc -E -Wp,-v - < /dev/null` 查看），`-I` 选项可以添加额外的搜索路径。
-
-头文件里通常放函数声明（原型）、类型定义（`typedef`/`struct`）、宏定义、外部变量声明（`extern`）。头文件是模块之间交流的"契约"——它告诉调用者"这个模块提供了什么"，但不暴露实现细节。这种"对外只暴露接口、把实现藏在 `.c` 里"的思路，是 C 组织多文件工程的核心手段。
-
-每个头文件都应该有包含防护（include guard），防止被重复包含：
-
-```c
-#ifndef MYHEADER_H
-#define MYHEADER_H
-
-// 头文件内容
-
-#endif /* MYHEADER_H */
-```
-
-或者使用 `#pragma once`：
-
-```c
-#pragma once
-
-// 头文件内容
-```
-
-> ⚠️ **踩坑预警**：`#pragma once` 虽然简洁，但在某些边缘场景（符号链接文件、网络路径映射）下可能有兼容性问题。项目中选一种方案保持一致即可——如果你不确定，就用传统的 `#ifndef` 方案，它是标准保证的。
-
-## 第四步——上手基本 I/O
-
-### 用 printf 做格式化输出
-
-`printf` 是 C 标准库中最常用的输出函数，格式串支持丰富的格式说明符：
-
-```c
+/* main.c */
 #include <stdio.h>
-
+#include "counter.h"
 int main(void) {
-    int i = 42;
-    unsigned int u = 0xDEAD;
-    double f = 3.14159265359;
-    const char* s = "Hello";
-    int* p = &i;
-
-    printf("整数: %d\n", i);             // 十进制：42
-    printf("十六进制: %x / %X\n", u, u); // 小写 dead / 大写 DEAD
-    printf("浮点: %f\n", f);             // 默认 6 位小数：3.141593
-    printf("浮点精度: %.2f\n", f);       // 2 位小数：3.14
-    printf("字符串: %s\n", s);           // Hello
-    printf("指针: %p\n", (void*)p);      // 指针地址
-
-    // 宽度与对齐
-    printf("[%10d]\n", i);    // 右对齐宽度 10：[        42]
-    printf("[%-10d]\n", i);   // 左对齐宽度 10：[42        ]
-    printf("[%010d]\n", i);   // 前导零填充：[0000000042]
+    inc();
+    inc();
+    printf("counter = %d\n", counter);
     return 0;
 }
 ```
 
-运行结果（指针地址每次运行都会变，这里是其中一次的输出）：
+两个翻译单元分别 `-c`、再链接：
 
 ```text
-整数: 42
-十六进制: dead / DEAD
-浮点: 3.141593
-浮点精度: 3.14
-字符串: Hello
-指针: 0x7ffd12345678
-[        42]
-[42        ]
-[0000000042]
+$ gcc -std=c11 -Wall -c counter.c -o counter.o    # 编译 counter 这个翻译单元
+$ gcc -std=c11 -Wall -c main.c -o main.o          # 编译 main 这个翻译单元
+$ gcc counter.o main.o -o cprog                    # 链接两个 .o
+$ ./cprog
+counter = 2
 ```
 
-有个经常被忽略的细节：`printf` 的返回值是成功输出的字符数，负值表示出错。在嵌入式开发中，用返回值做简单的错误检测有时很有用。
+`counter.o` 和 `main.o` 是各自独立编译出来的，它们怎么知道彼此的 `counter`、`inc`?这就是接下来要讲的「声明 vs 定义」和「链接」。
 
-### 用 scanf 读取用户输入
+## 声明 vs 定义
 
-`scanf` 从标准输入读取数据，格式说明符和 `printf` 类似但有一些微妙差异：
+上面那个例子里有个关键区分：**声明（declaration）告诉编译器「有这么个东西、它什么类型」，定义（definition）才真正「把它造出来、分配存储」**。看 `counter`：在 `counter.h` 里是 `extern int counter;`——这只是声明，`extern` 的意思是「这个变量在别处定义、我这里只是引用它的类型」，**不分配存储**；真正的定义在 `counter.c` 里：`int counter = 0;`，这一行才给 `counter` 分配了一块内存。函数也一样：`void inc(void);` 是函数原型（声明），`void inc(void) { counter++; }` 是函数体（定义）。
 
-```c
-int age;
-float weight;
-char name[32];
+这个区分决定了一个工程怎么组织：**头文件（`.h`）放声明、源文件（`.c`）放定义**。因为头文件会被多个翻译单元 `#include`，如果头文件里放了定义（比如 `int counter = 0;`），每个 include 它的 `.c` 都会生成一个 `counter` 的定义，链接时就会撞「multiple definition」（阶段 0 第 6 章讲过这个报错）。所以头文件里只放声明（`extern`、函数原型），让定义只在一个 `.c` 里出现一次——这是 C 多文件工程的基本规矩。
 
-printf("请输入姓名 年龄 体重: ");
-scanf("%31s %d %f", name, &age, &weight);
+## 链接：external / internal / none
 
-// name 是数组，不需要 &（数组名即地址）
-// age 和 weight 是普通变量，必须传地址
-```
-
-> ⚠️ **踩坑预警**：`scanf` 的 `%s` 遇到空白字符就停止，而且不检查缓冲区大小。如果输入超过缓冲区长度，直接导致缓冲区溢出。安全的做法是指定最大长度（`%31s`），或者用 `fgets` + `sscanf` 组合替代。实战项目中 `scanf` 用得很少，但学习阶段理解它的机制仍然重要。
-
-## 第五步——动手搭一个多文件项目
-
-我们来构建一个简单的多文件项目，体会一下分离编译的好处。项目结构如下：
+那么 `main.o` 引用的 `counter`、`inc`，怎么找到 `counter.o` 里的定义？靠的是**链接（linkage）**（ISO/IEC 9899 §6.2.2）。C 里有三种链接性。一个全局的函数或变量（没加 `static`）是 **external 链接**——它能被其他翻译单元看到、引用；`main.o` 里 `counter`/`inc` 正是靠 external 链接，在链接阶段被解析到 `counter.o` 的定义。我们用 `nm` 看符号表，能直接看到这个「能不能被外部引用」的区别（`nm` 的字母大小写是关键）：
 
 ```text
-calc/
-├── main.c      // 主程序
-├── math_ops.h  // 数学运算函数声明
-└── math_ops.c  // 数学运算函数实现
+$ nm counter.o
+0000000000000000 B counter     ← 大写 B:external 链接(在 .bss,因为初始化为 0)
+0000000000000000 T inc         ← 大写 T:external 链接(函数,在 .text)
+$ nm main.o | grep -E 'counter|inc'
+                 U counter     ← U:undefined,本翻译单元引用、等链接时填地址
+                 U inc
 ```
 
-**math_ops.h** — 头文件，模块的"公开接口"：
+`counter.o` 里 `counter` 是大写 `B`、`inc` 是大写 `T`——**大写表示 external 链接**（对外可见）；`main.o` 里它们是 `U`（undefined），表示「我引用了它、但定义在别处」，链接器负责把这个 `U` 填成 `counter.o` 里那个真实的地址。如果加上 `static`，就变成第二种 **internal 链接**——只在本翻译单元可见、别的翻译单元引用不到。对比一下:
 
 ```c
-#ifndef MATH_OPS_H
-#define MATH_OPS_H
-
-int add(int a, int b);
-int subtract(int a, int b);
-int multiply(int a, int b);
-float divide(int a, int b);
-
-#endif /* MATH_OPS_H */
+static int secret = 42; /* static:internal 链接,别的翻译单元看不到 */
+int visible = 7;        /* 外部链接:别的翻译单元可 extern 引用 */
 ```
-
-**math_ops.c** — 实现文件：
-
-```c
-#include "math_ops.h"
-
-int add(int a, int b) { return a + b; }
-int subtract(int a, int b) { return a - b; }
-int multiply(int a, int b) { return a * b; }
-
-float divide(int a, int b) {
-    if (b == 0) {
-        return 0.0f;
-    }
-    return (float)a / (float)b;
-}
-```
-
-**main.c** — 主程序：
-
-```c
-#include <stdio.h>
-#include "math_ops.h"
-
-int main(void) {
-    int x = 10, y = 3;
-    printf("%d + %d = %d\n", x, y, add(x, y));
-    printf("%d - %d = %d\n", x, y, subtract(x, y));
-    printf("%d * %d = %d\n", x, y, multiply(x, y));
-    printf("%d / %d = %.2f\n", x, y, divide(x, y));
-    return 0;
-}
-```
-
-编译和运行：
-
-```bash
-# 分别编译各源文件为目标文件，再链接
-gcc -c main.c -o main.o
-gcc -c math_ops.c -o math_ops.o
-gcc main.o math_ops.o -o calc
-./calc
-```
-
-运行结果：
 
 ```text
-10 + 3 = 13
-10 - 3 = 7
-10 * 3 = 30
-10 / 3 = 3.33
+$ gcc -std=c11 -c static.c -o static.o
+$ nm static.o
+0000000000000000 d secret    ← 小写 d:internal 链接(只在本文件)
+0000000000000004 D visible   ← 大写 D:external 链接
 ```
 
-这种分步编译的模式非常有用。当你修改了 `math_ops.c` 但没动头文件和 `main.c`，只需要重新编译 `math_ops.o` 再链接就行了——`Makefile` 和 `CMake` 这些构建工具本质上就是在自动化这个过程。
+**小写字母表示 internal 链接**：`secret` 是 `d`（小写），它对其他翻译单元是不可见的。所以 `static` 用在文件作用域的变量/函数上，效果是「把这个名字限制在本文件内」——你可以用它实现「模块私有」的辅助函数和全局状态，不用担心和别的翻译单元里同名的东西撞车。第三种 **none 链接**（无链接）就是普通的局部变量（函数内部的 `int x;`），它没有链接性可言、只在自己的作用域里存在——这个留到第 9 章讲作用域和存储期时细说。记一个口诀：**大写 external、小写 internal、`U` 是等着别人填的引用**。
 
-## 常见编译错误速查
+## 编译四阶段：回顾一眼
 
-| 错误信息 | 原因 | 解决方法 |
-|----------|------|----------|
-| `undefined reference to 'xxx'` | 链接阶段找不到函数定义 | 检查是否忘记链接 `.o` 文件或库 |
-| `implicit declaration of function` | 使用了未声明的函数 | 添加对应的 `#include` 或函数声明 |
-| `redefinition of 'xxx'` | 同一个符号定义了多次 | 检查头文件是否缺少 include guard |
-| `No such file or directory` | 头文件路径不对 | 检查文件名拼写和 `-I` 路径 |
-| `multiple definition of 'xxx'` | 全局变量/函数在头文件中定义 | 头文件中只放声明，定义放 `.c` 文件 |
+最后把阶段 0 第 2 章的编译四阶段在这里对齐一下（不重复展开，细节回去看那一章）：源码先经**预处理**（展开宏和 `#include`，得到一个翻译单元的完整文本）、再**编译**成汇编、**汇编**成 `.o`、最后**链接**把多个 `.o` 拼起来。这一章讲的「翻译单元」就是预处理之后的那个完整文本；讲的「链接」就是第四阶段在干的事——它把 `main.o` 里那些 `U`（undefined）符号，逐一解析到 `counter.o` 里的定义上，程序才完整。理解了 C 语言的这套骨架，你后面写多文件工程、查链接错误，就有了理论抓手。
 
 ## 小结
 
-到这里，我们对 C 程序从源码到可执行文件的完整链路有了一个清晰的认识。预处理展开所有 `#` 指令，编译器将 C 代码翻译成汇编，汇编器生成二进制目标文件，链接器把一切组装起来。头文件是模块间的契约，`printf`/`scanf` 是最基础的 I/O 工具，多文件编译是项目规模增长后的必然选择。
-
-### 关键要点
-
-- [ ] C 程序入口是 `int main(void)` 或 `int main(int argc, char *argv[])`
-- [ ] 编译四阶段：预处理 → 编译 → 汇编 → 链接
-- [ ] `<>` 搜索系统目录，`""` 先搜索当前目录
-- [ ] 头文件用 include guard 防止重复包含
-- [ ] 多文件编译：分别编译 `.c` → `.o`，再链接
-- [ ] 理解编译模型是后续搞懂构建系统、链接错误的根基
-
-## 练习
-
-### 练习 1：多文件编译实战
-
-构建一个多文件项目，包含以下文件：
-
-**utils.h**：
-
-```c
-#ifndef UTILS_H
-#define UTILS_H
-
-int add(int a, int b);
-void print_result(const char* label, int value);
-
-#endif /* UTILS_H */
-```
-
-请自行完成：
-
-1. **utils.c** — 实现 `add` 和 `print_result` 函数
-2. **main.c** — 调用 utils 中的函数，测试各种运算
-3. 用 gcc 命令行手动编译并链接，记录每一步的中间产物（`.i`、`.s`、`.o` 文件）
-4. 用 `nm` 或 `objdump` 查看目标文件的符号表
-
-### 练习 2：printf 格式化练习
-
-不查资料，写出以下 `printf` 语句的预期输出（然后再编译运行验证）：
-
-```c
-printf("[%5d]\n", 42);
-printf("[%-5d]\n", 42);
-printf("[%05d]\n", 42);
-printf("[%.3f]\n", 3.14159);
-printf("[%10.2f]\n", 3.14159);
-```
+从 C 语言视角看，一个程序是这样组装的：每个 `.c`（连同展开的头文件）是一个**翻译单元**（§5.1.1.1），编译器一个一个地编译、最后由链接阶段拼起来。`main` 是唯一入口（§5.1.2.2.1），返回 `int` 作退出码，**C99 起 `main` 不写 `return` 隐式返回 0**（§5.1.2.2.3，我们真跑 C11 退出码 0），但 C89 没这规定（真跑给你一个垃圾退出码 6 + `-Wreturn-type` 警告），所以兼容老标准就显式 `return`。**声明 vs 定义**是工程组织的核心：声明（函数原型、`extern` 变量）只说「有这东西」、不分配存储，定义才分配；所以头文件放声明、源文件放定义，避免 `multiple definition`。**链接**（§6.2.2）决定一个名字跨翻译单元可不可见：普通全局是 external（`nm` 大写 `T`/`B`/`D`，别的翻译单元能引用、`U` 等着填它）、加 `static` 是 internal（小写 `t`/`b`/`d`，只在本文件，可实现模块私有）、局部变量是无链接（none）。这一章是阶段 1 的开篇，接下来我们从 C 的类型系统（整型家族、`sizeof`）开始，一头扎进语言的细节。
 
 ## 参考资源
 
-- [C 语言编译模型 - cppreference](https://en.cppreference.com/w/c/language/translation_phases)
-- [GCC 编译选项文档](https://gcc.gnu.org/onlinedocs/gcc/Invoking-GCC.html)
-- [printf 格式说明符 - cppreference](https://en.cppreference.com/w/c/io/fprintf)
-
-*整理自作者 c_tutorials，按 C-Journey 写作规范适配。*
+- ISO/IEC 9899:2011 §5.1.1.1（翻译单元）、§5.1.2.2.1（程序启动 / main）、§5.1.2.2.3（main 的返回，C99 起隐式 return 0）、§6.2.2（链接性 external/internal/none）、§6.7（声明）、§6.9（外部定义）
+- `nm` 手册（符号类型：大写 = external、小写 = internal、`U` = undefined）
+- 阶段 0 · 第 2 章：编译四阶段全景（这一章只回顾）；第 6 章：链接与静态库（`undefined reference` / `multiple definition`）
+- 第 9 章：作用域、存储期与 static（static 的深入，含跨翻译单元隔离验证）

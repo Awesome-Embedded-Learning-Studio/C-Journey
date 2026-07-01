@@ -101,3 +101,12 @@ Output/
 *.uvgui.*
 *.bak
 *.Administrator
+
+# ===== VitePress 站点构建产物 =====
+node_modules/
+documents/.vitepress/dist/
+documents/.vitepress/cache/
+documents/.vitepress/.build-cache/
+*.local
+pnpm-debug.log*
+_tmp_/
