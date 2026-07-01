@@ -88,3 +88,133 @@
 .VPFeature.link:hover .link-text-icon {
   transform: translateX(4px);
 }
+
+/* ================================================================
+   正文字号五档(超小/小/正常/大/超大)—— FontSizeSwitcher.vue 切
+   documentElement 的 data-font-size,这里用 zoom 整页缩放。
+   首屏防闪由 config head 内联脚本提前设 data-font-size(默认 normal)。
+   ================================================================ */
+html[data-font-size='xxsmall'] {
+  zoom: 0.85;
+}
+html[data-font-size='small'] {
+  zoom: 0.92;
+}
+html[data-font-size='normal'] {
+  zoom: 1;
+}
+html[data-font-size='large'] {
+  zoom: 1.08;
+}
+html[data-font-size='xxlarge'] {
+  zoom: 1.16;
+}
+
+/* ================================================================
+   HomeTipBanner 配色变量(组件 scoped 用 var(--vp-tip-*),此处给默认值)
+   ================================================================ */
+:root {
+  --vp-tip-bg: rgba(63, 81, 181, 0.08);
+  --vp-tip-border: rgba(63, 81, 181, 0.2);
+  --vp-tip-text: var(--vp-c-text-2);
+  --vp-tip-accent: #3f51b5;
+  --vp-tip-accent-hover: #303f9f;
+}
+.dark {
+  --vp-tip-bg: rgba(99, 102, 241, 0.12);
+  --vp-tip-border: rgba(99, 102, 241, 0.3);
+  --vp-tip-text: var(--vp-c-text-2);
+  --vp-tip-accent: #818cf8;
+  --vp-tip-accent-hover: #a5b4fc;
+}
+
+/* ================================================================
+   ProofStrip:移动端(<960,hero 堆叠)夹在标题与终端之间;桌面端仍在 hero 下方。
+   两个实例按视口切换显隐(见 theme/index.ts 的 home-hero-actions-after / home-hero-after)。
+   ================================================================ */
+.proof-on-mobile {
+  display: none;
+}
+.proof-on-desktop {
+  display: block;
+}
+.proof-on-mobile .proof-strip {
+  margin-bottom: 0 !important;
+}
+@media (max-width: 959px) {
+  .proof-on-mobile {
+    display: block;
+  }
+  .proof-on-desktop {
+    display: none;
+  }
+}
+
+/* ================================================================
+   Resizable Sidebar(可拖拽侧栏宽度)—— ResizableSidebar.vue
+   左 handle 在组件模板内(fixed),右 handle 运行时注入 .aside(absolute)。
+   宽度由 --vp-sidebar-width(VitePress 原生)与 --vp-aside-width(本站自定义)驱动。
+   ================================================================ */
+:root {
+  --vp-aside-width: 256px;
+}
+
+.VPDoc.has-aside .aside {
+  max-width: var(--vp-aside-width);
+  position: relative;
+}
+.VPDoc .aside-container {
+  width: calc(var(--vp-aside-width) - 32px);
+}
+
+.rs-handle {
+  z-index: calc(var(--vp-z-index-sidebar) + 1);
+  width: 8px;
+  background: transparent;
+  cursor: col-resize;
+}
+.rs-handle::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--vp-c-divider);
+  transition: width 0.15s ease, background-color 0.15s ease;
+}
+.rs-handle:hover::before,
+.rs-handle.is-active::before {
+  width: 2px;
+  background: var(--vp-c-brand-1);
+}
+
+.rs-handle--left {
+  position: fixed;
+  left: var(--vp-sidebar-width);
+  margin-left: -4px;
+  top: var(--vp-nav-height, 64px);
+  bottom: 0;
+}
+.rs-handle--right {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  display: none;
+}
+body.rs-resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+@media (max-width: 959px) {
+  .rs-handle--left {
+    display: none;
+  }
+}
+@media (min-width: 1280px) {
+  .rs-handle--right {
+    display: block;
+  }
+}

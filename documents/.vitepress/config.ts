@@ -59,6 +59,15 @@ export default defineConfig({
         '01-c-basics/index.md',
         'README.md', /* 旧导航(指向 04-07 等未上线内容);首页用 index.md Hero */
     ],
+    head: [
+        /* 字号防闪:hydration 前读 localStorage('vp-font-size'),提前设 data-font-size。
+           与 FontSizeSwitcher.vue 的 STORAGE_KEY 保持一致,缺省 normal。 */
+        [
+            'script',
+            {},
+            `(function(){try{var s=localStorage.getItem('vp-font-size')||'normal';if(s!=='xxsmall'&&s!=='small'&&s!=='normal'&&s!=='large'&&s!=='xxlarge'){s='normal';}document.documentElement.dataset.fontSize=s;}catch(e){}})()`,
+        ],
+    ],
     themeConfig: {
         siteTitle: 'C-Journey',
         nav: [
