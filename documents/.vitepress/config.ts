@@ -29,7 +29,7 @@ function buildSidebar() {
             .sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
         return {
             text: stage.name,
-            collapsed: false,
+            collapsed: true, /* 默认折叠阶段、点击展开;当前阅读章所在阶段 VitePress 自动展开 */
             items: files.map((f) => ({
                 text: readTitle(path.join(stageDir, f)),
                 link: `/${stage.dir}/${f.replace(/\.md$/, '')}`,
