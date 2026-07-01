@@ -43,6 +43,7 @@ export default defineConfig({
     description: '一份亲手踩坑、贴真实输出的纯 C 系统编程教程',
     lang: 'zh-CN',
     lastUpdated: true,
+    base: '/C-Journey/',
     cleanUrls: true,
     /* 旧内容不上线(待 rewrite 或待补新章) */
     srcExclude: [
