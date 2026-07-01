@@ -1,0 +1,15 @@
+{
+  "name": "c-journey-docs",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev documents",
+    "build": "vitepress build documents",
+    "preview": "vitepress preview documents"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.34"
+  }
+}

@@ -74,7 +74,7 @@ ci.yml 里定义了四个 job，正好把前面几章的门串成一条防线。
         run: python3 scripts/build_examples.py
 ```
 
-这里出现了一个新概念——**矩阵**（`strategy.matrix`）。`cc: [gcc, clang]` 让这个 job **复制成两份**，一份用 gcc、一份用 clang，并行各跑一次。也就是说「同一个代码，分别用 gcc 和 clang 各编译一遍」（`${{ matrix.cc }}` 会被替换成 `gcc` 或 `clang`），确保你的代码不会被「只在 gcc 下能编、换 clang 就挂」坑到。`fail-fast: false` 让其中一个失败时不立刻取消另一个（两个都跑完，你能一次看全两边的问题）。
+这里出现了一个新概念——**矩阵**（`strategy.matrix`）。`cc: [gcc, clang]` 让这个 job **复制成两份**，一份用 gcc、一份用 clang，并行各跑一次。也就是说「同一个代码，分别用 gcc 和 clang 各编译一遍」（<code v-pre>${{ matrix.cc }}</code> 会被替换成 `gcc` 或 `clang`），确保你的代码不会被「只在 gcc 下能编、换 clang 就挂」坑到。`fail-fast: false` 让其中一个失败时不立刻取消另一个（两个都跑完，你能一次看全两边的问题）。
 
 step 这边：`uses: actions/checkout@v4` 是调用 GitHub 官方提供的 **action**（可复用的步骤，`@v4` 是版本号）把仓库代码拉到虚拟机上；接着 `apt-get install` 装构建工具；`echo "CC=..." >> $GITHUB_ENV` 把选定的编译器写进环境变量；最后 `python3 scripts/build_examples.py` 跑第 12 章那个脚本——**它退出码非 0（有示例编不过），整个 job 就失败、CI 就红**。这就是「硬门」的意思：不是警告，是直接挡住。
 
