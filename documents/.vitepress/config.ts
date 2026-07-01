@@ -54,8 +54,6 @@ export default defineConfig({
         '06-embedded/**',
         '07-capstone/**',
         'advanced/**',
-        '01-c-basics/12-struct-and-memory-alignment.md',
-        '01-c-basics/13-union-enum-bitfield-typedef.md',
         '01-c-basics/index.md',
         'README.md', /* 旧导航(指向 04-07 等未上线内容);首页用 index.md Hero */
     ],
