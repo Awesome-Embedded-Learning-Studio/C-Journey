@@ -46,7 +46,7 @@ def as_list(v):
 
 
 for md in sorted(DOCS.rglob("*.md")):
-    if md.name == "README.md":  # 导航/索引文档,不要求 frontmatter
+    if md.name in ("README.md", "index.md"):  # 导航/首页文档,不要求 frontmatter(首页用 VitePress Hero)
         continue
     rel = md.relative_to(REPO)
     text = md.read_text(encoding="utf-8")
