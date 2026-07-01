@@ -228,11 +228,14 @@ onBeforeUnmount(() => {
   }
 }
 
-/* 手机端(<768px)隐藏终端:VitePress Hero 在窄屏把 image 槽当半透明背景(position absolute)
-   覆盖在 text 上,终端不透明会盖住标题/正文,故隐藏;桌面端(≥768)正常左右布局显示。 */
-@media (max-width: 767px) {
+@media (max-width: 639px) {
   .hero-visual {
-    display: none;
+    max-width: calc(100vw - 48px);
+  }
+  .terminal__body {
+    font-size: 12px;
+    padding: 16px 16px 14px;
+    min-height: calc(23em + 30px);
   }
 }
 </style>

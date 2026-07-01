@@ -656,3 +656,56 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
     text-align: left;
   }
 }
+
+/* ================================================================
+   Hero Image 槽:让终端卡(HomeHeroVisual)进正常文档流、不覆盖标题文字
+   VitePress 默认把 .image-container 设固定 320/392px 方形 + 给 .image 大负 margin
+   (为小装饰图 + 模糊背景设计)。放终端这种 content card 会溢出盖住 hero text
+   (尤其手机端)。这里 neutralize 那些默认值 + 用 flex order 控制堆叠。
+   移植自 ~/Tutorial_AwesomeModernCPP custom.css。
+   ================================================================ */
+
+/* 隐藏 VitePress 默认的 image 背景 blob(我们用终端卡,不要模糊背景) */
+.VPHero .image-bg {
+  display: none !important;
+}
+
+/* 移动端把标题(.container)置于终端(.image)上方:order 1 < 2(桌面本就是 container 左,不受影响) */
+.VPHero .container {
+  order: 1 !important;
+}
+
+/* 终端在标题下方(移动端)/右侧(桌面端);margin 留间隙 */
+.VPHero .image {
+  order: 2 !important;
+  margin: 40px auto 0 !important;
+}
+
+/* 取消 VitePress 给 image-container 的固定方形大小,让终端卡按内容撑开 */
+.VPHero .image-container {
+  width: auto !important;
+  height: auto !important;
+}
+
+@media (min-width: 640px) {
+  .VPHero .image {
+    margin: 40px auto 0 !important;
+  }
+}
+
+@media (min-width: 960px) {
+  /* 桌面端两列 Hero:image 列填满剩余宽度,终端卡居中 */
+  .VPHero .image {
+    flex-grow: 1;
+    margin: 0 !important;
+    min-height: 100%;
+  }
+  .VPHero .image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+  }
+}
