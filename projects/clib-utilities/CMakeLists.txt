@@ -46,3 +46,12 @@ add_executable(test_runner
 target_link_libraries(test_runner PRIVATE clib_utils)
 target_include_directories(test_runner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/test)
 add_test(NAME clib_smoke COMMAND test_runner)
+
+# Unity-based DynamicArray 测试(用 test/unity/ 的极简 Unity shim)
+add_executable(test_dynamic_array_unity
+    test/test_DynamicArray_unity.c
+    test/unity/unity.c)
+target_link_libraries(test_dynamic_array_unity PRIVATE clib_utils)
+target_include_directories(test_dynamic_array_unity PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/unity)
+add_test(NAME dynamic_array_unity COMMAND test_dynamic_array_unity)
