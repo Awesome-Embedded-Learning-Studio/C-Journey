@@ -1,0 +1,19 @@
+# C-Journey clang-tidy 配置(阶段4·Ch12 引入)。
+# 选 bugprone/readability/performance 三大族(高价值、低误报),
+# 关掉教程代码会刷屏的几个(magic-numbers 教程里全是字面量、identifier-length
+# 短名多、easily-swappable-parameters 教程函数参数少、cognitive-complexity 示例本就简单)。
+Checks: >
+  -*,
+  bugprone-*,
+  performance-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity,
+  -readability-else-after-return,
+  -readability-named-parameter,
+  -readability-non-const-parameter,
+  -readability-implicit-bool-conversion,
+WarningsAsErrors: ''
+HeaderFilterRegex: '^(?!.*(stdlib|bits/|sys/)).*$'

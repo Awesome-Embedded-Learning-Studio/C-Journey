@@ -71,3 +71,13 @@ jobs:
       - name: 检查 examples 格式
         run: |
           git ls-files 'examples/*.c' 'examples/*.h' | xargs clang-format --dry-run --Werror
+
+  static-analysis:
+    name: 静态分析(clang-tidy,examples)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装 clang-tidy + cmake
+        run: sudo apt-get update && sudo apt-get install -y clang-tidy cmake ninja-build
+      - name: 跑 clang-tidy(examples 硬门,阶段4·Ch12 引入)
+        run: python3 scripts/clang_tidy_check.py
