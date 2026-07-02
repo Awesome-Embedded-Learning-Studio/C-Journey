@@ -81,3 +81,22 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y clang-tidy cmake ninja-build
       - name: 跑 clang-tidy(examples 硬门,阶段4·Ch12 引入)
         run: python3 scripts/clang_tidy_check.py
+
+
+  coverage:
+    name: 覆盖率(gcov/lcov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装工具
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build lcov
+      - name: 编译+测试 clib(带 --coverage)
+        run: |
+          cmake -B build-cov -S projects/clib-utilities             -DCMAKE_C_FLAGS="--coverage -g"             -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+          cmake --build build-cov
+          cd build-cov && ctest --output-on-failure && cd ..
+      - name: 生成覆盖率报告
+        run: |
+          lcov --capture --directory build-cov --output-file coverage.info             --ignore-errors mismatch --rc geninfo_auto_base=1
+          lcov --remove coverage.info '/usr/*' --output-file coverage.filtered.info
+          lcov --summary coverage.filtered.info
