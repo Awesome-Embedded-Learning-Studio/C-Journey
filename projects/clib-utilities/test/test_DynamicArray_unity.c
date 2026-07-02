@@ -43,7 +43,8 @@ void test_find_present_returns_nonneg_index(void) {
     int vals[] = {10, 20, 30};
     CCDynamicArray_pushBackMulti(g_arr, vals, 3);
     int key = 20;
-    CCSTD_Index_t idx = CCDynamicArray_Find(g_arr, &key, (CCSTD_CmpFuncType) compareInt, 0, TIL_END);
+    CCSTD_Index_t idx =
+        CCDynamicArray_Find(g_arr, &key, (CCSTD_CmpFuncType) compareInt, 0, TIL_END);
     TEST_ASSERT_TRUE(idx >= 0);
 }
 
@@ -51,7 +52,8 @@ void test_find_absent_returns_notfound(void) {
     int vals[] = {10, 20, 30};
     CCDynamicArray_pushBackMulti(g_arr, vals, 3);
     int key = 999;
-    CCSTD_Index_t idx = CCDynamicArray_Find(g_arr, &key, (CCSTD_CmpFuncType) compareInt, 0, TIL_END);
+    CCSTD_Index_t idx =
+        CCDynamicArray_Find(g_arr, &key, (CCSTD_CmpFuncType) compareInt, 0, TIL_END);
     TEST_ASSERT_TRUE(idx < 0);
 }
 
