@@ -245,8 +245,8 @@ const props = withDefaults(defineProps<{
   runOptions: '-std=c11 -Wall -Wextra -O2 -fsanitize=address,undefined',
   x86Compiler: 'cg161',
   x86Options: '-std=c11 -O2',
-  branch: 'next',
-  rawBase: 'https://raw.githubusercontent.com/Charliechen114514/C-Journey',
+  branch: 'main',
+  rawBase: 'https://raw.githubusercontent.com/Awesome-Embedded-Learning-Studio/C-Journey',
 })
 
 // 内置默认 demo:仅当既没传 code、也没传 sourcePath 时兜底用。

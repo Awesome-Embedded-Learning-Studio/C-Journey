@@ -92,7 +92,7 @@ export default defineConfig({
         returnToTopLabel: '回到顶部',
         darkModeSwitchLabel: '主题',
         socialLinks: [
-            { icon: 'github', link: 'https://github.com/Charliechen114514/C-Journey' },
+            { icon: 'github', link: 'https://github.com/Awesome-Embedded-Learning-Studio/C-Journey' },
         ],
     },
 })
