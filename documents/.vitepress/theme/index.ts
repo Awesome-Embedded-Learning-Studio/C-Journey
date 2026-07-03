@@ -1,7 +1,8 @@
 import DefaultTheme from 'vitepress/theme'
-import { h } from 'vue'
+import { defineComponent, h } from 'vue'
 import type { Theme } from 'vitepress'
 import './custom.css'
+import { setupMermaid } from './mermaid-client'
 
 /* 首页增强组件 */
 import HomeHeroVisual from './components/HomeHeroVisual.vue'
@@ -28,10 +29,10 @@ import ResizableSidebar from './components/ResizableSidebar.vue'
  * 全局注册 ChapterNav / ChapterLink 供各章 .md 内联使用;
  * FontSizeSwitcher 挂在顶栏;ResizableSidebar 挂 layout-top 注入拖拽手柄。
  */
-export default {
-    extends: DefaultTheme,
-    Layout() {
-        return h(DefaultTheme.Layout, null, {
+const Layout = defineComponent({
+    setup() {
+        setupMermaid()
+        return () => h(DefaultTheme.Layout, null, {
             /* 可拖拽侧栏手柄(运行时注入,无视觉模板) */
             'layout-top': () => h(ResizableSidebar),
             /* Hero 区右侧:终端打字机动画(替换默认图片) */
@@ -66,6 +67,11 @@ export default {
             'nav-screen-content-after': () => h(FontSizeSwitcher),
         })
     },
+})
+
+export default {
+    extends: DefaultTheme,
+    Layout,
     enhanceApp({ app }) {
         app.component('ChapterNav', ChapterNav)
         app.component('ChapterLink', ChapterLink)

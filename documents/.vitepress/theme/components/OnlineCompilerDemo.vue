@@ -466,14 +466,11 @@ function stripAnsi(value: string): string {
 
 function extractExecutionText(payload: any): string {
   const exec = payload.execResult ?? payload.executionResult ?? payload
-  const chunks = [
-    linesToText(exec.stdout),
-    linesToText(exec.stderr),
-    linesToText(payload.stdout),
-    linesToText(payload.stderr),
-    linesToText(payload.buildResult?.stdout),
-    linesToText(payload.buildResult?.stderr),
-  ].filter(Boolean)
+  // godbolt executor 响应常把程序输出同时放在 execResult 和顶层(此时 exec===payload),
+  // 每路只取第一份非空的,避免把同一份输出拼两遍。
+  const out = linesToText(exec.stdout) || linesToText(payload.stdout) || linesToText(payload.buildResult?.stdout)
+  const err = linesToText(exec.stderr) || linesToText(payload.stderr) || linesToText(payload.buildResult?.stderr)
+  const chunks = [out, err].filter(Boolean)
 
   if (exec.code !== undefined && exec.code !== 0) chunks.push(`exit code: ${exec.code}`)
   else if (payload.code !== undefined && payload.code !== 0) chunks.push(`exit code: ${payload.code}`)

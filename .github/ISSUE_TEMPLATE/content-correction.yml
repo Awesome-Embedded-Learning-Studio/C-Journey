@@ -7,16 +7,27 @@ body:
     attributes:
       label: 位置
       description: 文件路径 / 章节 / 行号
-      placeholder: "documents/02-pointers-memory/0-pointers-memory-and-bitops.md 第 XX 行"
+      placeholder: "documents/02-pointers-memory/01-what-is-a-pointer.md 第 XX 行"
     validations:
       required: true
   - type: textarea
     id: problem
     attributes:
-      label: 问题
-      description: 哪里错了、为什么(如有编译 / 运行证据请贴上)
+      label: 问题(请附证据)
+      description: |
+        哪里错了、为什么。本仓库铁律是「真实输出」,请贴对应证据:
+        • 代码编译 / 运行错误 → gcc / clang 的报错或程序输出
+        • 断言 C 行为有误 → ISO/IEC 9899 条款号
+        • 内存 / 未定义行为 → ASan/UBSan(`-fsanitize=address,undefined`)输出
     validations:
       required: true
+  - type: input
+    id: env
+    attributes:
+      label: 编译环境(可选)
+      description: gcc / clang 版本,便于复现(如 gcc 16.1.1 / clang 22.1.6)
+    validations:
+      required: false
   - type: textarea
     id: suggestion
     attributes:

@@ -1,70 +1,52 @@
 # C-Journey
 
-A learning journal + community hub for C beginners and learners.
+[![CI](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/actions/workflows/ci.yml/badge.svg)](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/Awesome-Embedded-Learning-Studio/C-Journey?style=social)](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey)
 
-> 目标：不只是“会写 C 语法”，而是逐步具备使用 C 语言完成真实工程、库设计、系统编程、嵌入式开发的能力。
+一份纯 C 的系统编程教程,定位是「用 C 游历计算机世界」。主机系统这一路——工具链、内存、数据结构、工程化、系统编程——做深;嵌入式只尝一口、开个门,真要写单片机和板级 Linux,去隔壁 [imx-forge](https://awesome-embedded-learning-studio.github.io/imx-forge/)(i.MX6ULL,目前最完整)和 [ST-Forge](https://awesome-embedded-learning-studio.github.io/ST-Forge/)(STM32)。
 
-## 路线概览
+每章代码都用 gcc 16 + clang 22 双编、ASan/UBSan 抓 UB,贴真实终端输出、引 ISO/IEC 9899 条款号。C 的未定义行为太多,凭记忆断言迟早翻车,所以每条都当场跑给你看,而不是「据说是」。在线站点在 <https://awesome-embedded-learning-studio.github.io/C-Journey/>,锈橙主题,浏览器里能直接改 C 代码、点运行看输出或看 x86-64 汇编(调 godbolt 公共 API,不用装东西)。
 
-```mermaid
-flowchart TD
-    A([开始：C 语言学习]) --> B[阶段 0：开发环境与基础工具]
-    B --> C[阶段 1：C 语言基础]
-    C --> D[阶段 2：指针、内存与数据布局]
-    D --> E[阶段 3：数据结构与算法基础]
-    E --> F[阶段 4：工程化与模块化设计]
-    F --> SYS[阶段 5：系统编程]
-    SYS --> G[阶段 6：嵌入式 C 与硬件相关开发]
-    G --> CAP[阶段 7：综合项目与开源协作]
-    CAP --> J([达到：能写可维护的 C 工程])
+## 现在到哪了
+
+主线六阶段已经全部写完上线,共 84 章:
+
+| 阶段 | 章 | 内容 |
+|---|---|---|
+| 0 开发环境 | 17 | 工具链 / 编译四阶段 / 链接与动态库 / 警告体系 / sanitizer / make / cmake / gdb / Git / CI / clang-format |
+| 1 C 基底 | 13 | 程序结构 / 类型与算术 / 运算符 / 控制流 / 函数 / 作用域 / 数组 / 字符串 / IO / 结构体联合枚举 |
+| 2 指针与内存 | 12 | 指针算术 / 动态内存 / 函数指针 / void\* 与字节操作 / 内存六区布局 |
+| 3 数据结构 | 12 | 链表 / 栈队列 / 动态数组 / 二叉树与 BST / 哈希表 / 查找排序 / 大 O |
+| 4 工程化 | 16 | 头文件契约 / API / 错误处理 / CMake 工程化 / 库与链接 / 测试与 Mock / gdb / ASan 与 valgrind / 静态分析 / 覆盖率 / 性能剖析 / CI 流水线 |
+| 5 系统编程 | 14 | 文件 IO / fork-exec / 守护进程 / 信号 / pipe 与共享内存 / select 与 epoll / 非阻塞 reactor / socket TCP/UDP / getaddrinfo |
+
+阶段 6(嵌入式)和阶段 7(capstone)还是占位旧稿,没重写——深做交给 imx-forge / ST-Forge,这里只留浅尝的 stub。完整设计思路见 [ROADMAP](./ROADMAP.md)。
+
+## 怎么读、怎么改
+
+按阶段顺序读 `documents/`(阶段 1 有[导读](./documents/01-c-basics/index.md));配套可编译示例在 `examples/`,完整项目在 `projects/`。改了东西,本地过两道门再提 PR:
+
+```bash
+python3 scripts/build_examples.py        # 编译所有 examples(gcc + clang 硬门)
+python3 scripts/validate_frontmatter.py  # 校验文档 frontmatter
 ```
 
-## 内容亮点
-
-> **8 个阶段全部有内容，共 41 篇文档**（见 [documents/](./documents/)）；`examples/` 与 `projects/` 里的 C 代码全部由 CI 编译通过。
-
-- **阶段 0 ~ 1**：开发环境、编译调试、Git —— 以及 **20 章从零到扎实的 C 基础**（程序结构、数据类型、运算符、控制流、函数、指针、结构体、动态内存、多文件工程）
-- **阶段 2 ~ 3**：指针 / 内存布局深入 + C 陷阱集；数据结构手搓（泛型容器、动态数组、单链表、递归、查找排序）
-- **阶段 4**：工程化（CMake 基础 + 进阶、符号与链接、ASan/UBSan、性能剖析）
-- **阶段 5**：系统编程（socket 基础 + 进阶、stdio 与文件 IO）
-- **阶段 6**：嵌入式（8051 裸机、Linux 字符设备驱动）
-- **阶段 7**：综合 —— [自制操作系统](./documents/07-capstone/0-hand-written-os.md)（对接 `projects/os-from-scratch`）
-
-## 适合人群
-
-- 已学过 C 语法，希望系统提升工程能力的开发者
-- 在校学生或转嵌入式/系统方向的学习者
-- 希望有一份“可落地”的 C 语言进阶路线图的团队或个人
-
-## 如何使用
-
-1. 按阶段顺序学习，每个阶段先阅读 [documents/](./documents/) 中的知识点文档（阶段 1 从 [导读](./documents/01-c-basics/index.md) 进）
-2. 完成 [examples/](./examples/) 中对应的实践，参考 [projects/](./projects/) 中的完整项目
-3. 在 `exercises/` 中做附加练习
-4. 最终挑战综合项目，并尝试提交 PR 参与开源
-
-> 改了文档 / 代码后，本地过一下质量门：`python3 scripts/build_examples.py`、`python3 scripts/validate_frontmatter.py`（详见 [CONTRIBUTING.md](./CONTRIBUTING.md)）。
+环境搭建、加文档和示例的规范、CI 的六道门(编译 / sanitize / 静态分析 / 覆盖率 / format / 文档校验),都写在 [CONTRIBUTING](./CONTRIBUTING.md) 里。
 
 ## 仓库结构
 
 ```text
 C-Journey/
-├── documents/          # 41 篇知识点文档（8 阶段，见 documents/README.md）
-├── examples/           # 可编译示例（编译调试 / C 基础 / TCP socket，CI 编译）
-├── projects/           # 完整项目（clib-utilities、os-from-scratch、embedded-mcu、song、tiny-c-stdlib）
-├── exercises/          # 练习题（规划中）
-├── scripts/            # 质量门脚本（build_examples / validate_frontmatter / tags）
-├── .github/workflows/  # CI（编译 / sanitize / format / 文档校验）
-├── .claude/            # AI 协作约定（writing-style.md 等，公开）
-├── CONTRIBUTING.md     # 贡献指南
-├── ROADMAP.md          # 完整路线图
-└── README.md
+├── documents/          # 84 章主线文档(阶段 0-5)+ 更新日志
+├── examples/           # 可编译示例(C 基础 / CMake 库工程 / TCP socket,CI 硬门)
+├── projects/           # clib-utilities(已整改,进 CI 硬门)+ os-from-scratch 等参考实现
+├── scripts/            # 质量门脚本(build_examples / validate_frontmatter / clang_tidy_check / tags)
+├── ROADMAP.md          # 完整路线图(0-5 已上线,6-7 待重写)
+├── CONTRIBUTING.md     # 怎么贡献
+└── .github/workflows/  # CI
 ```
 
 ## 贡献
 
-欢迎通过 Issue 和 PR 完善路线图、示例代码或文档。**新手必读 [CONTRIBUTING.md](./CONTRIBUTING.md)**（环境搭建、质量门怎么过、怎么加文档/示例），先读 [ROADMAP.md](./ROADMAP.md) 了解完整设计思路。
-
----
-
-**开始你的 C 语言工程化之旅 →**
+Issue 和 PR 都热烈欢迎, 不必拘束，小到错别字，大到您的笔记提交,我们都热烈欢迎！更新日志在[站点上](https://awesome-embedded-learning-studio.github.io/C-Journey/changelog/),按里程碑记了每个阶段的收官。

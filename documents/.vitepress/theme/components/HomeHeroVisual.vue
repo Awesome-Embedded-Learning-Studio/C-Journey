@@ -128,12 +128,12 @@ onBeforeUnmount(() => {
 .terminal {
   position: relative;
   box-sizing: border-box;
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  border: 1px solid rgba(194, 65, 12, 0.38);
   border-radius: 14px;
   overflow: hidden;
-  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+  background: linear-gradient(135deg, #1A1410 0%, #100A07 100%);
   box-shadow:
-    0 22px 56px rgba(15, 52, 96, 0.4),
+    0 22px 56px rgba(60, 30, 10, 0.45),
     0 6px 14px rgba(0, 0, 0, 0.22);
   animation: terminal-glow 4s ease-in-out infinite;
 }
@@ -159,7 +159,7 @@ onBeforeUnmount(() => {
 
 .terminal__title {
   margin-left: 10px;
-  color: rgba(226, 232, 240, 0.55);
+  color: rgba(232, 216, 202, 0.55);
   font-family: var(--vp-font-family-mono);
   font-size: 13px;
   letter-spacing: 0.3px;
@@ -180,17 +180,17 @@ onBeforeUnmount(() => {
   min-height: 1.75em;
 }
 
-.ln--code { color: #cbd5e1; }
-.ln--cmd { color: #42a5f5; }     /* shell prompt */
-.ln--ok { color: #009688; }      /* 双跑通过 / brand teal */
-.ln--save { color: #fbbf24; }    /* 保存提示 */
-.ln--out { color: #e2e8f0; }     /* 程序输出 */
-.ln--prompt { color: #009688; }
+.ln--code { color: #d8cfc2; }    /* 暖灰 · 代码 */
+.ln--cmd { color: #FF8A4C; }     /* shell prompt · 锈橙 */
+.ln--ok { color: #34D399; }      /* 双跑通过 · 成功绿(与锈橙互补出彩) */
+.ln--save { color: #FBBF24; }    /* 保存提示 · 琥珀 */
+.ln--out { color: #ede4d6; }     /* 程序输出 · 暖白 */
+.ln--prompt { color: #34D399; }
 
 .cursor {
   display: inline-block;
   margin-left: 2px;
-  color: #009688;
+  color: #34D399;
   animation: blink 1.05s step-end infinite;
 }
 
@@ -203,15 +203,15 @@ onBeforeUnmount(() => {
 @keyframes terminal-glow {
   0%, 100% {
     box-shadow:
-      0 22px 56px rgba(15, 52, 96, 0.4),
+      0 22px 56px rgba(60, 30, 10, 0.45),
       0 6px 14px rgba(0, 0, 0, 0.22),
-      0 0 0 0 rgba(99, 102, 241, 0);
+      0 0 0 0 rgba(251, 114, 40, 0);
   }
   50% {
     box-shadow:
-      0 22px 56px rgba(15, 52, 96, 0.45),
+      0 22px 56px rgba(60, 30, 10, 0.5),
       0 6px 14px rgba(0, 0, 0, 0.25),
-      0 0 26px 3px rgba(99, 102, 241, 0.24);
+      0 0 26px 3px rgba(251, 114, 40, 0.28);
   }
 }
 

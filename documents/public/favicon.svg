@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="C-Journey">
+  <!-- 锈橙圆角方底 -->
+  <rect width="32" height="32" rx="7" fill="#C2410C"/>
+  <!-- 暖米色 "C" 弧(开口朝右) -->
+  <path d="M 21 9 A 8.5 8.5 0 1 0 21 23" fill="none" stroke="#FBF8F2" stroke-width="4" stroke-linecap="round"/>
+  <!-- 终端光标块:嵌在 C 开口处,呼应「终端 + C 旅途」 -->
+  <rect x="22.5" y="13" width="2.6" height="6" rx="1" fill="#FBF8F2"/>
+</svg>

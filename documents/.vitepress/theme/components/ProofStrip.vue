@@ -61,7 +61,7 @@ const items = [
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--vp-c-brand-1), var(--vp-c-indigo-1));
+  background: linear-gradient(135deg, var(--vp-c-brand-1), var(--vp-c-brand-3));
   flex-shrink: 0;
 }
 

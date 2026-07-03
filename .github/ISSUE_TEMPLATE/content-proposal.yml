@@ -14,14 +14,32 @@ body:
     attributes:
       label: 所属阶段
       options:
-        - 阶段 0:开发环境
-        - 阶段 1:C 基础
-        - 阶段 2:指针 / 内存
-        - 阶段 3:数据结构
-        - 阶段 4:工程化
-        - 阶段 5:系统编程
-        - 阶段 6:嵌入式
-        - 阶段 7:综合项目
+        - 阶段 0:开发环境(已上线)
+        - 阶段 1:C 基础(已上线)
+        - 阶段 2:指针 / 内存(已上线)
+        - 阶段 3:数据结构(已上线)
+        - 阶段 4:工程化(已上线)
+        - 阶段 5:系统编程(已上线)
+        - 阶段 6:嵌入式(浅尝 stub,深做见 imx-forge)
+        - 阶段 7:综合项目(待重写)
         - 跨阶段 / 其他
+    validations:
+      required: false
+  - type: dropdown
+    id: audience
+    attributes:
+      label: 预期受众(可选)
+      options:
+        - 初学者
+        - 有 C 基础想进阶
+        - 转嵌入式 / 系统方向
+        - 团队 / 教学
+    validations:
+      required: false
+  - type: textarea
+    id: refs
+    attributes:
+      label: 参考材料(可选)
+      description: 是否有参考书 / 论文 / 博客 / 其他教程的对应内容可借鉴
     validations:
       required: false
