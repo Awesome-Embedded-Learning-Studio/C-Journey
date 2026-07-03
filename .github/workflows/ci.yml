@@ -104,7 +104,7 @@ jobs:
         run: |
           lcov --capture --directory build-cov --output-file coverage.info \
                --ignore-errors mismatch --rc geninfo_auto_base=1
-          lcov --remove coverage.info '/usr/*' --output-file coverage.filtered.info
+          lcov --remove coverage.info '/usr/*' --output-file coverage.filtered.info --ignore-errors unused
           lcov --summary coverage.filtered.info
       - name: 上传覆盖率报告
         uses: actions/upload-artifact@v4
