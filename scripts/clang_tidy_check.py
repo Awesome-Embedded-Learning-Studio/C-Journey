@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""对 examples/ + projects/clib-utilities 的 C 源跑 clang-tidy(阶段4·Ch12 引入)。
+"""对 examples/ 的 C 源跑 clang-tidy(阶段4·Ch12 引入,examples 硬门)。
 
 为每个 CMake 工程生成 compile_commands.json(EXPORT_COMPILE_COMMANDS)、
-对其 .c 源(排除 test/ 与 build/)跑 clang-tidy,任一 warning 即失败(硬门)。
-配置见仓库根 .clang-tidy。退出码:0 全过;1 有 warning;2 缺 cmake/clang-tidy。
+对其 .c 源(排除 test/ 与 build/)跑 clang-tidy,任一 warning 即失败。
+projects/clib-utilities 暂未纳入(有 4 个已知 finding 待整改,见 阶段4·Ch12「clib 现状」),
+修齐后再一并查。配置见仓库根 .clang-tidy。退出码:0 全过;1 有 warning;2 缺 cmake/clang-tidy。
 """
 import os
 import shutil

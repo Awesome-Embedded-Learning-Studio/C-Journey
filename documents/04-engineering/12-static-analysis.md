@@ -23,8 +23,6 @@ related:
   - "第 1 章:头文件契约(reserved identifier 这条直接对应 ISO §7.1.3,头文件契约的延伸)"
 ---
 
-> 🟡 状态:待审核(2026-07-02)
-
 # 静态分析门:clang-tidy 与 cppcheck 进 CI
 
 ## 引言:编译器警告和 sanitizer 之外,还有一片没人管的角落

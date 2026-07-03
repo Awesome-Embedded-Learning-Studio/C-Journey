@@ -21,8 +21,6 @@ related:
   - "阶段 0·第 10 章：Sanitizer 门禁（ASan/UBSan，本章用它复核内存安全）"
 ---
 
-> 🟡 状态:待审核(2026-07-02)
-
 # 文件 IO 与 fd：open/read/write/dup 与缓冲那点事
 
 ## 引言：从 stdio 走到系统调用
@@ -521,6 +519,220 @@ $ wc -c < /tmp/cj/p5ch1/buf.txt
 这个对照把三件事一次讲透：其一，**stdio 缓冲确实存在**，没 flush 的数据就飘在用户态、没进内核；其二，**`_exit` 不刷 stdio**，而 `exit` 会（你把 `_exit` 换成 `exit` 跑 mode 0，数据照样保得住，因为 `exit` 帮你 flush 了所有流）；其三，前面 `dup2` 那节我特意写的 `fflush(stdout)` 不是多余的——`printf` 是 stdio、有用户态缓冲，重定向到文件后是全缓冲、不会自动按 `\n` 送，不 `fflush` 那句很可能就卡在缓冲里看不见。系统编程里一个频繁踩的坑就是 `fork` 之后子进程用 `_exit` 退出、管道里的输出却莫名其妙少了半截——根子就在这儿，等下一章讲 `fork` 时还会再撞见它。
 
 诚实地收一句关于 `fsync` 的话：这一节我用 `_exit` 把「stdio 缓冲 vs 内核」的边界演示得很清楚了，但「内核页缓存 vs 磁盘硬件」这层（也就是 `fsync` 的主战场）在普通教学环境里很难肉眼区分——`fsync` 真正的价值在断电、在数据库的持久性保证，这些光在我们这种 WSL2 + 普通文件系统上很难「演」出来。所以这里我只把 `fflush`/`fsync`/`_exit` 三者的边界讲准（`fflush` 刷 stdio→内核、`fsync` 刷内核→磁盘、`_exit` 啥都不刷），至于 `fsync` 的真落盘演示，等你写数据库类项目时再去亲手体会——那种「`fsync` 慢得能感觉到」的量级，比我在这里造个假演示有说服力得多。
+
+## 顺手管一下 stdio 这一层：setvbuf 与 fread/fwrite 的脾气
+
+上面讲的是「stdio 这层存在、它怎么被 `_exit` 整吞」；可既然 stdio 这层躲不开，我们也该顺手把它能调的那些旋钮认识一下——`setvbuf` 改缓冲策略、`fread`/`fwrite` 的返回值到底算什么、`feof` 这个状态位到底在什么时候才置位。这些是上一章 stdio 留的尾巴，正好趁讲完两层缓冲一起补齐，免得后面写真正的工程代码时一个一个地栽进去。
+
+### setvbuf：自己改 stdio 的缓冲脾气
+
+stdio 默认给每个流配的缓冲模式不一定合你心意——比如想让一个小日志流完全不缓冲（每个字符立刻打 syscall，方便实时观察）、或者想给它换一块更大的自定义缓冲。`setvbuf`（`<stdio.h>`，ISO C §7.21.5.6）就是干这个的，原型是 `int setvbuf(FILE* restrict stream, char* restrict buf, int mode, size_t size)`：`mode` 三选一，`_IOFBF`（全缓冲，攒满才刷）、`_IOLBF`（行缓冲，遇 `\n` 就刷）、`_IONBF`（不缓冲，立刻刷）；`buf` 和 `size` 让你塞一块自己的缓冲进去（`buf` 传 `NULL`、`size` 传 0，就让 stdio 自己分配）。
+
+光说三档模式不够直观，我们直接把切换前后的缓冲区大小**量出来**给你看。怎么量？用 glibc 的私有扩展 `__fbufsize(FILE*)`——它不在 ISO C 里、连 POSIX 都不算，纯粹是 glibc 给的偷窥接口，所以 `extern size_t __fbufsize(FILE*);` 自己声明一下就能用（头文件里没有它的原型）。下面这段三档连切、每切一次就用 `__fbufsize` 量一遍：
+
+```c
+#define _POSIX_C_SOURCE 200809L
+#include <stdio.h>
+
+/* glibc 私有扩展:偷看 FILE 内部缓冲区。仅 Linux/glibc 有,演示用,
+   头文件没原型,自己 extern 声明一下即可 */
+extern size_t __fbufsize(FILE *stream);
+extern int __flbf(FILE *stream); /* 是否行缓冲 */
+
+int main(void) {
+    FILE *f = fopen("/tmp/cj/p5ch1/setvbuf.txt", "w");
+    if (!f) {
+        perror("fopen");
+        return 1;
+    }
+
+    fputs("seed\n", f); /* seed 一下,让默认缓冲区物化(避免读到 lazy alloc 前的 0) */
+    printf("默认磁盘流:        缓冲=%zu 行缓冲=%d\n", __fbufsize(f), __flbf(f));
+
+    setvbuf(f, NULL, _IONBF, 0); /* 改成无缓冲:之后每个字符立刻打 syscall */
+    fputs("seed2\n", f);
+    printf("setvbuf(_IONBF) 后: 缓冲=%zu 行缓冲=%d\n", __fbufsize(f), __flbf(f));
+
+    char mybuf[16];
+    setvbuf(f, mybuf, _IOFBF, sizeof mybuf); /* 改成自定义 16 字节全缓冲 */
+    fputs("seed3\n", f);
+    printf("setvbuf(_IOFBF,16): 缓冲=%zu 行缓冲=%d\n", __fbufsize(f), __flbf(f));
+
+    fclose(f);
+    return 0;
+}
+```
+
+```text
+$ gcc -std=c11 -Wall -Wextra setvbuf_demo.c -o svb && ./svb
+默认磁盘流:        缓冲=4096 行缓冲=0
+setvbuf(_IONBF) 后: 缓冲=1 行缓冲=0
+setvbuf(_IOFBF,16): 缓冲=16 行缓冲=0
+```
+
+三行输出把 `setvbuf` 的脾气全摆出来了：默认磁盘流缓冲是 **4096** 字节、行缓冲=0（也就是全缓冲，符合上一章 `file_internals.c` 实测的那 4KB）；切成 `_IONBF` 之后 `__fbufsize` 报 **1**——注意这「1」不是说它真给你开了 1 字节缓冲，而是 glibc 内部用一个 1 字节的占位表示「这流不缓冲」，每次写入就直接打 `write`；再切成 `_IOFBF` 配 16 字节自定义缓冲，量出来就是 **16**——你给什么它就用什么。这台机器默认是 4096（不是某些老教材想当然的 512 或 1024，别凭记忆写，真跑一下最稳）。
+
+用 `setvbuf` 有两条铁律必须刻进去。第一条：**它必须在流做任何 I/O 之前调用**——`fopen` 之后、`fread`/`fwrite`/`fputs`/`fgetc` 任何一次之前就得调好。一旦流上有过哪怕一次 I/O，stdio 内部的缓冲区已经按默认模式物化、可能还攒进了数据，这时再 `setvbuf` 等于在它脚下抽地毯，ISO C 原话是「behavior is undefined」——表现可能是缓冲被静默丢弃、可能是数据错位、可能看着没事但换个 libc 就炸。上面这段代码我每个 `setvbuf` 后都 `fputs` 一次 seed、但**第一次 `setvbuf` 是在第一次 `fputs("seed\n")` 之后**——这其实是利用了「seed 让默认缓冲物化」这个副作用来量出 4096，真要严格按铁律写工程代码，应该 `fopen` 完立刻 `setvbuf`、一次到位、之后再开始读写。第二条：**你传进去的自定义 `buf`，在 `fclose` 之前绝对不能失效**——这意味着 `buf` 不能是函数里那个 `char mybuf[16]` 出了函数就没了的栈数组，除非你保证 `fclose` 也在同一作用域内（像上面 demo 那样全塞在 `main` 里没问题）；更不能是 `setvbuf` 之后被 `free` 掉的堆内存。stdio 不会复制你给的 `buf`，它只是记下指针、之后所有 I/O 都直接往这块内存里读写——`buf` 一旦失效，每一次读写都在踩已释放内存，那种崩溃是出了名地难查。
+
+### fread/fwrite 返回的是「元素个数」不是字节
+
+写惯了 `read`/`write`（返回字节、`ssize_t`）的人，碰 `fread`/`fwrite` 特别容易栽在返回值的语义上。看签名：
+
+```c
+size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
+size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
+```
+
+`size` 是**单个元素**的字节数，`nmemb` 是**元素个数**。返回值类型是 `size_t`（无符号），它给的**不是写入/读出的字节总数**，而是「**成功完成的完整元素个数**」——也就是 `nmemb` 那一维。`fwrite(arr, sizeof(int), 5, f)` 全部写成功就返回 `5`，不是 `5 * sizeof(int) = 20`。这一处差异看着小，写错了要么日志数字对不上、要么把「写了 5 个」误判成「写了 5 字节、还差 15 字节」从而进死循环补写。
+
+要分清「返回 < nmemb 时到底是出错还是到尾」，得请出 `ferror`/`feof`。下面这段把「写 3 个 `Student` 元素→`fseek` 随机跳到第 3 个读→读到文件末尾再读」一次性演示，重点看返回值和 `feof`/`ferror` 的配合：
+
+```c
+#include <stdio.h>
+#include <stddef.h>
+
+typedef struct {
+    int id;
+    char name[16];
+    float score;
+} Student;
+
+int main(void) {
+    Student roster[3] = {
+        {1, "alice", 90.5f},
+        {2, "bob", 77.0f},
+        {3, "carol", 88.25f},
+    };
+
+    FILE *f = fopen("/tmp/cj/p5ch1/students.dat", "wb");
+    if (!f) {
+        perror("fopen wb");
+        return 1;
+    }
+
+    size_t n = fwrite(roster, sizeof(Student), 3, f); /* 返回完整元素个数,不是字节 */
+    printf("sizeof(Student) = %zu\n", sizeof(Student));
+    printf("请求写 3 个元素, fwrite 返回: %zu\n", n);
+    if (n != 3) {
+        if (ferror(f))
+            perror("写出错");
+        fclose(f);
+        return 1;
+    }
+    fclose(f);
+
+    f = fopen("/tmp/cj/p5ch1/students.dat", "rb");
+    if (!f) {
+        perror("fopen rb");
+        return 1;
+    }
+
+    Student one;
+    size_t got = fread(&one, sizeof(Student), 1, f); /* 故意只读 1 个 */
+    printf("读第 1 个: got=%zu  id=%d  name=%s  score=%.2f\n", got, one.id,
+           one.name, one.score);
+
+    fseek(f, 2 * (long)sizeof(Student), SEEK_SET); /* 随机跳到第 3 个 */
+    Student third;
+    got = fread(&third, sizeof(Student), 1, f);
+    printf("读第 3 个: got=%zu  id=%d  name=%s  score=%.2f\n", got, third.id,
+           third.name, third.score);
+
+    fseek(f, 0, SEEK_END); /* 跳到末尾再读:fread 返回 0、feof 为真、ferror 为 0 */
+    Student over;
+    got = fread(&over, sizeof(Student), 1, f);
+    printf("文件末尾再读: fread 返回 %zu, feof=%d, ferror=%d\n", got, feof(f),
+           ferror(f));
+
+    fclose(f);
+    return 0;
+}
+```
+
+```text
+$ gcc -std=c11 -Wall -Wextra fread_nmemb.c -o frn && ./frn
+sizeof(Student) = 24
+请求写 3 个元素, fwrite 返回: 3
+读第 1 个: got=1  id=1  name=alice  score=90.50
+读第 3 个: got=1  id=3  name=carol  score=88.25
+文件末尾再读: fread 返回 0, feof=1, ferror=0
+$ wc -c /tmp/cj/p5ch1/students.dat
+72 /tmp/cj/p5ch1/students.dat
+```
+
+对着输出逐条核：`fwrite` 请求写 3 个元素、返回 `3`（**不是 72**）；`sizeof(Student)=24`（`int` 4 + `char[16]` 16 + `float` 4，glibc 这套布局正好 24，没有填充），3 个元素落盘就是 72 字节，`wc -c` 印证了。读那两次 `fread` 都请求 1 个元素、各返回 `1`，`fseek` 跳到第 3 个读出来正是 carol——`fseek` 在 `FILE*` 上干的活，对应裸 syscall 那边的 `lseek`，只是参数从 fd 换成了 `FILE*`。最值得看的是末尾那行：跳到 `SEEK_END` 再读，`fread` 返回 `0`、`feof=1`、`ferror=0`——这次「少于请求量」的原因是**到了文件尾**（`feof` 被置位），不是出错（`ferror` 保持 0）。纪律也就这一条：**`fread`/`fwrite` 返回值不等于 `nmemb` 时，用 `ferror`/`feof` 二选一判断是出错还是到尾**，别瞎猜。这跟裸 syscall 那边「`read` 返回 `-1` 看 `errno`、返回 0 是 EOF」是同一类思路，只是 stdio 把状态拆成了两个独立的标志位。
+
+### feof 是事后状态，不是事前预判
+
+上一段末尾那个 `feof`，其实藏着 stdio 最经典的一个坑。先把它的语义咬死：**`feof(f)` 只有在「已经发生过一次读到 EOF 的读操作之后」才为真，它不会预判「下一次读会不会到尾」**。换句话说，`feof` 是**事后**的状态读，不是**事前**的预判——它读的是「上一次 I/O 是不是撞了 EOF 标志」，而不是「这个流接下来还有没有数据」。
+
+这个语义直接杀掉了一种特别诱人的写法：`while (!feof(f)) { fread(...); 处理(...); }`。看着像「只要还没到尾就继续读」，可实际上 `feof` 在「最后一次成功读」之后还**没**被置位（置位要等下一次读到 EOF），于是循环会**多进一次**——这次 `fread` 返回 0、什么都没读到，可循环体里的「处理」照样跑了一遍，把上一轮残留在变量里的旧数据又当新数据处理一次。空口说太抽象，真跑给你看，下面这段往文件里只放 3 个 `int`，分别用「错法」和「正法」去读，循环进了几次一目了然：
+
+```c
+#include <stdio.h>
+
+#define FILENAME "/tmp/cj/p5ch1/three.dat"
+#define COUNT 3
+
+int main(void) {
+    FILE *w = fopen(FILENAME, "wb");
+    if (!w) {
+        perror("fopen wb");
+        return 1;
+    }
+    int src[COUNT] = {10, 20, 30};
+    fwrite(src, sizeof(int), COUNT, w);
+    fclose(w);
+
+    /* ===== 错法: while(!feof) 当条件, 循环体里 fread ===== */
+    FILE *f = fopen(FILENAME, "rb");
+    int v = -999;
+    int iters_bad = 0, last_bad = -999;
+    while (!feof(f)) {
+        size_t got = fread(&v, sizeof(int), 1, f);
+        iters_bad++;
+        last_bad = v; /* 不检查 got: 拿 v 就处理 */
+        printf("[错法] 第 %d 次进循环: fread 返回 %zu, v=%d\n", iters_bad, got,
+               v);
+    }
+    fclose(f);
+    printf("[错法] 循环共进了 %d 次, 最后一轮 v=%d (注意这个 %d 没在文件里)\n\n",
+           iters_bad, last_bad, last_bad);
+
+    /* ===== 正法: 用 fread 返回值当条件 ===== */
+    f = fopen(FILENAME, "rb");
+    int iters_good = 0;
+    size_t got;
+    int v2;
+    while ((got = fread(&v2, sizeof(int), 1, f)) == 1) {
+        iters_good++;
+        printf("[正法] 第 %d 次进循环: fread 返回 %zu, v=%d\n", iters_good, got,
+               v2);
+    }
+    fclose(f);
+    printf("[正法] 循环共进了 %d 次, 退出时 fread 返回 %zu\n", iters_good, got);
+
+    return 0;
+}
+```
+
+```text
+$ gcc -std=c11 -Wall -Wextra feof_loop.c -o fpl && ./fpl
+[错法] 第 1 次进循环: fread 返回 1, v=10
+[错法] 第 2 次进循环: fread 返回 1, v=20
+[错法] 第 3 次进循环: fread 返回 1, v=30
+[错法] 第 4 次进循环: fread 返回 0, v=30
+[错法] 循环共进了 4 次, 最后一轮 v=30 (注意这个 30 没在文件里)
+
+[正法] 第 1 次进循环: fread 返回 1, v=10
+[正法] 第 2 次进循环: fread 返回 1, v=20
+[正法] 第 3 次进循环: fread 返回 1, v=30
+[正法] 循环共进了 3 次, 退出时 fread 返回 0
+```
+
+看清楚了——文件里明明只有 3 个 `int`（10、20、30），错法那个循环**进了 4 次**。前 3 次都正常：`fread` 返回 1、`v` 分别是 10/20/30。可第 4 次 `fread` 返回 0（没读到东西），`v` 里**残留**着上一轮的 `30`，循环体照样把这次「空读」当一次有效数据处理——这就是 `while (!feof)` 多跑一次的实物证据。如果这个循环体是「往另一个文件写一份摘要」「累加一个计数」「往链表里塞一个节点」，那后果就是日志里多一条重复记录、统计数字大了一格、链表尾多一个重复节点——这种 bug 不是崩溃，是数据悄悄错一格，特别难查。正法那次循环进了 3 次、干净利落，退出时 `fread` 返回 0，没有任何多余的处理。
+
+正确姿势只有一句话：**循环条件用读函数自己的返回值**，`while ((got = fread(...)) == 期望个数)`、`while ((c = fgetc(f)) != EOF)`、`while (fgets(line, sizeof line, f) != NULL)`——读函数返回「成功读了多少」就是它替你做的「事前预判」，比 `feof` 准、比 `feof` 早。`feof` 的正确用途是**读完之后**用来分辨「刚才那次 `fread` 返回少于请求量，到底是因为到尾了、还是因为出错了」——配合 `ferror` 一起用，而不是拿来当循环条件。
 
 ## 小结
 

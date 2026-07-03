@@ -24,8 +24,6 @@ related:
   - "阶段 4·第 1 章:Sanitizer asan/ubsan(本章多线程 UAF 用 ASan 复核根因)"
 ---
 
-> 🟡 状态:待审核(2026-07-02)
-
 # gdb 实战:多线程栈、catch signal 与 -O2 的变量失踪
 
 ## 引言:单线程那套 gdb,撞上多线程和 -O2 就不够用了

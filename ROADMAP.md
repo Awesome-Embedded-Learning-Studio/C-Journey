@@ -571,7 +571,12 @@ clib/
 
 # 阶段 6：嵌入式 C 与硬件相关开发
 
-> 建议周期：6 ~ 12 周
+> **状态(2026-07):浅尝 stub,待重写。** C-Journey 对嵌入式只做「尝一口、开个门」——
+> 本阶段目前仅留 2 篇占位旧稿(`documents/06-embedded/`)。**深度嵌入式**交给工作室更垂直的系列:
+> [imx-forge](https://awesome-embedded-learning-studio.github.io/imx-forge/)(i.MX6ULL 板级 Linux / 驱动,目前最完整)、
+> [ST-Forge](https://awesome-embedded-learning-studio.github.io/ST-Forge/)(STM32 HAL 外设)。
+
+> 建议周期：2 ~ 4 周(浅尝体验,深度见 imx-forge)
 > 目标：掌握 C 在嵌入式环境下的核心用法，理解寄存器、外设、内存和实时性。
 
 ## 核心知识点
@@ -649,6 +654,8 @@ clib/
 ------
 
 # 阶段 7：综合项目与开源协作
+
+> **状态(2026-07):待重写 stub,规划中。** 当前仅 `documents/07-capstone/0-hand-written-os.md` 占位旧稿。
 
 > 建议周期：持续进行
 > 目标：把前面阶段的成果沉淀为可维护、可发布、可协作的真实项目，掌握现代开源工程的工作流。

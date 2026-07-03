@@ -1,7 +1,7 @@
 # 阶段 5 示例：TCP Socket 编程
 
 > 对应 [ROADMAP](../../ROADMAP.md) · **阶段 5：系统编程** · 网络编程
-> 📖 先读知识点：[Socket 编程：用 TCP 从零写一个客户端/服务端](../../documents/05-system-programming/0-socket-programming.md)
+> 📖 先读知识点：[Socket TCP：从零写客户端/服务端四件套](../../documents/05-system-programming/11-socket-tcp.md)
 
 从最简 TCP 服务端 / 客户端起步，逐步实现 echo 服务，练熟 POSIX socket API。每个子目录（SC = Socket Communication）是一个递进的练习。
 

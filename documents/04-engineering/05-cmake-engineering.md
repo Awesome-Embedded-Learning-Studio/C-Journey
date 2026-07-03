@@ -23,8 +23,6 @@ related:
   - "第 2 章:API 设计与不透明类型(把 struct 藏进 .c,target 把内部分进 PRIVATE)"
 ---
 
-> 🟡 状态:待审核(2026-07-02)
-
 # CMake 工程化:target 语义、PRIVATE/PUBLIC/INTERFACE 与多配置
 
 ## 引言:从「能编出来」到「能给别人用」

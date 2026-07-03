@@ -21,8 +21,6 @@ related:
   - "第 7 章：IPC 下（freeaddrinfo 的『用完释放』纪律,同共享内存的 shm_unlink）"
 ---
 
-> 🟡 状态:待审核(2026-07-02)
-
 # 网络名址解析:getaddrinfo 与协议无关编程
 
 ## 引言：地址不是写死的

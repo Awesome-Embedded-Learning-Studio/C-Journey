@@ -24,8 +24,6 @@ related:
   - "第 5 章:CMake 工程化(install/export/find_package 那段是它的延伸)"
 ---
 
-> 🟡 状态:待审核(2026-07-02)
-
 # 静态库、动态库与链接顺序:亲手造一次 undefined reference
 
 ## 引言:链接期到底管什么,跟运行期怎么分
@@ -381,6 +379,135 @@ $ readelf -d consumer/build/consumer | grep -Ei 'rpath|runpath|NEEDED'
 那条 `Library runpath: [/tmp/cj/p4ch6/mathlib_prefix/usr/local/lib]` 就是 CMake 替我埋的——它叫 **build-tree RPATH**(构建期 RPATH),是 CMake 的默认行为:链接到任何 `.so`(IMPORTED 的也算),就把那个 `.so` 的所在目录烤进可执行文件的 `DT_RUNPATH`,保证在构建树上直接跑就能找到依赖、不用手设 `LD_LIBRARY_PATH`。这条机制省心,但要心里有数:它烤的是**绝对路径**(这里指向 `/tmp/cj/p4ch6/mathlib_prefix/...`),把可执行文件原样拷到别的机器、别的目录,这条绝对 RUNPATH 就失效了。要做成可分发的可执行文件,正规做法是给消费者 target 设 `INSTALL_RPATH`(用相对的 `$ORIGIN` 写法,像上一节那样)再 `install` 它;构建期这条 RUNPATH 只是为了本地开发顺手能跑。把这两件事分清:CMake 的 build-tree RPATH 是开发期便利、绝对路径;`$ORIGIN` 那种相对 RPATH 才是分发期的可移植写法。
 
 顺带说一句那个 `mathlib_shared` 的 `SOVERSION 1`——它是 `set_target_properties(... PROPERTIES SOVERSION 1)` 设的,效果就是 install 出来的 `.so` 带版本后缀 `libmathlib.so.1`、外加一条指向它的 `libmathlib.so` 软链(`.so.1` 是带 ABI 版本的真实文件、`.so` 是链接期要的别名)。`SOVERSION` 是给动态库标 ABI 兼容版本的:不兼容的改动要 bump 版本号,消费者靠 `libmathlib.so.1` 这个名字锁住「我这版是跟 `.so.1` 兼容的」。这套 SONAME/SOVERSION 机制是动态库版本管理的标准做法,`readelf -d` 里能看到对应的 `SONAME` 条目。
+
+## 退一步:`find_package` 到底有几种找法
+
+刚才消费者那行 `find_package(Mathlib 1.0 REQUIRED)` 一行就把 `MathlibConfig.cmake` 摸出来了,顺滑得像变魔术。但等到你换一个库——比如想用系统的 zlib——`find_package(ZLIB)` 又是另一套动作,因为它找的根本不是「`XXXConfig.cmake`」那种文件。`find_package` 其实有**两套找包模式**,先把这条分水岭钉死,后面看任何 `find_package` 都不会糊。
+
+**Module 模式**找的是 CMake **自带的**、叫 `Find<PackageName>.cmake` 的脚本。这些脚本是 CMake 发行版里写好的「找包配方」,专门给一批系统常见库(zlib、curl、OpenSSL、Python、Threads……)用,搜 `CMAKE_MODULE_PATH` 环境变量和 CMake 自己安装目录下的 `Modules/`。两件事可以当场验:一是 CMake 自带了多少这种配方,二是 Module 模式找包成功后会按约定留哪几个变量。先看第一件,CMake 装好就带了一条「列出所有自带模块」的子命令:
+
+```text
+$ cmake --help-module-list | grep -E '^Find'
+FindALSA
+FindASPELL
+FindAVIFile
+FindArmadillo
+FindBISON
+FindBLAS
+FindBZip2
+FindBacktrace
+FindBoost
+...
+```
+
+这台机器上(CMake 4.3)`grep -E '^Find'` 出来一共 **163 条**——也就是说 CMake 开箱就认得 163 个常见库,`FindZLIB`/`FindCURL`/`FindPNG`/`FindJPEG`/`FindPython3`/`FindThreads`/`FindOpenGL` 全在里面。一个库的公开头 + 库被这 163 个之一覆盖到,你一行 `find_package(<P>)` 就拿到了,不用自己写配方。Module 模式找包成功后,这批脚本**按约定**留一组变量:`<P>_FOUND`(找到没)、`<P>_INCLUDE_DIRS`(头文件在哪)、`<P>_LIBRARIES`(库在哪),有的还会留 `<P>_VERSION_STRING`。这条「`<P>_FOUND`/`<P>_INCLUDE_DIRS`/`<P>_LIBRARIES`」三件套约定是 Module 模式的指纹——注意它给的是**裸字符串变量**,不是带名字空间的 IMPORTED target。
+
+最干净的验证是写一个**只有 `find_package` 的极小工程**,真跑一次,把这几个变量打印出来。这台机器上 zlib 是装好的(`/usr/lib/libz.so` + `/usr/include/zlib.h`,版本 1.3.2),所以 `find_package(ZLIB)` 在 Module 模式下应该一抓一个准:
+
+```cmake
+# zprobe/CMakeLists.txt —— 只为看 find_package(ZLIB) 留了哪些变量
+cmake_minimum_required(VERSION 3.15)
+project(zprobe LANGUAGES C)
+
+find_package(ZLIB)
+
+message(STATUS "ZLIB_FOUND = ${ZLIB_FOUND}")
+message(STATUS "ZLIB_INCLUDE_DIRS = ${ZLIB_INCLUDE_DIRS}")
+message(STATUS "ZLIB_LIBRARIES = ${ZLIB_LIBRARIES}")
+message(STATUS "ZLIB_VERSION_STRING = ${ZLIB_VERSION_STRING}")
+```
+
+```text
+$ cmake -S zprobe -B zprobe/build -G Ninja
+-- The C compiler identification is GNU 16.1.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/sbin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Found ZLIB: /usr/lib/libz.so (found version "1.3.2")
+-- ZLIB_FOUND = TRUE
+-- ZLIB_INCLUDE_DIRS = /usr/include
+-- ZLIB_LIBRARIES = /usr/lib/libz.so
+-- ZLIB_VERSION_STRING = 1.3.2
+-- Configuring done (0.4s)
+```
+
+那行 `Found ZLIB: /usr/lib/libz.so (found version "1.3.2")` 就是 CMake 自带的 `FindZLIB.cmake` 在 Module 模式下跑出来的——它定位了头和库、读了 `zlib.h` 里的版本宏、按约定填好了 `ZLIB_FOUND/ZLIB_INCLUDE_DIRS/ZLIB_LIBRARIES/ZLIB_VERSION_STRING` 这一组变量。调用方拿这几个字符串变量,自己去 `target_include_directories(... PRIVATE ${ZLIB_INCLUDE_DIRS})` + `target_link_libraries(... PRIVATE ${ZLIB_LIBRARIES})` 链上,活就完了。这就是 Module 模式:配方 CMake 给你写好了,产物是一组裸变量。
+
+找不到时它说什么,也得亲眼见一次——换个**这台机器上没装**的库来试,Java 的 JNI 头(`JAVA_INCLUDE_PATH`)压根不存在,正好复现 Module 模式「找不到」的真实措辞:
+
+```cmake
+# jniprobe/CMakeLists.txt —— 这台机器没装 JDK,演示 Module 模式「找不到」
+cmake_minimum_required(VERSION 3.15)
+project(jniprobe LANGUAGES C)
+
+find_package(JNI)
+
+message(STATUS "JNI_FOUND = ${JNI_FOUND}")
+message(STATUS "JNI_INCLUDE_DIRS = ${JNI_INCLUDE_DIRS}")
+message(STATUS "JNI_LIBRARIES = ${JNI_LIBRARIES}")
+```
+
+```text
+$ cmake -S jniprobe -B jniprobe/build -G Ninja
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/sbin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Could NOT find JNI (missing: JAVA_INCLUDE_PATH JAVA_INCLUDE_PATH2 AWT JVM)
+-- JNI_FOUND = FALSE
+-- JNI_INCLUDE_DIRS = JAVA_INCLUDE_PATH-NOTFOUND;JAVA_INCLUDE_PATH2-NOTFOUND;JAVA_AWT_INCLUDE_PATH-NOTFOUND
+-- JNI_LIBRARIES =
+-- Configuring done (0.2s)
+```
+
+`Could NOT find JNI (missing: ...)` 这行就是 Module 模式找不到时 CMake 替你打的诊断——括号里 `missing:` 列出 `FindJNI.cmake` 想要、但没捞着的每一个具体变量(`JAVA_INCLUDE_PATH` 等)。注意那个 `<X>-NOTFOUND` 后缀:`find_path`/`find_library` 没命中时不会留空,而是塞一个字面量 `JAVA_INCLUDE_PATH-NOTFOUND` 进变量,调用方一眼能看出「这个变量是失败的占位符」而不是「碰巧是空字符串」。Module 模式的成败两端都按这套约定走。
+
+这里我得当场拆一个**特别能坑人的坑**:你可能看过有教程用 `cmake -P` 直接跑一个 `.cmake` 脚本去演示 `find_package`(包括早期笔记我也这么写过),在那篇里它跑出 `Could NOT find ZLIB`。可同样这台机器、同样的 zlib 装得好好的,上面的 `project()` 配置却能找到——`cmake -P` 怎么就找不到了?真跑一遍当场打脸:
+
+```text
+$ cmake -P probe_zlib.cmake
+-- probing via FindZLIB.cmake ...
+-- Could NOT find ZLIB (missing: ZLIB_LIBRARY ZLIB_INCLUDE_DIR)
+-- ZLIB_FOUND = FALSE
+-- ZLIB_INCLUDE_DIRS =
+-- ZLIB_LIBRARIES = ZLIB_LIBRARY-NOTFOUND
+-- ZLIB_VERSION_STRING =
+```
+
+zlib 明明装着(`/usr/lib/libz.so`、`/usr/include/zlib.h` 都在),`cmake -P` 却报 `Could NOT find ZLIB`,而带 `project(... LANGUAGES C)` 的正常配置却报 `Found ZLIB`。原因在 `cmake -P` 这个**脚本模式(script mode)**:`-P` 是「跑一个 CMake 脚本、不做任何工程配置」的玩法,它**不初始化编译器/平台上下文**,而 `find_package` 底层那套 `find_library`/`find_path` 的搜索路径和 hints 里有不少是靠 `project()` 探测出来的(比如编译器目标三元组、系统默认库目录的判定),脚本模式下这些 hints 残缺,系统库就抓不到。所以要演示 `find_package` 的真实行为,**正经 `project()` 配置才是诚实的场子**;`cmake -P` 那种演示法子会给你一个虚假的「找不到」,把你和读者都带沟里去。这条坑我以前也踩过,这里写出来给自己也给后来人提个醒。
+
+**Config 模式**走的是另一条路:它不指望 CMake 自带配方,而是去找**库自己 install 出来的** `<PackageName>Config.cmake`(或小写 `<lower>-config.cmake`)。这种配置文件**不是 CMake 自带的**,而是「懂得自我描述的库」在 `install(EXPORT ...)` 阶段一起装出来的——我们前面那套 `MathlibConfig.cmake`/`MathlibTargets.cmake` 就是 Config 模式要找的东西。Config 模式找到后,留下的是一个(或几个)**IMPORTED target**:一个跨工程边界、带好 include 路径和库位置的「导入目标」,直接塞给 `target_link_libraries` 就能用,不用手抓 `_INCLUDE_DIRS`/`_LIBRARIES` 变量。一句话收口两套模式的差别:Module 模式靠 CMake 自带的 `FindXXX.cmake` 找系统常见库、留一组裸变量;Config 模式靠库自己装的 `XXXConfig.cmake` 找任何「懂得自我描述」的库、留一个 IMPORTED target。本仓库 `Mathlib` 走的是 Config 模式,系统 zlib 走的是 Module 模式——同一个 `find_package`,底下两条路,认准它找的是 `Find` 还是 `Config` 就知道走哪条。
+
+那为什么前面消费者写的是 `target_link_libraries(consumer PRIVATE mathlib_shared)`——一个**没带名字空间**的裸 target 名?翻一下 `examples/stage4-cmake-lib` 的 `install(EXPORT ...)` 就明白了:它**没写 `NAMESPACE`**,所以导出文件 `MathlibTargets.cmake` 里登记的 IMPORTED target 就叫原始名 `mathlib`/`mathlib_shared`,消费者拿来直接链。这套「裸名」在一个孤立 demo 里没问题,可真到了多库工程里就埋雷:你要是同时 `find_package` 了两个库、它们各自的 export 集里都造了一个叫 `common` 的 target,两个 `common` 在同一个 CMake 作用域里直接撞车、报「重定义」。这正是 `install(EXPORT ... NAMESPACE <P>::)` 存在的理由——给导出的 IMPORTED target 统一加一个「`包名::`」前缀,把命名空间隔开,消费者就只能用 `Mathlib::mathlib_shared` 这种带前缀的名字去链,想撞都撞不起来。
+
+把它接到我们这个活教材上,把 `stage4-cmake-lib` 的 `install(EXPORT ...)` 那段改成带名字空间:
+
+```cmake
+install(EXPORT MathlibTargets
+        NAMESPACE Mathlib::
+        FILE MathlibTargets.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Mathlib)
+```
+
+重新 install 一次,扒开装出来的 `MathlibTargets.cmake` 看,差别就在 `add_library` 登记的那个 IMPORTED target 名字:
+
+```cmake
+# Create imported target Mathlib::mathlib
+add_library(Mathlib::mathlib STATIC IMPORTED)
+...
+# Create imported target Mathlib::mathlib_shared
+add_library(Mathlib::mathlib_shared SHARED IMPORTED)
+```
+
+加了 `NAMESPACE Mathlib::` 之后,原本的 `mathlib`/`mathlib_shared` 被改写成了 `Mathlib::mathlib`/`Mathlib::mathlib_shared`。消费侧那行 `target_link_libraries` 就得相应改成链带名字空间的 target:
+
+```cmake
+target_link_libraries(ns_consumer PRIVATE Mathlib::mathlib_shared)
+```
+
+真跑一遍,跑得通、输出对(`ml_add(2,3)=5  ml_mul(2,3)=6`),`readelf -d` 看 `RUNPATH` 也照常指向 `.so` 所在目录——说明 `Mathlib::mathlib_shared` 这个带前缀的 IMPORTED target 被 CMake 正确解析成了 `/tmp/.../lib/libmathlib.so.1`。这条 `包名::target` 的双冒号约定是 CMake 现代写法的硬规矩:**双冒号在 CMake 里是保留给 IMPORTED/ALIAS target 的**,普通 target 名不允许含 `::`,所以你看到 `Mathlib::mathlib_shared` 这种写法,一眼就能断定它一定来自 `find_package`(或别处的 IMPORTED),不可能是个本地手写的 `add_library` 名——这条视觉信号对读代码的人是实打实的实惠。
 
 ## 小结
 

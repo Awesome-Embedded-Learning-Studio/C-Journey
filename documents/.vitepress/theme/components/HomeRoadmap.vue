@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { withBase } from 'vitepress'
 
-// 首页"学习路线图":展示 C-Journey 四阶段 + 进度状态。
+// 首页"学习路线图":展示 C-Journey 六阶段 + 进度状态。
 // TAMCPP 原版用 mermaid 画图,C-Journey 没装 mermaid —— 改成纯 HTML/CSS 的阶段卡列表,
 // 信息密度更高(每阶段带章数 + 简介 + 状态徽标),且零运行时依赖。
 // 状态:done = 已审核标杆 / reviewing = 已写待审 / planned = 规划中。
@@ -38,8 +38,8 @@ const stages: Stage[] = [
     no: '阶段 1',
     name: 'C 语言基底',
     dir: '01-c-basics',
-    chapters: 12,
-    desc: '程序结构、整型与溢出、浮点字符、运算符、位运算、控制流、函数、作用域 static、数组、字符串、IO。',
+    chapters: 13,
+    desc: '程序结构、整型与溢出、浮点字符、运算符、位运算、控制流、函数、作用域 static、数组、字符串、IO、结构体联合枚举。',
     status: 'done',
     link: '/01-c-basics/01-program-structure-and-compilation',
   },
@@ -60,6 +60,24 @@ const stages: Stage[] = [
     desc: '单链表、双向链表、栈、队列、动态数组、二叉树、BST、哈希表、排序入门、快排归并、二分查找、大 O。',
     status: 'done',
     link: '/03-data-structures/01-singly-linked-list',
+  },
+  {
+    no: '阶段 4',
+    name: '工程化与质量门',
+    dir: '04-engineering',
+    chapters: 16,
+    desc: '头文件契约、API 不透明类型、错误处理、make/CMake 工程化、库与链接 install/export、测试 + Mock、gdb 多线程、ASan/valgrind、静态分析、覆盖率、性能剖析、CI 流水线。',
+    status: 'done',
+    link: '/04-engineering/01-header-contracts',
+  },
+  {
+    no: '阶段 5',
+    name: '系统编程',
+    dir: '05-system-programming',
+    chapters: 14,
+    desc: '文件 IO 与 fd、fork/exec、守护进程、信号、pipe、共享内存、select/poll/epoll、reactor、socket TCP/UDP、getaddrinfo。',
+    status: 'done',
+    link: '/05-system-programming/01-file-io-and-fd',
   },
 ]
 </script>
@@ -105,7 +123,7 @@ const stages: Stage[] = [
       </div>
 
       <p class="home-roadmap__next">
-        严格线性:阶段 0 装好工具链和 sanitizer → 阶段 1 打 C 基底 → 阶段 2 啃指针与内存(ASan 全程护驾)→ 阶段 3 自己造数据结构。别跳着读。
+        严格线性:阶段 0 装好工具链和 sanitizer → 阶段 1 打 C 基底 → 阶段 2 啃指针与内存(ASan 全程护驾)→ 阶段 3 自己造数据结构 → 阶段 4 工程化(把零散 .c 变成可信工程)→ 阶段 5 系统编程(进程/IO/socket)。别跳着读。
       </p>
     </div>
   </section>

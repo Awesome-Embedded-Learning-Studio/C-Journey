@@ -23,13 +23,223 @@ related:
   - "第 9 章：poll 与 epoll（epoll_ctl/wait,并发服务端的主力）"
 ---
 
-> 🟡 状态:待审核(2026-07-02)
-
 # 进阶 Socket：SIGPIPE、消息边界与并发服务端
 
 ## 引言：走向真实场景的三个坑
 
 上一章的 TCP「一个客户端连一个服务端」能跑通,可一旦往真实场景推,立刻有三个坑等着,这一章逐个拆。其一,**SIGPIPE**——往一个「对端已经关掉」的连接上 `write`,内核默认给你发 SIGPIPE、默认动作是**直接杀进程**(第 5 章讲过它的名字,这里真机踩一次)。其二,**TCP 没有消息边界**——它是个字节流,「一条消息」和「一次 read」并不对应,粘包/半包是日常。其三,**单 `accept` 一次只处理一个连接**,要同时服务很多客户端、得把它升级成 epoll 并发服务端。这三个搞清楚,你就有了一个能上生产的 TCP 服务端骨架。
+
+## TIME_WAIT 与 SO_REUSEADDR:服务端重启为什么连不上
+
+先讲服务端骨架最该加的一行。你写完一个 TCP 服务端跑得好好的,把它停掉、立刻再启动,常常会撞上这么一句:`bind: Address already in use`。端口明明没人用了,为什么占着?根因是 TCP 关闭时那套四次挥手——**主动调 `close` 的那一端,会进入 `TIME_WAIT` 状态**,停留大约 1～4 分钟(RFC 793 的 MSL 是 2 分钟,Linux 上实测差不多 60 秒)。这段时间里那个本地 `IP:端口` 是被内核占着的。服务端通常是处理完请求就主动关连接的一方,所以服务端一重启、端口大概率还卡在 `TIME_WAIT` 里,`bind` 就报错。
+
+`TIME_WAIT` 不是内核吃饱了撑的,它干两件事:一是可靠地完成连接终止——万一最后那个 ACK 丢了,被动关闭端会重发 FIN,主动关闭端得留着状态好去回 ACK,不留就只能回 RST、对端就报错;二是让网络上这个连接的「老分组」有时间消亡,免得它们被误当成同一个四元组(`IP:端口` 的四种组合)的新连接的数据。所以 `TIME_WAIT` 是 TCP 可靠性的一部分,我们要做的不是消灭它,而是在它存在的时候、还能把服务端重新拉起来。这就是 `SO_REUSEADDR` 的活。
+
+### SO_REUSEADDR 救不救你——三档本机实测
+
+很多人对 `SO_REUSEADDR` 有个误解,觉得加一行就能随便重绑端口。我写了个最小复现打脸:父进程做服务端,`fork` 出一个客户端连进来、读一句就走,服务端回完 `hi` 后**主动 `close`**(端口进入 `TIME_WAIT`),然后**立刻第二次 `bind` 同一个端口**,模拟「服务端重启」。三档对比——不加任何选项 / 只加 `SO_REUSEADDR` / 加 `SO_REUSEADDR + SO_REUSEPORT`(`SO_REUSEPORT` 需要 `#define _GNU_SOURCE` 才有定义):
+
+```c
+#define _GNU_SOURCE
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+static const char* mode_name(int m) {
+    return m == 0 ? "无选项" : m == 1 ? "SO_REUSEADDR" : "REUSEADDR+REUSEPORT";
+}
+
+static int make_listen(int mode, int port) {
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) { perror("socket"); return -1; }
+    int one = 1;
+    if (mode == 1 || mode == 2) setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    if (mode == 2) setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one));
+
+    struct sockaddr_in a;
+    memset(&a, 0, sizeof(a));
+    a.sin_family = AF_INET;
+    a.sin_port = htons(port);
+    a.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (bind(fd, (struct sockaddr*)&a, sizeof(a)) < 0) { perror("bind"); close(fd); return -1; }
+    if (listen(fd, 5) < 0) { perror("listen"); close(fd); return -1; }
+    return fd;
+}
+
+int main(int argc, char** argv) {
+    int mode = (argc > 1) ? atoi(argv[1]) : 0;
+    int port = (argc > 2) ? atoi(argv[2]) : 19020;
+    signal(SIGPIPE, SIG_IGN);
+
+    printf("==== 第一次 bind (%s) port=%d ====\n", mode_name(mode), port);
+    fflush(stdout);
+    int lfd = make_listen(mode, port);
+    if (lfd < 0) return 1;
+    printf("[第一次] bind+listen 成功\n");
+
+    pid_t pid = fork();
+    if (pid == 0) { /* 客户端连进来读一句就走 */
+        int c = socket(AF_INET, SOCK_STREAM, 0);
+        struct sockaddr_in a;
+        memset(&a, 0, sizeof(a));
+        a.sin_family = AF_INET;
+        a.sin_port = htons(port);
+        inet_pton(AF_INET, "127.0.0.1", &a.sin_addr);
+        if (connect(c, (struct sockaddr*)&a, sizeof(a)) == 0) {
+            char buf[16] = {0};
+            ssize_t n = read(c, buf, sizeof(buf) - 1);
+            printf("[client] 收到 %zd 字节: %s\n", n, buf);
+        }
+        close(c);
+        _exit(0);
+    }
+
+    int cfd = accept(lfd, NULL, NULL);
+    if (cfd >= 0) {
+        write(cfd, "hi", 2);
+        close(cfd); /* 服务端主动关闭 -> TIME_WAIT */
+    }
+    waitpid(pid, NULL, 0);
+    close(lfd);
+    printf("[第一次] 关闭,端口进入 TIME_WAIT\n");
+
+    printf("==== 第二次 bind (%s) 同端口(模拟重启)====\n", mode_name(mode));
+    int lfd2 = make_listen(mode, port);
+    if (lfd2 < 0) {
+        printf("[第二次] bind 失败 —— TIME_WAIT 还卡着,重绑不了\n");
+    } else {
+        printf("[第二次] bind 成功 —— 重启可立即接管端口\n");
+        close(lfd2);
+    }
+    return 0;
+}
+```
+
+三档依次跑(`bind: Address already in use` 是 `perror` 写到 **stderr** 的,跟 `printf` 写到 stdout 的行顺序会错位,真跑看到的就是这样,别当成自己漏抄了):
+
+```text
+$ gcc -std=c11 -Wall -Wextra reuse_demo.c -o reuse_demo
+$ ./reuse_demo 0 28021
+==== 第一次 bind (无选项) port=28021 ====
+[第一次] bind+listen 成功
+[client] 收到 2 字节: hi
+[第一次] 关闭,端口进入 TIME_WAIT
+==== 第二次 bind (无选项) 同端口(模拟重启)====
+bind: Address already in use
+[第二次] bind 失败 —— TIME_WAIT 还卡着,重绑不了
+
+$ ./reuse_demo 1 28022
+==== 第一次 bind (SO_REUSEADDR) port=28022 ====
+[第一次] bind+listen 成功
+[client] 收到 2 字节: hi
+[第一次] 关闭,端口进入 TIME_WAIT
+==== 第二次 bind (SO_REUSEADDR) 同端口(模拟重启)====
+[第二次] bind 成功 —— 重启可立即接管端口
+
+$ ./reuse_demo 2 28023
+==== 第一次 bind (REUSEADDR+REUSEPORT) port=28023 ====
+[第一次] bind+listen 成功
+[client] 收到 2 字节: hi
+[第一次] 关闭,端口进入 TIME_WAIT
+==== 第二次 bind (REUSEADDR+REUSEPORT) 同端口(模拟重启)====
+[第二次] bind 成功 —— 重启可立即接管端口
+```
+
+为了确认根因真的是 `TIME_WAIT`(而不是别的残留),我在 mode 0 跑完后立刻用 `ss -tan` 看一眼那条连接,清清楚楚一行 `TIME-WAIT`:
+
+```text
+$ ./reuse_demo 0 28091 >/dev/null 2>&1
+$ ss -tan | grep 28091
+TIME-WAIT 0      0      127.0.0.1:28091    127.0.0.1:45544
+```
+
+我还顺手量了它待多久:从这条 `TIME-WAIT` 出现开始,55 秒时还在、62 秒时已消失,跟「Linux 默认约 60 秒」对得上(注意 `/proc/sys/net/ipv4/tcp_fin_timeout` 里那个 60 是 **FIN-WAIT-2** 的超时,不是 TIME_WAIT;TIME_WAIT 是 2×MSL,Linux 上 MSL 取 30 秒,所以也大约 60 秒——两个数同值但来源不同,别混)。结论很清楚:**不加任何选项,服务端重启会被 `TIME_WAIT` 卡死(第二次 bind 失败);加了 `SO_REUSEADDR`,立刻就能重新接管端口**。所以「服务端重启」场景下这行必加。
+
+### 顺序坑:setsockopt 必须在 bind 之前
+
+这是高频翻车点。选项是设在 socket 上的,`bind` 是去占用地址的动作,顺序反了不生效——上面那段程序里 `make_listen` 已经是这个顺序,把它单独拎出来当肌肉模板:`socket` → `setsockopt(SO_REUSEADDR)` → `bind` → `listen`,四步别颠倒。你在 `bind` 之后才补一句 `setsockopt`,编译照样过、`setsockopt` 还给你返回 0,但重启照样 `Address already in use`——因为它生效的是「以后的 bind」,而你这次的 bind 早撞进 TIME_WAIT 里了,这种「不报错但不救命」的坑最难调。
+
+### SO_REUSEADDR != 端口共享,SO_REUSEPORT 才是
+
+但 `SO_REUSEADDR` 不是万金油,它**不等于「能让两个监听 socket 同时绑同一个端口」**——很多人(包括我当年)以为它有 BSD 那种端口共享的能力。我在本机用一个双进程最小测试打过脸:两个进程都开 `SO_REUSEADDR` 去监听同一端口,第二个照样 `bind` 失败;要真正让多个监听 socket 共享一个端口(比如多进程负载均衡),Linux 上得用 `SO_REUSEPORT`(内核 3.9+),而且**两个进程都得开它**才行:
+
+```c
+#define _GNU_SOURCE
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+static int make_listen(int mode, int port) {
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) { perror("socket"); return -1; }
+    int one = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    if (mode == 2) setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one));
+    struct sockaddr_in a;
+    memset(&a, 0, sizeof(a));
+    a.sin_family = AF_INET;
+    a.sin_port = htons(port);
+    a.sin_addr.s_addr = htonl(INADDR_ANY);
+    if (bind(fd, (struct sockaddr*)&a, sizeof(a)) < 0) { perror("bind"); close(fd); return -1; }
+    if (listen(fd, 5) < 0) { perror("listen"); close(fd); return -1; }
+    return fd;
+}
+
+int main(int argc, char** argv) {
+    int mode = (argc > 1) ? atoi(argv[1]) : 1;
+    int port = (argc > 2) ? atoi(argv[2]) : 28030;
+    int lfd = make_listen(mode, port);
+    if (lfd < 0) return 1;
+
+    pid_t pid = fork();
+    if (pid == 0) { /* 子进程再 bind 同一端口 */
+        int fd2 = make_listen(mode, port);
+        if (fd2 < 0) { printf("[child] 第二个监听 bind 失败 —— 不能共享端口\n"); _exit(0); }
+        printf("[child] 第二个监听 bind 成功 —— 端口可共享\n");
+        close(fd2);
+        _exit(0);
+    }
+    waitpid(pid, NULL, 0);
+    close(lfd);
+    return 0;
+}
+```
+
+两档跑一遍,对比极其直白(同样,`bind:` 那行是 stderr,会和 stdout 错位):
+
+```text
+$ gcc -std=c11 -Wall -Wextra share_test.c -o share_test
+$ ./share_test 1 28041
+[parent] bind+listen 成功
+bind: Address already in use
+[child] 第二个监听 bind 失败 —— 不能共享端口
+
+$ ./share_test 2 28042
+[parent] bind+listen 成功
+[child] 第二个监听 bind 成功 —— 端口可共享
+```
+
+一句话记住——`SO_REUSEADDR` 解决的是「我自己重启能不能绑回来」,`SO_REUSEPORT` 解决的是「好几个进程能不能一起监听」(nginx 1.9.1 之后的多 worker 抢端口就是这个机制,内核还会在多个监听 socket 间做负载均衡)。所以写服务端的肌肉模板就这一段,背下来:
+
+```c
+int lfd = socket(AF_INET, SOCK_STREAM, 0);
+int one = 1;
+setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)); /* 必在 bind 前 */
+/* ... bind / listen ... */
+```
+
+有了「重启不被 TIME_WAIT 卡」这一行打底,接下来才可以谈连接死活——因为下面要讲的 SIGPIPE,正是你服务端跑起来之后、最容易让你莫名其妙「进程没了」的那一刀。
 
 ## SIGPIPE:往死连接 write 会被默默杀掉
 

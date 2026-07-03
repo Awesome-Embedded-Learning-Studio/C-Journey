@@ -23,8 +23,6 @@ related:
   - "第 11 章:Valgrind(sanitizer 之外另一条内存排查路线)"
 ---
 
-> 🟡 状态:待审核(2026-07-02)
-
 # ASan+UBSan 深入:复现本仓 CI 的 sanitizer 门
 
 ## 前置阅读:这篇和阶段 0 的那一章是什么关系

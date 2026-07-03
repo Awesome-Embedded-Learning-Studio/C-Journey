@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: C-Journey
-  text: 亲手踩坑的<br>纯 C 系统编程教程
-  tagline: 每章真跑 gcc 16 + clang 22、<br>引 ISO/IEC 9899 条款, <br>四阶段带你走通纯 C 系统编程
+  text: 用 C 游历计算机世界
+  tagline: 主机系统全程真跑(gcc 16 + clang 22 + ISO 9899)<br>嵌入式浅尝指路,深做见 <a href="https://awesome-embedded-learning-studio.github.io/imx-forge/" target="_blank">imx-forge</a>
   actions:
     - theme: brand
       text: 从阶段 0 开始
@@ -18,8 +18,8 @@ features:
     details: 每个结论引用 ISO/IEC 9899:2011 条款,可追溯、可验证,不是「据说是」而是「标准说」。
   - title: Sanitizer 贯穿
     details: UBSan/ASan 当场抓未定义行为(溢出、越界、UAF、double-free、泄漏),写动态内存代码的必备护栏。
-  - title: 四阶段、53 章
-    details: 阶段0 开发环境(17 章)→ 阶段1 C 基底(12)→ 阶段2 指针与内存(12)→ 阶段3 数据结构与算法(12)。
+  - title: 六阶段、84 章
+    details: 阶段0 开发环境(17)→ 阶段1 C 基底(13)→ 阶段2 指针与内存(12)→ 阶段3 数据结构与算法(12)→ 阶段4 工程化与质量门(16)→ 阶段5 系统编程(14)。
   - title: 每章可编译
     details: 文档里的每个代码块都能 gcc/clang 编译运行,输出和贴的一致——CI 硬门 build_examples 守着。
 ---

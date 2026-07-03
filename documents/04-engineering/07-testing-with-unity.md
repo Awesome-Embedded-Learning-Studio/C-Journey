@@ -22,8 +22,6 @@ related:
   - "阶段 0·第 10 章:Sanitizer 门禁(测试抓逻辑错、ASan 抓内存错,互补)"
 ---
 
-> 🟡 状态:待审核(2026-07-02)
-
 # 测试不再是 printf:assert、Unity 与 CTest 装配
 
 ## 引言:printf 不叫测试,叫演示

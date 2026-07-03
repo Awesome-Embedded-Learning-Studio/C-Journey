@@ -14,21 +14,19 @@ reading_time_minutes: 16
 platform: host
 c_standard: [99, 11]
 prerequisites:
-  - "阶段 4·第 1 章(本仓库 1-sanitizers-asan-and-ubsan.md):ASan/UBSan 的 -fsanitize=address,undefined 用法、红区机制、三段式读报告——本章是它的对照面"
+  - "阶段 4·第 10 章(本仓库 10-sanitizer-deep.md):ASan/UBSan 的 -fsanitize=address,undefined 用法、红区机制、三段式读报告——本章是它的对照面"
   - "阶段 0·第 10 章:Sanitizer 门禁(MSan/TSan 的提法,本章把 valgrind 补进来)"
   - "阶段 0·第 1 章:工具链体检(valgrind 是否装的检查思路)"
 related:
-  - "阶段 4·第 1 章:ASan/UBSan(本章 sanitizer 那一侧的完整版)"
+  - "阶段 4·第 10 章:ASan/UBSan(本章 sanitizer 那一侧的完整版)"
   - "阶段 5:线程与并发(helgrind/TSan 抓数据竞争,那里会深入用)"
 ---
-
-> 🟡 状态:待审核(2026-07-02)
 
 # valgrind 与 sanitizer 的分工:能力矩阵
 
 ## 引言:ASan 抓不到的那一类错误
 
-前置阅读:阶段 4 的第 1 章(本仓库 `1-sanitizers-asan-and-ubsan.md`)把 ASan/UBSan 当成了调试期的默认开关,我们也确实靠它当场抓住了堆越界、释放后使用、有符号溢出。那一章末尾的速查表里,ASan 那一栏几乎覆盖了 C 程序最容易踩的雷。可它故意留了一个口子没说透——**读未初始化的内存,ASan 抓不到**。
+前置阅读:阶段 4 的第 10 章(本仓库 `10-sanitizer-deep.md`)把 ASan/UBSan 当成了调试期的默认开关,我们也确实靠它当场抓住了堆越界、释放后使用、有符号溢出。那一章末尾的速查表里,ASan 那一栏几乎覆盖了 C 程序最容易踩的雷。可它故意留了一个口子没说透——**读未初始化的内存,ASan 抓不到**。
 
 这不是 ASan 的 bug,是它的设计边界:ASan 给每块内存配了一份「影子内存」,标记的是**这块地址能不能访问**(地址越界、已释放、踩红区),它不管**这块地址里装的值是从哪来的**。你 `malloc` 了一块、没赋值、转头就拿来 `if (*p > 100)` 判断——地址完全合法(刚分配的、没越界、没释放),ASan 没有任何理由报警;可 `*p` 里装的是别人用过的脏数据,这次判断的结果是骰子掷出来的。这一类「值未初始化」的错误,要么用 MemorySanitizer(MSan,`-fsanitize=memory`,但 MSan 不能和 ASan 同开、而且它要求**所有链接进来的库都用 MSan 重编**,工程上极难落地),要么——上 valgrind。这一章就是讲 valgrind 在 2026 年仍然不可替代的那一块,以及它和整套 sanitizer 家族的能力怎么分工。
 
@@ -296,4 +294,4 @@ TSan 的报告更干净:`data race`,「T2 读 / T1 之前写」,`Location is glo
 - **AddressSanitizer Wiki(Google)**:ASan 的影子内存机制、和 MSan/TSan 为什么互斥(`https://github.com/google/sanitizers/wiki/AddressSanitizer`)。
 - **MemorySanitizer Wiki**:MSan 为什么要求全栈重编、为什么工程上几乎没法用(同上 wiki 的 MemorySanitizer 页)。
 - **ISO C**:读未初始化的自动变量在 C11 §6.7.9 / §6.2.6.1 里多数情况算「未指定值」(unspecified),用 trap representation 时才升格为未定义行为——这正是 ASan/UBSan 都不报的法律根据。
-- 阶段 4 第 1 章(本仓库 `1-sanitizers-asan-and-ubsan.md`):sanitizer 那一侧的完整用法、红区机制、三段式读报告,是本章的直接对照面。
+- 阶段 4 第 10 章(本仓库 `10-sanitizer-deep.md`):sanitizer 那一侧的完整用法、红区机制、三段式读报告,是本章的直接对照面。

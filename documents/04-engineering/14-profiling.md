@@ -22,8 +22,6 @@ related:
   - "阶段 5:线程与并发(CLOCK_THREAD_CPUTIME_ID 量单线程 CPU 时间的进阶用法,那里深入)"
 ---
 
-> 🟡 状态:待审核(2026-07-02)
-
 # 性能剖析:clock_gettime 计时、gprof 调用图与 perf 原理
 
 ## 引言:从「感觉慢」到「量得出慢在哪」
