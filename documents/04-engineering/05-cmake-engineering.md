@@ -474,6 +474,6 @@ Release 给的是 `-O3 -DNDEBUG`——`-O3` 激进优化,`-DNDEBUG` 定义了 `N
 - **CMake 官方教程:[Adding Usage Requirements](https://cmake.org/cmake/help/latest/guide/tutorial/Adding%20Usage%20Requirements.html)**——PUBLIC/PRIVATE/INTERFACE 三态的官方演示,本章那张三列表的思想来源。
 - **CMake 官方手册**:`target_include_directories` / `target_compile_definitions` / `target_link_libraries`(`cmake --help-command target_link_libraries`)、`CMAKE_BUILD_TYPE`、`CMAKE_C_STANDARD`/`CMAKE_C_EXTENSIONS`、`file(GLOB ... CONFIGURE_DEPENDS)`。
 - **[Professional CMake: A Practical Guide](https://crascit.com/professional-cmake/)**(Craig Scott):target-centric 心法、usage requirement 传播、install/export 全签名讲得最系统的一本。
-- **本仓库 [projects/clib-utilities/CMakeLists.txt](../../projects/clib-utilities/CMakeLists.txt)**:一份改革过的真实多模块 CMake 工程,显式源表 + target_* 三态 + `pthread dl` PUBLIC 的活教材,本章逐行引用了它。
+- **本仓库 [projects/clib-utilities/CMakeLists.txt](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/projects/clib-utilities/CMakeLists.txt)**:一份改革过的真实多模块 CMake 工程,显式源表 + target_* 三态 + `pthread dl` PUBLIC 的活教材,本章逐行引用了它。
 - **阶段 0 第 9 章:标准与优化**——`-g`/`-O3`/`-DNDEBUG`/`-std=c11 vs gnu11` 的含义,CMake 的旗标就是它们的封装。
 - **阶段 0 第 12 章:CMake 入门**——`cmake -B build` 两步走、out-of-source 构建,本章是它的工程化深化。

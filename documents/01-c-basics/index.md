@@ -18,7 +18,7 @@ related:
 
 # 阶段 1 · C 语言基底:13 章导读
 
-这一阶段是整个 C-Journey 的**地基**——从「一行 `gcc` 到底干了什么」开始,把 C 的类型、运算、控制流、函数、作用域、数组、字符串、IO、复合类型一座座搭起来,目标是让你**写得出、看得懂、调得动**基础的 C 程序。13 章按下面的顺序读最顺,每组学完都建议去 [examples/](../../examples/) 找对应小练习跑一遍。
+这一阶段是整个 C-Journey 的**地基**——从「一行 `gcc` 到底干了什么」开始,把 C 的类型、运算、控制流、函数、作用域、数组、字符串、IO、复合类型一座座搭起来,目标是让你**写得出、看得懂、调得动**基础的 C 程序。13 章按下面的顺序读最顺,每组学完都建议去 [examples/](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/tree/main/examples/) 找对应小练习跑一遍。
 
 > 全部代码 gcc 16 + clang 22 真编真跑(`-std=c11 -Wall -Wextra`),贴真实输出、引 ISO/IEC 9899 条款。
 

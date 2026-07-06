@@ -31,7 +31,7 @@ related:
 
 问题是——**谁来保证每次提交都把它们一道不漏地全跑一遍?** 阶段 0 第 16 章已经回答过这个问题:GitHub Actions,把质量门挂在 `push`/`pull_request` 上自动跑。那一章我们逐行拆了当时的 `ci.yml`——四道 job(`build-examples`/`sanitize`/`docs`/`format-check`)。可打那以后,本仓又立了两道新门:第 12 章的 `static-analysis`(clang-tidy)和第 13 章的 `coverage`(gcov/lcov)。于是 `ci.yml` 从四道扩到了**六道**。
 
-本章干的就是把扩展后的全景讲清楚,**不重复阶段 0 第 16 章那次逐行拆解**——yml 的 `on`/`jobs`/`steps`/`runs-on`/`uses` 这些语法那里讲透了,这里只看「扩展后六道门怎么排、谁是硬门谁是报告、怎么再加一道」。读的是仓库里真实的 [.github/workflows/ci.yml](../../.github/workflows/ci.yml),本地用 `/tmp/cj/p4ch15/gate_echo.sh` 把三道本地能跑的硬门串起来真跑一遍,贴退出码 0 的汇总——这就是 GitHub 上那颗绿勾背后实际发生的事。
+本章干的就是把扩展后的全景讲清楚,**不重复阶段 0 第 16 章那次逐行拆解**——yml 的 `on`/`jobs`/`steps`/`runs-on`/`uses` 这些语法那里讲透了,这里只看「扩展后六道门怎么排、谁是硬门谁是报告、怎么再加一道」。读的是仓库里真实的 [.github/workflows/ci.yml](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.github/workflows/ci.yml),本地用 `/tmp/cj/p4ch15/gate_echo.sh` 把三道本地能跑的硬门串起来真跑一遍,贴退出码 0 的汇总——这就是 GitHub 上那颗绿勾背后实际发生的事。
 
 ## 扩展后的全景:六道门怎么排
 
@@ -339,6 +339,6 @@ CI 把前面几章一道道立的门拼成一条流水线,挂在每次 `push`/`p
 
 ## 参考资源
 
-- **本仓活教材**:[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)(六道 job 的真实配置)、[`scripts/build_examples.py`](../../scripts/build_examples.py)(`KNOWN_LEGACY` 双模式在这)、[`scripts/clang_tidy_check.py`](../../scripts/clang_tidy_check.py)、[`scripts/validate_frontmatter.py`](../../scripts/validate_frontmatter.py)。
+- **本仓活教材**:[`.github/workflows/ci.yml`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.github/workflows/ci.yml)(六道 job 的真实配置)、[`scripts/build_examples.py`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/scripts/build_examples.py)(`KNOWN_LEGACY` 双模式在这)、[`scripts/clang_tidy_check.py`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/scripts/clang_tidy_check.py)、[`scripts/validate_frontmatter.py`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/scripts/validate_frontmatter.py)。
 - **GitHub Actions 文档**:workflow 语法(`on`/`jobs`/`steps`/`runs-on`)、`strategy.matrix` 矩阵、`concurrency`(含 `cancel-in-progress`)、`DavidAnson/markdownlint-cli2-action`(第三方 action 的版本化复用)。
 - **承接章节**:阶段 0 第 16 章(那里逐行拆了原来的 4-job ci.yml、本章是它扩到 6 道门后的全景)、第 12 章(static-analysis 这道门的来历)、第 13 章(coverage 这道门的来历)、阶段 0 第 10 章(sanitize job 的源头)、第 17 章(format-check job 的 clang-format 详解)。

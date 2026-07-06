@@ -35,7 +35,7 @@ related:
 
 ## 先把 CI 那扇门读一遍
 
-要复现一道门,先得把它读对。本仓库的 sanitizer 门在 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) 里,job 名字叫 `sanitize`。把它和编译相关的那几行原文摘出来:
+要复现一道门,先得把它读对。本仓库的 sanitizer 门在 [`.github/workflows/ci.yml`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.github/workflows/ci.yml) 里,job 名字叫 `sanitize`。把它和编译相关的那几行原文摘出来:
 
 ```yaml
   sanitize:
@@ -394,11 +394,11 @@ cost_asan:  min=46ms median=49ms
 
 ## 小结
 
-我们这一章把镜头从「sanitizer 怎么用」拉到「sanitizer 在一个真实仓库里怎么当一道 CI 门」。本仓 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) 的 `sanitize` job 用的是 `CC=clang` + `CFLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer -g` + 配套的 `LDFLAGS`(链接那步也得带 `-fsanitize`,否则找不到 `libasan`/`libubsan` 运行时)——我们拿这套 flags 真编了四个含错程序,看到 ASan 对 use-after-free 给出「分配/释放/非法访问」三段栈、对栈越界给出点名变量和 `f1`/`f2`/`f3` shadow bytes,UBSan 对有符号溢出(§6.5 p5)和移位越界(§6.5.7 p3)精确报到行列、且默认 recover(报完不停、退出码 0)。把 gcc 和 clang 的输出摆一起,你看到的是 **sanitizer 的具体行为依赖编译器实现**——同样 `oob.c`,clang 是 UBSan 把 ASan 的报告截胡、退出码 0;gcc 是两个都报、`ABORTING` 退出码 1。所以别拿「我本地 gcc -fsanitize 跑过没报」当「CI(clang)也一定过」,反过来也一样。ci.yml 第 43-45 行那段「仅覆盖 CMake 子项目(SC1-4)」的注释,顺着 `build_examples.py` 的 `glob("**/CMakeLists.txt")` 一查就清楚:整个 stage0/stage1 的裸 `.c` 从来没进过 sanitizer 门,**别把「CI 过了 sanitizer」当「全仓代码都干净」**。行为上,`ASAN_OPTIONS` 三个旋钮要记牢——`halt_on_error`(默认 true,报完即崩)、`abort_on_error`(默认 false,严格 `abort(3)` 关着,要 core dump 才显式开)、`detect_leaks`(默认开,让 LSan 在退出时报泄漏且退出码非 0)。`-fsanitize-address-use-after-scope` 抓「作用域失效后还用栈变量」,在新版 gcc/clang 上是 ASan 的默认行为(shadow byte `f8` 现身),但写 CMake/CI 时显式加上更稳。还有两个工程坑值得带走:一是 LSan 靠 `ptrace(2)` 扫内存,在 seccomp 严的容器里会让进程启动即挂(本机无受限容器、未贴伪造输出,据文档诚实标注),那种环境必须 `detect_leaks=0`;二是 sanitizer 有约 2 倍开销(本机 23ms→46ms 真测),所以它是调试和 CI 的工具、不进发布构建,ci.yml 把它单拆一个 job 也是为了和「快」的编译门并行。带着这套理解,下一章我们换条线看 Valgrind——它是 sanitizer 之外的另一条内存排查路线,脾气和适用场景都不一样。
+我们这一章把镜头从「sanitizer 怎么用」拉到「sanitizer 在一个真实仓库里怎么当一道 CI 门」。本仓 [`.github/workflows/ci.yml`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.github/workflows/ci.yml) 的 `sanitize` job 用的是 `CC=clang` + `CFLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer -g` + 配套的 `LDFLAGS`(链接那步也得带 `-fsanitize`,否则找不到 `libasan`/`libubsan` 运行时)——我们拿这套 flags 真编了四个含错程序,看到 ASan 对 use-after-free 给出「分配/释放/非法访问」三段栈、对栈越界给出点名变量和 `f1`/`f2`/`f3` shadow bytes,UBSan 对有符号溢出(§6.5 p5)和移位越界(§6.5.7 p3)精确报到行列、且默认 recover(报完不停、退出码 0)。把 gcc 和 clang 的输出摆一起,你看到的是 **sanitizer 的具体行为依赖编译器实现**——同样 `oob.c`,clang 是 UBSan 把 ASan 的报告截胡、退出码 0;gcc 是两个都报、`ABORTING` 退出码 1。所以别拿「我本地 gcc -fsanitize 跑过没报」当「CI(clang)也一定过」,反过来也一样。ci.yml 第 43-45 行那段「仅覆盖 CMake 子项目(SC1-4)」的注释,顺着 `build_examples.py` 的 `glob("**/CMakeLists.txt")` 一查就清楚:整个 stage0/stage1 的裸 `.c` 从来没进过 sanitizer 门,**别把「CI 过了 sanitizer」当「全仓代码都干净」**。行为上,`ASAN_OPTIONS` 三个旋钮要记牢——`halt_on_error`(默认 true,报完即崩)、`abort_on_error`(默认 false,严格 `abort(3)` 关着,要 core dump 才显式开)、`detect_leaks`(默认开,让 LSan 在退出时报泄漏且退出码非 0)。`-fsanitize-address-use-after-scope` 抓「作用域失效后还用栈变量」,在新版 gcc/clang 上是 ASan 的默认行为(shadow byte `f8` 现身),但写 CMake/CI 时显式加上更稳。还有两个工程坑值得带走:一是 LSan 靠 `ptrace(2)` 扫内存,在 seccomp 严的容器里会让进程启动即挂(本机无受限容器、未贴伪造输出,据文档诚实标注),那种环境必须 `detect_leaks=0`;二是 sanitizer 有约 2 倍开销(本机 23ms→46ms 真测),所以它是调试和 CI 的工具、不进发布构建,ci.yml 把它单拆一个 job 也是为了和「快」的编译门并行。带着这套理解,下一章我们换条线看 Valgrind——它是 sanitizer 之外的另一条内存排查路线,脾气和适用场景都不一样。
 
 ## 参考资源
 
-- **本仓 CI**:[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) 的 `sanitize` job(第 31-45 行),`build_examples.py` 的 `glob("**/CMakeLists.txt")`——覆盖盲区的根因。
+- **本仓 CI**:[`.github/workflows/ci.yml`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.github/workflows/ci.yml) 的 `sanitize` job(第 31-45 行),`build_examples.py` 的 `glob("**/CMakeLists.txt")`——覆盖盲区的根因。
 - **阶段 0·第 10 章:Sanitizer 门禁**——sanitizer 入门视角(UBSan/ASan/shadow memory/recover vs abort/开销),本章是它的 CI 升级。
 - **本阶段 legacy 第 1 章:ASan 与 UBSan 实战**——GCC 16 的 shadow bytes(`fa`/`05`/`fd`)真跑,本章补它的 CI 工程视角。
 - **ISO/IEC 9899:2011**:§6.5 第 5 段(有符号整数溢出 UB)、§6.5.7 第 3 段(移位指数大于等于位宽 UB)。
