@@ -26,7 +26,7 @@ related:
 
 ## 引言
 
-如果你问我学计算机这一路上最"上头"的事是什么，我会说是一次性把一个操作系统从零写出来、让它在自己眼前跑起来。这不是夸张——当你第一次看到自己写的汇编字符"MBR"出现在模拟器屏幕上，那种"我真正让一块硬件听我话了"的快感，是写多少业务代码都换不来的。所以这一章不是 ROADMAP 八阶段里的必修内容，它是一个**进阶挑战**，适合在啃完前面阶段、特别是第六章裸机 C 之后，用来把所有底层知识串起来熔炼一遍。配套代码就在 [os-from-scratch](../../projects/os-from-scratch/)，从第 1 课到第 20 课逐步演进，`final/` 是一个相当完整的阶段性版本。
+如果你问我学计算机这一路上最"上头"的事是什么，我会说是一次性把一个操作系统从零写出来、让它在自己眼前跑起来。这不是夸张——当你第一次看到自己写的汇编字符"MBR"出现在模拟器屏幕上，那种"我真正让一块硬件听我话了"的快感，是写多少业务代码都换不来的。所以这一章不是 ROADMAP 八阶段里的必修内容，它是一个**进阶挑战**，适合在啃完前面阶段、特别是第六章裸机 C 之后，用来把所有底层知识串起来熔炼一遍。配套代码就在 [os-from-scratch](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/tree/main/projects/os-from-scratch/)，从第 1 课到第 20 课逐步演进，`final/` 是一个相当完整的阶段性版本。
 
 > 老规矩先交底：OS 代码得用 `nasm` 汇编、`dd` 写进软盘/硬盘镜像，然后在 Bochs 里跑，所以这儿没法给你贴运行截图。但下面每一行汇编和 C 都是真实的，你照着把镜像做出来、丢进 Bochs 就能看到效果。
 
@@ -41,7 +41,7 @@ related:
       → kernel(你写的) 的 main 开始跑，OS 正式上线
 ```
 
-关键在于：**BIOS 只帮你做第一棒**——它把硬盘的第一个扇区（512 字节，叫 MBR 主引导记录）读到内存的 `0x7c00` 位置然后跳过去，剩下的全是你自己的事。所以你的第一段代码，就是塞在这 512 字节里的 MBR。我们看 [final/boot/mbr.S](../../projects/os-from-scratch/final/boot/mbr.S) 的开头：
+关键在于：**BIOS 只帮你做第一棒**——它把硬盘的第一个扇区（512 字节，叫 MBR 主引导记录）读到内存的 `0x7c00` 位置然后跳过去，剩下的全是你自己的事。所以你的第一段代码，就是塞在这 512 字节里的 MBR。我们看 [final/boot/mbr.S](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/projects/os-from-scratch/final/boot/mbr.S) 的开头：
 
 ```asm
 SECTION MBR vstart=0x7c00        ; 这段代码被加载到 0x7c00 运行
@@ -67,7 +67,7 @@ MBR 最后把自己从硬盘读出来的 loader 跳过去执行（`jmp LOADER_BA
 
 ## 内核起来之后：一个 OS 都有哪些零件
 
-接力赛跑到 kernel 的 `main`，OS 才算真正上线。我们看 [final/kernel/main.c](../../projects/os-from-scratch/final/kernel/main.c) 的开头，能一眼看出这个内核都攒了哪些子系统：
+接力赛跑到 kernel 的 `main`，OS 才算真正上线。我们看 [final/kernel/main.c](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/projects/os-from-scratch/final/kernel/main.c) 的开头，能一眼看出这个内核都攒了哪些子系统：
 
 ```c
 int main(void) {

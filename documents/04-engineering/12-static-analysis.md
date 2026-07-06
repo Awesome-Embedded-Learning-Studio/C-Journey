@@ -242,7 +242,7 @@ Suppressed 14 warnings (14 in non-user code).
 
 ### `.clang-tidy`:选三族、关噪声
 
-根目录的 [`.clang-tidy`](../../.clang-tidy) 是整道门的配置中心,全文很短,值得逐行读:
+根目录的 [`.clang-tidy`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.clang-tidy) 是整道门的配置中心,全文很短,值得逐行读:
 
 ```yaml
 Checks: >
@@ -449,7 +449,7 @@ void freshError(CCSTDLib_FetchError* errorBuf) {
 
 ## 参考资源
 
-- **本仓活教材**:[`.clang-tidy`](../../.clang-tidy)(Checks 配置)、[`scripts/clang_tidy_check.py`](../../scripts/clang_tidy_check.py)(compile_commands + 跑 clang-tidy 的脚本)、[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) 的 `static-analysis` job(全仓第 5 道 CI 门)。
+- **本仓活教材**:[`.clang-tidy`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.clang-tidy)(Checks 配置)、[`scripts/clang_tidy_check.py`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/scripts/clang_tidy_check.py)(compile_commands + 跑 clang-tidy 的脚本)、[`.github/workflows/ci.yml`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.github/workflows/ci.yml) 的 `static-analysis` job(全仓第 5 道 CI 门)。
 - **ISO/IEC 9899:2011**:§7.1.3「Reserved identifiers」(双下划线、下划线+大写、文件作用域下划线开头的标识符保留给实现,`bugprone-reserved-identifier` 的依据);§6.3.1.3(有符号整数窄化是 implementation-defined,`bugprone-narrowing-conversions` 的依据);§6.5.4.1 语法(else 配最近的 if,dangling else 的根源)。
 - **clang-tidy 官方文档**:完整 check 清单(`clang.llvm.org/extra/clang-tidy/checks/`)、`-p`/`compile_commands.json` 的用法、`.clang-tidy` 配置文件格式。
 - **cppcheck**:`cppcheck.sourceforge.io`、`man cppcheck`(`--enable=all`、`--suppress=`、`--error-exitcode=`)。

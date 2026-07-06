@@ -400,5 +400,5 @@ function CCDynamicArray_InsertSingle called 1 returned 100% blocks executed 69%
 - **`gcov(1)` man 页**:`--coverage` 的等价展开(`-fprofile-arcs -ftest-coverage` + 链接 `-lgcov`)、`.gcno`/`.gcda` 文件格式、`-b`(分支覆盖)、`-o`(目标目录)的完整说明。
 - **`lcov` 项目**(<https://github.com/linux-test-project/lcov>):gcov 的前端,`--capture`/`--remove`/`--summary`/`genhtml` 的用法;CI 上 `apt install lcov` 即得。
 - **ISO/IEC 9899:2011 §7.19**(`stddef.h`):`NULL` 的定义来源(覆盖率用例里要用 `NULL` 得 include 它)。
-- **本仓活教材**:[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) 的 `coverage` job(`--coverage` 注入 + lcov 三步出总览)、[`projects/clib-utilities`](../../projects/clib-utilities)(被测对象,`CCDynamicArray.c` 139 行 14 函数,本机真跑 42.45%)。
+- **本仓活教材**:[`.github/workflows/ci.yml`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.github/workflows/ci.yml) 的 `coverage` job(`--coverage` 注入 + lcov 三步出总览)、[`projects/clib-utilities`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/tree/main/projects/clib-utilities)(被测对象,`CCDynamicArray.c` 139 行 14 函数,本机真跑 42.45%)。
 - **承接章节**:第 7 章(测试不再是 printf,本章量化它的覆盖)、第 12 章(静态分析门,同为 CI 门,一个查代码语义、一个量化测试)、阶段 0 第 16 章(GitHub Actions,`coverage` 是 CI 的一道 job)。

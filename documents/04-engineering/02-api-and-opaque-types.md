@@ -315,7 +315,7 @@ pop 30
 
 讲完原理,我们把镜头拉回项目本身,看两个真实在用的头——它们正好一个是正面教材、一个是反面教材,对照起来读最有味道。
 
-先看正面教材 [`CCMutex.h`](../../projects/clib-utilities/SystemRelated/Includes/CCMutex.h)(只摘关键几行,原样引用、未按本教程风格重排):
+先看正面教材 [`CCMutex.h`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/projects/clib-utilities/SystemRelated/Includes/CCMutex.h)(只摘关键几行,原样引用、未按本教程风格重排):
 
 ```text
 typedef struct __CCMutex
@@ -327,7 +327,7 @@ typedef struct __CCMutex
 
 这里它**没有**用我们这一章的纯前向声明(它把 `__CCMutex` 整个 struct 摊在了头里),但它对**最敏感的那个字段** `core_lock` 用了一招异曲同工的手法——`void*`。注释写着 `/* pthread_mutex_t* */`,说明它在 Linux/POSIX 分支里实际存的是 `pthread_mutex_t*`,但它**故意不在头里 `#include <pthread.h>`**,而是用 `void*` 把这个平台相关的类型藏起来。收益是双重的:其一,头文件保持轻量,消费者 `#include "CCMutex.h"` 不会被强行拉进整个 `<pthread.h>`(那个头相当大、还会传染到所有间接包含它的翻译单元,拖慢编译);其二,Windows 分支(`#ifdef CCSTD_USE_WINDOWS`)里 `core_lock` 指向的是 `RTL_CRITICAL_SECTION`、Linux 分支里指向的是 `pthread_mutex_t`,两边**共用同一张头、同一套 API**,平台差异全被 `void*` 这个「不知道指向啥的指针」吃掉了。这是 `void*` 型泛化 + 不暴露细节的典型用法,和 opaque pointer 师出同门——「我给你一个指针、但我不告诉你它指向什么、你只能交给我自己的 API 处理」。
 
-再看反面教材 [`CCDynamicArray.h`](../../projects/clib-utilities/BasicDataStructure/Includes/CCDynamicArray.h)(同样只摘关键几行,原样引用、未按本教程风格重排):
+再看反面教材 [`CCDynamicArray.h`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/projects/clib-utilities/BasicDataStructure/Includes/CCDynamicArray.h)(同样只摘关键几行,原样引用、未按本教程风格重排):
 
 ```text
 typedef struct __CCDynamicArray
