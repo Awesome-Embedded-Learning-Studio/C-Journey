@@ -14,6 +14,18 @@
 </p>
 
 
+## 学完你能做出什么
+
+不只是「会写 C 语法」。六阶段走下来,你能独立做出这些:
+
+- 一个过得了 ASan + 静态分析检查的 C 库(头文件契约、错误处理、单元测试齐全)
+- 手写动态数组、哈希表、二叉搜索树这些常用数据结构
+- 写 TCP/UDP 的客户端和服务端
+- 实现一个基于 epoll 的非阻塞 Reactor 事件循环
+- 把一个旧式 C 项目改造成有测试、覆盖率、CI 的现代工程
+
+不是画饼——每一条都对应主线里实打实的章节和可编译示例,抄下来就能跑。
+
 ## 现在到哪了
 
 主线六阶段已经全部写完上线,共 84 章:
@@ -41,7 +53,12 @@ flowchart LR
 
 ## 怎么读、怎么改
 
-按阶段顺序读 `documents/`(阶段 1 有[导读](./documents/01-c-basics/index.md));配套可编译示例在 `examples/`,完整项目在 `projects/`。改了东西,本地过两道门再提 PR:
+不知道从哪开始?有两条路:
+
+- **完整路线**:从[阶段 0 开发环境](./documents/00-dev-environment/01-toolchain-health-check.md)顺序学——17 章工具链打底,之后进 C 基底,体系最完整。
+- **先写起来**:急着动手?直接去[阶段 1 程序结构](./documents/01-c-basics/01-program-structure-and-compilation.md)开始写代码,工具链用到哪、回补哪(建议至少先扫一眼[工具链体检](./documents/00-dev-environment/01-toolchain-health-check.md))。
+
+配套可编译示例在 `examples/`,完整项目在 `projects/`。改了东西,本地过两道门再提 PR:
 
 ```bash
 python3 scripts/build_examples.py        # 编译所有 examples(gcc + clang 硬门)

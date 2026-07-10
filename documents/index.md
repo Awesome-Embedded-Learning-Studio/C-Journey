@@ -10,8 +10,8 @@ hero:
       text: 从阶段 0 开始
       link: /00-dev-environment/01-toolchain-health-check
     - theme: alt
-      text: 直奔指针与内存
-      link: /02-pointers-memory/01-what-is-a-pointer
+      text: 先写代码再说
+      link: /01-c-basics/01-program-structure-and-compilation
 
 features:
   - title: ISO 条款锚定
