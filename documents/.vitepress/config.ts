@@ -11,8 +11,7 @@ import { viteCppEscape } from './plugins/vite-escape-cpp'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const docsRoot = path.resolve(__dirname, '..') /* documents/ */
 
-/* 主线六阶段(0-5 已重写上线):目录名 + 显示名。侧栏自动读每阶段 NN-*.md、按 order 排、用 frontmatter title。
-   阶段 6/7/进阶尚未重写,留在 srcExclude 不上线(见下)。*/
+/* 主线六阶段(0-5 已重写上线):目录名 + 显示名。侧栏自动读每阶段 NN-*.md、按 order 排、用 frontmatter title。*/
 const stages = [
     { dir: '00-dev-environment', name: '阶段 0 · 开发环境与编译' },
     { dir: '01-c-basics', name: '阶段 1 · C 语言基底' },
@@ -48,7 +47,7 @@ function buildSidebar() {
 
 export default defineConfig({
     title: 'C-Journey',
-    description: '一份用 C 游历计算机世界的教程:主机系统全程真跑、引 ISO/IEC 9899;嵌入式浅尝指路,深做见 imx-forge',
+    description: '脱胎于我学 C 时攒下的笔记,用 C 游历计算机世界:主机系统全程真跑、引 ISO/IEC 9899;嵌入式浅尝指路,深做见 imx-forge',
     lang: 'zh-CN',
     lastUpdated: true,
     base: '/C-Journey/',
@@ -60,14 +59,8 @@ export default defineConfig({
        仓库浏览时有效,但 Pages 站只 serve documents/,会 404。放行这类跳出 srcDir 的 ../../ 链接,
        保留站内链接的 dead-link 检查。(后续把这些改成 GitHub 绝对 URL 更彻底,见优化清单) */
     ignoreDeadLinks: [/\/\.\.\//],
-    /* 阶段 6/7/进阶尚未重写,旧内容暂不上线;index.md/README 走首页 Hero 不参与侧栏 */
-    srcExclude: [
-        '06-embedded/**',
-        '07-capstone/**',
-        'advanced/**',
-        '01-c-basics/index.md',
-        'README.md',
-    ],
+    /* index.md/README 走首页 Hero,不参与侧栏渲染 */
+    srcExclude: ['01-c-basics/index.md', 'README.md'],
     head: [
         /* favicon(锈橙 C) */
         ['link', { rel: 'icon', href: '/C-Journey/favicon.svg', type: 'image/svg+xml' }],
@@ -78,7 +71,7 @@ export default defineConfig({
         ['meta', { property: 'og:site_name', content: 'C-Journey' }],
         ['meta', { property: 'og:type', content: 'website' }],
         ['meta', { property: 'og:title', content: '用 C 游历计算机世界 · C-Journey' }],
-        ['meta', { property: 'og:description', content: '用 C 游历计算机世界:主机系统全程真跑(gcc 16 + clang 22 + ASan/UBSan)、引 ISO/IEC 9899;嵌入式浅尝指路,深做见 imx-forge。' }],
+        ['meta', { property: 'og:description', content: '脱胎于我学 C 时攒下的笔记,用 C 游历计算机世界:主机系统全程真跑(gcc 16 + clang 22 + ASan/UBSan)、引 ISO/IEC 9899;嵌入式浅尝指路,深做见 imx-forge。' }],
         ['meta', { property: 'og:url', content: 'https://awesome-embedded-learning-studio.github.io/C-Journey/' }],
         ['meta', { property: 'og:image', content: 'https://awesome-embedded-learning-studio.github.io/C-Journey/og-image.png' }],
         ['meta', { property: 'og:locale', content: 'zh_CN' }],

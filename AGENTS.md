@@ -4,14 +4,14 @@
 
 ## 你在哪、这是什么
 
-**C-Journey** —— 一个用 C 游历计算机世界的教程仓库(**纯 C,不是 C++**)。定位:主机系统(工具链/内存/数据结构/工程化/系统编程)深做,嵌入式浅尝指路。仓库 canonical:`Awesome-Embedded-Learning-Studio/C-Journey`(本地 `origin` 指这;`Charliechen114514/C-Journey` 已转移、是死链,别用)。8 个阶段:开发环境 → C 基础 → 指针内存 → 数据结构 → 工程化 → 系统编程 → 嵌入式(浅尝)→ 综合项目。
+**C-Journey** —— 脱胎于维护者自己学 C 时攒下的笔记、逐条真跑核实后公开的教程仓库(**纯 C,不是 C++**),定位是用 C 游历计算机世界:主机系统(工具链/内存/数据结构/工程化/系统编程)深做,嵌入式浅尝指路。仓库 canonical:`Awesome-Embedded-Learning-Studio/C-Journey`(本地 `origin` 指这;`Charliechen114514/C-Journey` 已转移、是死链,别用)。8 个阶段:开发环境 → C 基础 → 指针内存 → 数据结构 → 工程化 → 系统编程 → 嵌入式(浅尝)→ 综合项目。
 
 ## 当前状态(接手必读)
 
-主线内容层重写**已完成**:**六阶段(0-5)84 章全部写完并上线**站点(锈橙主题 VitePress,源在 `documents/`)。阶段 6(嵌入式)/ 7(capstone)/ 进阶 = 待重写,目录里留 stub。**新章写作暂停**。当前两项:
+主线内容层重写**已完成**:**六阶段(0-5)84 章全部写完并上线**站点(锈橙主题 VitePress,源在 `documents/`)。阶段 6(嵌入式)/ 7(capstone)/ 进阶 = 尚未动笔,目录里不留占位稿。**新章写作暂停**。当前两项:
 
 1. **维护者人工大优化**——逐章调优,见 `.claude/review-queue.md` 顶部「📋 人工大优化清单」;
-2. **阶段 6/7/进阶定方向**——嵌入式按**深度**切:C-Journey 留浅尝 stub,深做交 [imx-forge](https://awesome-embedded-learning-studio.github.io/imx-forge/)/ST-Forge(见 memory `cjourney-portfolio-boundary`)。
+2. **阶段 6/7/进阶定方向**——嵌入式按**深度**切:C-Journey 将来也只浅尝,深做交 [imx-forge](https://awesome-embedded-learning-studio.github.io/imx-forge/)/ST-Forge(见 memory `cjourney-portfolio-boundary`)。
 
 **接手前先读**:
 

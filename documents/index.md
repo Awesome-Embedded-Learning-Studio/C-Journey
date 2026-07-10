@@ -4,7 +4,7 @@ layout: home
 hero:
   name: C-Journey
   text: 用 C 游历计算机世界
-  tagline: 主机系统全程真跑(gcc 16 + clang 22 + ISO 9899)<br>嵌入式浅尝指路,深做见 <a href="https://awesome-embedded-learning-studio.github.io/imx-forge/" target="_blank">imx-forge</a>
+  tagline: 脱胎于我学 C 时攒下的笔记,主机系统全程真跑(gcc 16 + clang 22 + ISO 9899)<br>嵌入式浅尝指路,深做见 <a href="https://awesome-embedded-learning-studio.github.io/imx-forge/" target="_blank">imx-forge</a>
   actions:
     - theme: brand
       text: 从阶段 0 开始

@@ -2,15 +2,31 @@
 
 [![CI](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/actions/workflows/ci.yml/badge.svg)](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/Awesome-Embedded-Learning-Studio/C-Journey?style=social)](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey)
 
-一份纯 C 的系统编程教程,定位是「用 C 游历计算机世界」。主机系统这一路——工具链、内存、数据结构、工程化、系统编程——做深;嵌入式只尝一口、开个门,真要写单片机和板级 Linux,去隔壁 [imx-forge](https://awesome-embedded-learning-studio.github.io/imx-forge/)(i.MX6ULL,目前最完整)和 [ST-Forge](https://awesome-embedded-learning-studio.github.io/ST-Forge/)(STM32)。
+嘿！这里是C-Journey! 最开始的时候呢，是笔者的大学针对C语言，和使用C完成的一些领域学习的笔记！经过相当漫长的时间的改造，今天主骨架大致完成啦！笔者花费一些时间，将可验证的代码收集成可以被CI验证，将笔记梳理成可以游历计算机世界的一套，也许可以说是“教程”的仓库！
 
-每章代码都用 gcc 16 + clang 22 双编、ASan/UBSan 抓 UB,贴真实终端输出、引 ISO/IEC 9899 条款号。C 的未定义行为太多,凭记忆断言迟早翻车,所以每条都当场跑给你看,而不是「据说是」。在线站点在 <https://awesome-embedded-learning-studio.github.io/C-Journey/>,锈橙主题,浏览器里能直接改 C 代码、点运行看输出或看 x86-64 汇编(调 godbolt 公共 API,不用装东西)。
+> 嘿，点一下下面的图片！进入C语言的世界！
+
+<p align="center">
+  <a href="https://awesome-embedded-learning-studio.github.io/C-Journey/">
+    <img src="assets/website.png" alt="在线文档站首页预览 · 点击进入" width="860">
+  </a>
+</p>
+
 
 ## 现在到哪了
 
 主线六阶段已经全部写完上线,共 84 章:
+
+```mermaid
+flowchart LR
+    S0[阶段 0<br/>开发环境] --> S1[阶段 1<br/>C 基底]
+    S1 --> S2[阶段 2<br/>指针内存]
+    S2 --> S3[阶段 3<br/>数据结构]
+    S3 --> S4[阶段 4<br/>工程化]
+    S4 --> S5[阶段 5<br/>系统编程]
+    S5 -. 嵌入式浅尝 .-> EMB[imx-forge<br/>ST-Forge]
+```
 
 | 阶段 | 章 | 内容 |
 |---|---|---|
@@ -21,7 +37,7 @@
 | 4 工程化 | 16 | 头文件契约 / API / 错误处理 / CMake 工程化 / 库与链接 / 测试与 Mock / gdb / ASan 与 valgrind / 静态分析 / 覆盖率 / 性能剖析 / CI 流水线 |
 | 5 系统编程 | 14 | 文件 IO / fork-exec / 守护进程 / 信号 / pipe 与共享内存 / select 与 epoll / 非阻塞 reactor / socket TCP/UDP / getaddrinfo |
 
-阶段 6(嵌入式)和阶段 7(capstone)还是占位旧稿,没重写——深做交给 imx-forge / ST-Forge,这里只留浅尝的 stub。完整设计思路见 [ROADMAP](./ROADMAP.md)。
+阶段 6(嵌入式)和阶段 7(capstone)还没动笔——深做交给 imx-forge / ST-Forge,这里将来也只浅尝开个门。完整设计思路见 [ROADMAP](./ROADMAP.md)。
 
 ## 怎么读、怎么改
 
@@ -33,19 +49,6 @@ python3 scripts/validate_frontmatter.py  # 校验文档 frontmatter
 ```
 
 环境搭建、加文档和示例的规范、CI 的六道门(编译 / sanitize / 静态分析 / 覆盖率 / format / 文档校验),都写在 [CONTRIBUTING](./CONTRIBUTING.md) 里。
-
-## 仓库结构
-
-```text
-C-Journey/
-├── documents/          # 84 章主线文档(阶段 0-5)+ 更新日志
-├── examples/           # 可编译示例(C 基础 / CMake 库工程 / TCP socket,CI 硬门)
-├── projects/           # clib-utilities(已整改,进 CI 硬门)+ os-from-scratch 等参考实现
-├── scripts/            # 质量门脚本(build_examples / validate_frontmatter / clang_tidy_check / tags)
-├── ROADMAP.md          # 完整路线图(0-5 已上线,6-7 待重写)
-├── CONTRIBUTING.md     # 怎么贡献
-└── .github/workflows/  # CI
-```
 
 ## 贡献
 

@@ -52,10 +52,9 @@ const CONCURRENCY = parseInt(process.env.BUILD_CONCURRENCY || '4', 10)
 // ── Configuration ───────────────────────────────────────────────
 
 /**
- * C-Journey 的「卷」= 4 个上线阶段(与 documents/.vitepress/config.ts 的 stages 对齐)。
- * 注意:documents/ 下还有 04-engineering / 05-system-programming / 06-embedded /
- * 07-capstone / advanced —— 这些被 config.ts 的 srcExclude 排除、不参与 build,
- * 因此这里也不纳入内容 hash(否则改旧内容会误触发重建)。
+ * C-Journey 的「卷」= 6 个上线阶段(与 documents/.vitepress/config.ts 的 stages 对齐)。
+ * 注意:documents/ 下除上线的六阶段(00-05)外,其余(index.md / README 等)被 config.ts 的
+ * srcExclude 排除、不参与 build,因此这里也不纳入内容 hash。
  *
  * 标杆的 VOLUMES 是「每个 volume 独立 build 的单元」;这里则是「参与整站内容 hash
  * 的源目录集合」—— 语义被收窄了,因为不再分段独立 build。
@@ -65,10 +64,12 @@ interface Stage {
   name: string
 }
 const STAGES: Stage[] = [
-  { dir: '00-dev-environment', name: '阶段 0 · 开发环境与编译' },
-  { dir: '01-c-basics',        name: '阶段 1 · C 语言基底' },
-  { dir: '02-pointers-memory', name: '阶段 2 · 指针与内存' },
-  { dir: '03-data-structures', name: '阶段 3 · 数据结构与算法' },
+  { dir: '00-dev-environment',    name: '阶段 0 · 开发环境与编译' },
+  { dir: '01-c-basics',           name: '阶段 1 · C 语言基底' },
+  { dir: '02-pointers-memory',    name: '阶段 2 · 指针与内存' },
+  { dir: '03-data-structures',    name: '阶段 3 · 数据结构与算法' },
+  { dir: '04-engineering',        name: '阶段 4 · 工程化与质量门' },
+  { dir: '05-system-programming', name: '阶段 5 · 系统编程' },
 ]
 
 const PROJECT_ROOT = resolve(import.meta.dirname, '..')

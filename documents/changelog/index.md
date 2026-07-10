@@ -16,7 +16,9 @@ related: []
 
 # 更新日志
 
-C-Journey 按里程碑往前走,不按语义化版本号。这里记每个阶段收官、基础设施大改、定位调整;逐条提交在 [commit 历史](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/commits/main)。
+C-Journey 起初是维护者自己学 C 时随手记的笔记,记着记着攒成了从工具链到系统编程的一条全程,逐条真跑核实后整理公开,就成了这份教程。
+
+往后按里程碑往前走,不按语义化版本号。这里记每个阶段收官、基础设施大改、定位调整;逐条提交在 [commit 历史](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/commits/main)。
 
 ## 2026-07-03 · 定位落定 + 站点重设计 + 元信息收口
 

@@ -1,5 +1,6 @@
 # C 语言学习 Roadmap：从语法到工程实践
 
+> 这份路线图源自维护者自己学 C 时走过的路径，整理出来给同样想系统学的人。
 > 目标：不只是“会写 C 语法”，而是逐步具备使用 C 语言完成真实工程、库设计、系统编程、嵌入式开发的能力。
 
 ## 总览
@@ -571,8 +572,7 @@ clib/
 
 # 阶段 6：嵌入式 C 与硬件相关开发
 
-> **状态(2026-07):浅尝 stub,待重写。** C-Journey 对嵌入式只做「尝一口、开个门」——
-> 本阶段目前仅留 2 篇占位旧稿(`documents/06-embedded/`)。**深度嵌入式**交给工作室更垂直的系列:
+> **状态(2026-07):尚未写,浅尝定位。** C-Journey 对嵌入式只做「尝一口、开个门」——**深度嵌入式**交给工作室更垂直的系列:
 > [imx-forge](https://awesome-embedded-learning-studio.github.io/imx-forge/)(i.MX6ULL 板级 Linux / 驱动,目前最完整)、
 > [ST-Forge](https://awesome-embedded-learning-studio.github.io/ST-Forge/)(STM32 HAL 外设)。
 
@@ -655,7 +655,7 @@ clib/
 
 # 阶段 7：综合项目与开源协作
 
-> **状态(2026-07):待重写 stub,规划中。** 当前仅 `documents/07-capstone/0-hand-written-os.md` 占位旧稿。
+> **状态(2026-07):尚未写,规划中。**
 
 > 建议周期：持续进行
 > 目标：把前面阶段的成果沉淀为可维护、可发布、可协作的真实项目，掌握现代开源工程的工作流。

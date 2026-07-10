@@ -1,6 +1,6 @@
 # 学习文档（documents）
 
-这里是 C-Journey 的全部知识点文档,按阶段分目录。主线六阶段(0-5)已经写完,共 84 章;阶段 6/7/进阶还是占位旧稿,没重写。
+这里是 C-Journey 的全部知识点文档,按阶段分目录。主线六阶段(0-5)已经写完,共 84 章;阶段 6(嵌入式)/ 7(capstone)/ 进阶尚未动笔。
 
 每章都按同一套规矩来:frontmatter 齐全、代码用 gcc 16 + clang 22 真编真跑(ASan/UBSan 抓 UB)、贴真实终端输出、引 ISO/IEC 9899 条款号。声音是「折腾工程师」——坑就地讲、不套预警框、小结走散文。完整规矩在 [.claude/writing-style.md](../.claude/writing-style.md),动手写之前先看一眼。
 
@@ -57,21 +57,13 @@
 - 08 [select](./05-system-programming/08-select.md) · 09 [poll 与 epoll](./05-system-programming/09-poll-and-epoll.md) · 10 [非阻塞 IO 与 reactor](./05-system-programming/10-nonblock-and-reactor.md)
 - 11 [Socket TCP:客户端/服务端四件套](./05-system-programming/11-socket-tcp.md) · 12 [进阶 Socket:SIGPIPE / 消息边界](./05-system-programming/12-socket-advanced.md) · 13 [UDP 与 Unix 域套接字](./05-system-programming/13-udp-and-unix-domain.md) · 14 [getaddrinfo 与协议无关](./05-system-programming/14-getaddrinfo.md)
 
-### 阶段 6 · 嵌入式(待重写) — [06-embedded/](./06-embedded/)
+### 阶段 6 · 嵌入式(尚未写,浅尝定位)
 
-> 该阶段尚未进入重写执行态,以下为占位旧稿,待维护者定方向后重写或下线。
+> 嵌入式这条线 C-Journey 只浅尝、开个门;真要写单片机和板级 Linux,去隔壁 [imx-forge](https://awesome-embedded-learning-studio.github.io/imx-forge/)、[ST-Forge](https://awesome-embedded-learning-studio.github.io/ST-Forge/)。本阶段尚未动笔。
 
-- [裸机 C 入门:8051 会跑的时钟](./06-embedded/0-8051-bare-metal-basics.md) · [Linux 字符设备驱动入门](./06-embedded/1-linux-driver-basics.md)
+### 阶段 7 · 综合收官(尚未写,规划中)
 
-### 阶段 7 · 综合收官(待重写) — [07-capstone/](./07-capstone/)
-
-> 该阶段尚未进入重写执行态,以下为占位旧稿。
-
-- [自制操作系统:从按电源到内核 main](./07-capstone/0-hand-written-os.md)(对接 [projects/os-from-scratch](../projects/os-from-scratch/))
-
-### 进阶专题(待重写) — [advanced/](./advanced/)
-
-- [从零写一个操作系统:通电到内核的接力赛](./advanced/0-os-from-scratch.md)
+> 综合收官项目尚未动笔,规划中。
 
 ---
 
