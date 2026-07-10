@@ -1,6 +1,6 @@
 # 阶段 1–2 示例：C 基础与内存观察
 
-> 对应 [ROADMAP](../../ROADMAP.md) · **阶段 1：C 语言基础** / **阶段 2：指针、内存与数据布局**
+> 对应 [ROADMAP](https://awesome-embedded-learning-studio.github.io/C-Journey/roadmap) · **阶段 1：C 语言基础** / **阶段 2：指针、内存与数据布局**
 > 📖 先读知识点：[指针、内存布局与位运算](../../documents/02-pointers-memory/0-pointers-memory-and-bitops.md)
 
 用一组小程序观察变量存储、堆内存分配与位运算的底层效果（最初在 ARM 环境下练习，原理同样适用于桌面平台）。

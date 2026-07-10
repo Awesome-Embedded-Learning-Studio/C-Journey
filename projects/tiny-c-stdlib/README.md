@@ -1,6 +1,6 @@
 # 项目：迷你 C 标准库 (Tiny C Standard Library)
 
-> 对应 [ROADMAP](../../ROADMAP.md) · **阶段 3：数据结构与算法基础** / **阶段 4：工程化与模块化设计**
+> 对应 [ROADMAP](https://awesome-embedded-learning-studio.github.io/C-Journey/roadmap) · **阶段 3：数据结构与算法基础** / **阶段 4：工程化与模块化设计**
 > 📖 先读知识点：[用 C 造一个泛型容器：从 void* 到自己的 vector](../../documents/03-data-structures/0-generic-containers-in-c.md)
 
 用 C 从零实现常见数据结构与字符串库，是“自己造轮子理解底层”的练习。对应阶段 3 的 **C STL Mini** 与阶段 4 的 **C 基础库**。
@@ -28,7 +28,7 @@
 
 ## 后续练习
 
-以此为参考，对照 [ROADMAP](../../ROADMAP.md) 阶段 3，自己重写一份更完善的 `vector` / `hashmap`，并补上单元测试。
+以此为参考，对照 [ROADMAP](https://awesome-embedded-learning-studio.github.io/C-Journey/roadmap) 阶段 3，自己重写一份更完善的 `vector` / `hashmap`，并补上单元测试。
 
 ---
 *整理自 2023–2024 学习存档。原项目曾混用 C++，本仓库仅保留纯 C 部分。*

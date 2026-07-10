@@ -65,6 +65,7 @@ TOPIC_TAGS = {
     "embedded",    # 嵌入式通用
     "interrupts",  # 中断
     "driver",      # 驱动分层
+    "meta",        # 元文档(项目本身的 changelog/roadmap 等)
 }
 
 # 全部合法标签

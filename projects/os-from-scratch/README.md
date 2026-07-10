@@ -1,6 +1,6 @@
 # 进阶项目：从零写一个操作系统
 
-> ⚠️ **超出 ROADMAP 8 阶段主线的进阶实践**。建议在完成 [阶段 5 系统编程](../../ROADMAP.md) 后作为综合挑战。
+> ⚠️ **超出 ROADMAP 8 阶段主线的进阶实践**。建议在完成 [阶段 5 系统编程](https://awesome-embedded-learning-studio.github.io/C-Journey/roadmap) 后作为综合挑战。
 > 📖 先读导览：[从零写一个操作系统：通电到内核的接力赛](../../documents/advanced/0-os-from-scratch.md)
 
 从引导扇区到内核线程与文件系统，按“课次”循序渐进地实现一个 x86 裸机操作系统。

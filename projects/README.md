@@ -1,6 +1,6 @@
 # 完整项目 (projects/)
 
-按 [ROADMAP](../ROADMAP.md) 阶段组织的较完整项目，可作为各阶段产出的参考实现。
+按 [ROADMAP](https://awesome-embedded-learning-studio.github.io/C-Journey/roadmap) 阶段组织的较完整项目，可作为各阶段产出的参考实现。
 
 | 项目 | 阶段 | 说明 |
 |---|---|---|

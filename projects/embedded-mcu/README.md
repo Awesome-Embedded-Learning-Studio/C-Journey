@@ -1,6 +1,6 @@
 # 项目：MCU 嵌入式实践（8051）
 
-> 对应 [ROADMAP](../../ROADMAP.md) · **阶段 6：嵌入式 C 与硬件相关开发**
+> 对应 [ROADMAP](https://awesome-embedded-learning-studio.github.io/C-Journey/roadmap) · **阶段 6：嵌入式 C 与硬件相关开发**
 > 📖 先读知识点：[裸机 C 入门：在 8051 上写一个会跑的时钟](../../documents/06-embedded/0-8051-bare-metal-basics.md)
 
 基于 8051 单片机的小型嵌入式项目，练习寄存器操作、外设驱动（GPIO / Timer / LCD / 按键）与裸机程序组织。

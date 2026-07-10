@@ -1,6 +1,6 @@
 # 项目：C 工具库 (CCSTD UtilsLib)
 
-> 对应 [ROADMAP](../../ROADMAP.md) · **阶段 4：工程化与模块化设计**
+> 对应 [ROADMAP](https://awesome-embedded-learning-studio.github.io/C-Journey/roadmap) · **阶段 4：工程化与模块化设计**
 > 📖 先读知识点：[CMake 工程化：target 语义与多配置](../../documents/04-engineering/05-cmake-engineering.md)
 
 一个用 **CMake** 组织的可复用 C 基础库，演示模块化设计、头文件分离与测试组织方式——是阶段 4 推荐项目“C 基础库 clib”的实现雏形。

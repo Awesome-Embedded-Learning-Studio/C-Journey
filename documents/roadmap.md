@@ -1,3 +1,19 @@
+---
+title: "学习路线图"
+description: "C-Journey 的八阶段学习路线——开发环境到系统编程的主线,加嵌入式浅尝与综合收官。"
+chapter: 99
+order: 1
+tags:
+  - host
+  - meta
+difficulty: beginner
+reading_time_minutes: 10
+platform: host
+c_standard: [99, 11]
+prerequisites: []
+related: []
+---
+
 # C 语言学习 Roadmap：从语法到工程实践
 
 > 这份路线图源自维护者自己学 C 时走过的路径，整理出来给同样想系统学的人。
@@ -685,7 +701,7 @@ clib/
 ### 4. 开源协作实践
 
 - Issue 模板 / PR 模板
-- `CONTRIBUTING.md` / `CODE_OF_CONDUCT`
+- `CONTRIBUTING.md`(含行为准则)
 - 文档与发布：`CHANGELOG`、Tag、Release
 - 开源许可证选择
 

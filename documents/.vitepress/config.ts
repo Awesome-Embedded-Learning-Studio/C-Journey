@@ -126,6 +126,7 @@ export default defineConfig({
             { text: '阶段 4 · 工程化', link: '/04-engineering/01-header-contracts' },
             { text: '阶段 5 · 系统编程', link: '/05-system-programming/01-file-io-and-fd' },
             { text: '更新日志', link: '/changelog/' },
+            { text: '路线图', link: '/roadmap' },
         ],
         sidebar: buildSidebar(),
         search: {

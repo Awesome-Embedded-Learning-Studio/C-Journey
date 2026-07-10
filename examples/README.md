@@ -1,6 +1,6 @@
 # 示例代码 (examples/)
 
-配合 [ROADMAP](../ROADMAP.md) 各阶段的小型可运行示例。建议先阅读对应阶段的 `documents/`，再到这里动手实践。
+配合 [ROADMAP](https://awesome-embedded-learning-studio.github.io/C-Journey/roadmap) 各阶段的小型可运行示例。建议先阅读对应阶段的 `documents/`，再到这里动手实践。
 
 | 目录 | 阶段 | 主题 |
 |---|---|---|

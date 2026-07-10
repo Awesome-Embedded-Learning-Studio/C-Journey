@@ -37,7 +37,7 @@ flowchart LR
 | 4 工程化 | 16 | 头文件契约 / API / 错误处理 / CMake 工程化 / 库与链接 / 测试与 Mock / gdb / ASan 与 valgrind / 静态分析 / 覆盖率 / 性能剖析 / CI 流水线 |
 | 5 系统编程 | 14 | 文件 IO / fork-exec / 守护进程 / 信号 / pipe 与共享内存 / select 与 epoll / 非阻塞 reactor / socket TCP/UDP / getaddrinfo |
 
-阶段 6(嵌入式)和阶段 7(capstone)还没动笔——深做交给 imx-forge / ST-Forge,这里将来也只浅尝开个门。完整设计思路见 [ROADMAP](./ROADMAP.md)。
+阶段 6(嵌入式)和阶段 7(capstone)还没动笔——深做交给 imx-forge / ST-Forge,这里将来也只浅尝开个门。完整设计思路见 [ROADMAP](https://awesome-embedded-learning-studio.github.io/C-Journey/roadmap)。
 
 ## 怎么读、怎么改
 
