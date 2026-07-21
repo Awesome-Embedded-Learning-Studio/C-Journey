@@ -27,6 +27,16 @@ function readTitle(filePath: string): string {
     return m ? m[1] : path.basename(filePath, '.md')
 }
 
+/* 侧栏窄列只显「第 N 章 + 核心主题」:砍掉 frontmatter title 冒号后的解释性副标题(常
+   20-40 字,在侧栏只会换行截断)。冒号兼容中/英文;无冒号则保留完整标题。章号取文件名前缀,
+   = 阶段内 order,与正文 description / related 里『第 X 章』引用体系一致。 */
+function sidebarLabel(filePath: string, fileName: string): string {
+    const title = readTitle(filePath)
+    const idx = title.search(/[:：]/)
+    const core = idx >= 0 ? title.slice(0, idx).trim() : title
+    return `第 ${parseInt(fileName, 10)} 章 ${core}`
+}
+
 function buildSidebar() {
     return stages.map((stage) => {
         const stageDir = path.join(docsRoot, stage.dir)
@@ -38,7 +48,7 @@ function buildSidebar() {
             text: stage.name,
             collapsed: true, /* 默认折叠阶段、点击展开;当前阅读章所在阶段 VitePress 自动展开 */
             items: files.map((f) => ({
-                text: readTitle(path.join(stageDir, f)),
+                text: sidebarLabel(path.join(stageDir, f), f),
                 link: `/${stage.dir}/${f.replace(/\.md$/, '')}`,
             })),
         }
