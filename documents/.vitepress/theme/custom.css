@@ -167,6 +167,54 @@ html[data-font-size='large'] {
 html[data-font-size='xxlarge'] {
   zoom: 1.16;
 }
+/* 中文正文:行高放松、字号微提(VitePress 默认偏小偏挤) */
+.vp-doc {
+  line-height: 1.85;
+  font-size: 1.05rem;
+}
+.vp-doc h1 { line-height: 1.4; }
+.vp-doc h2 { line-height: 1.45; }
+.vp-doc h3 { line-height: 1.5; }
+.vp-doc h4 { line-height: 1.55; }
+.vp-doc p {
+  margin-bottom: 1.2em;
+}
+
+/* Content Width:整页布局上限。VitePress 用它算 VPContent 左右 padding,
+   正文区天花板 ≈ layout − 272(目录栏) − 256(大纲栏) − 128(padding)。
+   取 1560 → 天花板 ≈ 904px(中文 ~53 字/行,舒适);1920 屏两侧留白 ~180px
+   (仍小于 VitePress 默认 1440 的留白)。想让正文更宽就调大此值。 */
+:root {
+  --vp-layout-max-width: 1560px;
+}
+
+/* 正文列撑满父级:三类选择器叠特异性,稳压 VitePress 默认的 has-aside / 无 aside 规则。
+   max-width ≥ 天花板(≈904)即撑满,给 1380 留足余量。 */
+.VPDoc .content-container,
+.VPDoc.has-aside .content-container,
+.VPDoc:not(.has-aside) .content-container {
+  max-width: 1380px;
+}
+
+/* 侧栏 / 大纲 / 卡片:字号随正文整体放大,层级协调(VitePress 默认 14px 偏小) */
+.VPSidebar .link {
+  font-size: 1.2rem;
+}
+/* 侧栏长标题省略号收口:.text 是 .item(flex)子项,放大字号后 nowrap 长标题会撑爆;
+   min-width:0 + ellipsis 优雅截断(当前「第 N 章 核心主题」偏短不触发,留作兜底)。 */
+.VPSidebar .text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.VPDocAsideOutline .outline-link {
+  font-size: 1.1rem;
+}
+/* 首页卡片标题:零特异性默认,实际被上方 .VPFeature .title !important 管辖(保留以维持镜像) */
+:where(.VPFeature .title) {
+  font-size: 1.125rem;
+}
 
 /* ================================================================
    HomeTipBanner 配色变量(组件 scoped 用 var(--vp-tip-*),此处给默认值)
