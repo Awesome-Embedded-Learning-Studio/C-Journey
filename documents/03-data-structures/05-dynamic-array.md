@@ -272,7 +272,7 @@ SUMMARY: AddressSanitizer: heap-buffer-overflow /tmp/cj/s3ch5/oob.c:12 in main
 
 (ASan 报错里的进程号、地址值、寄存器值每次跑都不一样,是 ASLR 和堆地址随机化在做事,但「错误类型 `heap-buffer-overflow`、`READ of size 4`、点出的源码行 `oob.c:12`、16 字节区域」这些信息是稳定的,我这里把会变的部分省略成 `...`。)
 
-ASan 报 `heap-buffer-overflow`、`READ of size 4`,而且告诉你这一下读在「16 字节区域之后 0 字节」——那块 `malloc(4 * sizeof(int))` 拿到的内存是 16 字节(4 个 int),`a[4]` 读的位置正好是这块区域**之外的第 1 个字节**,被 ASan 的 redzone(阶段0 第 10 章见过)逮个正着。`oob.c:12` 就是那一行 `printf("a[4] ...")`。所以这一节的两条结论合起来就是:**裸下标访问越界是 UB,靠它「恰好不崩」是赌命;容器的职责是在边界处把 UB 拦下来,`vec_get` 的那道 `if (index >= v->size)` 不是可有可无的装饰**。
+ASan 报 `heap-buffer-overflow`、`READ of size 4`,而且告诉你这一下读在「16 字节区域之后 0 字节」——那块 `malloc(4 * sizeof(int))` 拿到的内存是 16 字节(4 个 int),`a[4]` 读的位置正好是这块区域**之外的第 1 个字节**,被 ASan 的 redzone(阶段0 第 11 章见过)逮个正着。`oob.c:12` 就是那一行 `printf("a[4] ...")`。所以这一节的两条结论合起来就是:**裸下标访问越界是 UB,靠它「恰好不崩」是赌命;容器的职责是在边界处把 UB 拦下来,`vec_get` 的那道 `if (index >= v->size)` 不是可有可无的装饰**。
 
 ## 小结
 
@@ -283,5 +283,5 @@ ASan 报 `heap-buffer-overflow`、`READ of size 4`,而且告诉你这一下读�
 - ISO/IEC 9899:2011 §6.2.5p20(数组类型)、§6.5.2.1(数组下标 `a[i] ≡ *(a+i)`,越界 UB)、§6.5.3.4(`sizeof`)、§7.22.3(内存管理函数总则)与 §7.22.3.4(malloc)、§7.22.3.5(realloc 的 tmp 模式与「可能搬家」语义)、§7.22.3.3(free)
 - K. N. King《C Programming: A Modern Approach》第 17 章·17.3 Dynamically Allocated Arrays(malloc 给数组开空间、calloc 清零版、realloc 让数组「grow」)、17.4 Deallocating Storage
 - cppreference:[`realloc`](https://en.cppreference.com/w/c/memory/realloc)(搬家行为与失败语义)、[`malloc`](https://en.cppreference.com/w/c/memory/malloc)
-- 第 10 章:数组(下标、越界、`a[i] ≡ *(a+i)`)、阶段2·第 2 章:指针算术(`data[i]`)、阶段2·第 6 章:动态内存入门(malloc/realloc 的 tmp 模式)、阶段2·第 7 章:动态内存的坑(ASan 抓 UAF/越界/泄漏)、阶段0·第 10 章:Sanitizer 门禁
+- 第 10 章:数组(下标、越界、`a[i] ≡ *(a+i)`)、阶段2·第 2 章:指针算术(`data[i]`)、阶段2·第 6 章:动态内存入门(malloc/realloc 的 tmp 模式)、阶段2·第 7 章:动态内存的坑(ASan 抓 UAF/越界/泄漏)、阶段0·第 11 章:Sanitizer 门禁
 - 阶段3·第 12 章:算法复杂度与大 O(push 的分摊 O(1) 正式推导)、阶段3·第 9/10 章:排序算法(动态数组当容器用)

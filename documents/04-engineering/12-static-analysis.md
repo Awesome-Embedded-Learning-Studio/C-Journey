@@ -1,6 +1,6 @@
 ---
 title: "静态分析门:clang-tidy 与 cppcheck 进 CI"
-description: "编译器警告(-Wall -Wextra)查语法和类型错、sanitizer 查运行时错,可总有一类问题它们俩都管不到——『代码能编过、但写得不对』的语义毛病:隐式 narrowing 截断、双下划线开头的保留标识符、缺括号让 else 配错 if。这一章讲 CI 的第三层防线——编译时静态分析。先用三个亲手复现的小程序证明 clang-tidy 抓到的 finding 里有的是 gcc/clang 的 -Wall -Wextra 一声不吭(双下划线标识符、缺括号)、有的是 -Wextra 不管只有 -Wconversion 才顺手抓到(narrowing),把『静态分析到底补在哪』说准。再把本仓这套活教材逐行读透:根目录 .clang-tidy 选了 bugprone/performance/readability 三族、关了教程会刷屏的 magic-numbers/cognitive-complexity,scripts/clang_tidy_check.py 为每个 CMake 子项目配 compile_commands.json 再跑 clang-tidy -p,.github/workflows/ci.yml 的 static-analysis 是第 5 道 CI 门——真在本仓跑这个脚本(examples 全过、退出 0)。cppcheck 本机未装,诚实标注,只讲怎么装怎么跑、不编造输出。最后把 projects/clib-utilities 现存的 4 个真 finding 当活样板——narrowing conversion in CCSTDLib_FetchError.c:44、reserved identifier __CCThread_TrampolineArg、int→ptr in CCThread.c:117、缺括号×2——逐条给修法,并说明它为啥暂未纳入硬门(legacy 整改中)。承接阶段0 Ch10 sanitizer 是运行时、本章是编译时静态。gcc 16.1.1 + clang 22.1.6 双真跑,贴真实 clang-tidy 输出 + ISO §7.1.3 保留标识符条款。"
+description: "编译器警告(-Wall -Wextra)查语法和类型错、sanitizer 查运行时错,可总有一类问题它们俩都管不到——『代码能编过、但写得不对』的语义毛病:隐式 narrowing 截断、双下划线开头的保留标识符、缺括号让 else 配错 if。这一章讲 CI 的第三层防线——编译时静态分析。先用三个亲手复现的小程序证明 clang-tidy 抓到的 finding 里有的是 gcc/clang 的 -Wall -Wextra 一声不吭(双下划线标识符、缺括号)、有的是 -Wextra 不管只有 -Wconversion 才顺手抓到(narrowing),把『静态分析到底补在哪』说准。再把本仓这套活教材逐行读透:根目录 .clang-tidy 选了 bugprone/performance/readability 三族、关了教程会刷屏的 magic-numbers/cognitive-complexity,scripts/clang_tidy_check.py 为每个 CMake 子项目配 compile_commands.json 再跑 clang-tidy -p,.github/workflows/ci.yml 的 static-analysis 是第 5 道 CI 门——真在本仓跑这个脚本(examples 全过、退出 0)。cppcheck 本机未装,诚实标注,只讲怎么装怎么跑、不编造输出。最后把 projects/clib-utilities 现存的 4 个真 finding 当活样板——narrowing conversion in CCSTDLib_FetchError.c:44、reserved identifier __CCThread_TrampolineArg、int→ptr in CCThread.c:117、缺括号×2——逐条给修法,并说明它为啥暂未纳入硬门(legacy 整改中)。承接阶段0 Ch11 sanitizer 是运行时、本章是编译时静态。gcc 16.1.1 + clang 22.1.6 双真跑,贴真实 clang-tidy 输出 + ISO §7.1.3 保留标识符条款。"
 chapter: 4
 order: 12
 tags:
@@ -14,12 +14,12 @@ reading_time_minutes: 16
 platform: host
 c_standard: [11]
 prerequisites:
-  - "阶段 0·第 8 章:警告旗标进阶(-Wall -Wextra 是 best-effort、有盲区,本章补它的编译时缺口)"
+  - "阶段 0·第 9 章:警告旗标进阶(-Wall -Wextra 是 best-effort、有盲区,本章补它的编译时缺口)"
   - "第 10 章:ASan+UBSan 深入(运行时 sanitizer 是动态插桩,本章是编译时静态分析,两者互补)"
-  - "阶段 0·第 17 章:clang-format(代码格式统一;本章是 clang-tidy 语义分析,纯增量、别混)"
+  - "阶段 0·第 18 章:clang-format(代码格式统一;本章是 clang-tidy 语义分析,纯增量、别混)"
   - "第 5 章:CMake 工程化(EXPORT_COMPILE_COMMANDS 产出 compile_commands.json 是 clang-tidy 的输入)"
 related:
-  - "阶段 0·第 16 章:GitHub Actions(static-analysis 是 CI 第 5 道门,本章逐行读 ci.yml)"
+  - "阶段 0·第 17 章:GitHub Actions(static-analysis 是 CI 第 5 道门,本章逐行读 ci.yml)"
   - "第 1 章:头文件契约(reserved identifier 这条直接对应 ISO §7.1.3,头文件契约的延伸)"
 ---
 
@@ -27,7 +27,7 @@ related:
 
 ## 引言:编译器警告和 sanitizer 之外,还有一片没人管的角落
 
-到这里你已经攒下两道防线了。第一道是**编译器警告**——阶段 0 第 8 章我们真跑过 `-Wall -Wextra`,看它抓 `unused-parameter`、抓 `=` 写成 `==`、抓条件里的赋值;也亲眼见过它的盲区:`-Wuninitialized` 在条件分支里干脆一声不吭,所以那条铁律叫「警告是 best-effort、没 warning 不等于没 bug」。第二道是 **sanitizer**——本阶段第 10 章我们复现了本仓 CI 的 `sanitize` job,看 ASan 给 use-after-free 拽出三段栈、UBSan 把有符号溢出精确报到行列,代价是约 2 倍运行开销、而且**必须把程序跑起来才抓得到**。
+到这里你已经攒下两道防线了。第一道是**编译器警告**——阶段 0 第 9 章我们真跑过 `-Wall -Wextra`,看它抓 `unused-parameter`、抓 `=` 写成 `==`、抓条件里的赋值;也亲眼见过它的盲区:`-Wuninitialized` 在条件分支里干脆一声不吭,所以那条铁律叫「警告是 best-effort、没 warning 不等于没 bug」。第二道是 **sanitizer**——本阶段第 10 章我们复现了本仓 CI 的 `sanitize` job,看 ASan 给 use-after-free 拽出三段栈、UBSan 把有符号溢出精确报到行列,代价是约 2 倍运行开销、而且**必须把程序跑起来才抓得到**。
 
 可就有这么一类问题,这两道防线都够不着。看一眼这段代码:
 
@@ -77,7 +77,7 @@ $ clang -std=c11 -Wall -Wextra -c narrow.c -o narrow.o
 $                                     ← 同样静默
 ```
 
-`-Wall -Wextra` 不管 narrowing,这一点阶段 0 第 8 章提过一句——它得靠更激进的 `-Wconversion` 才顺手抓到:
+`-Wall -Wextra` 不管 narrowing,这一点阶段 0 第 9 章提过一句——它得靠更激进的 `-Wconversion` 才顺手抓到:
 
 ```text
 $ gcc -std=c11 -Wall -Wextra -Wconversion -c narrow.c -o narrow.o
@@ -234,7 +234,7 @@ Suppressed 14 warnings (14 in non-user code).
 
 把三类 finding 在「编译器管不管 / clang-tidy 管不管」两个维度上摆开,静态分析的定位就清楚了。narrowing 是编译器(`-Wconversion`)和 clang-tidy 的交集——但 CI 不一定开 `-Wconversion`(它会刷屏),所以这条多半还是靠 clang-tidy 这道独立门抓。缺括号是编译器完全不管、clang-tidy 独占的风格问题。reserved-identifier 是违反 ISO §7.1.3、编译器完全不管、clang-tidy 独占的标准符合性问题。后两类尤其能说明「静态分析为什么不可或缺」——**它们是编译器和 sanitizer 都够不着的角落**,只有静态分析这种「在编译时、不运行程序、做模式匹配和数据流分析」的工具才抓得到。
 
-到这里也能把本章和阶段 0 那两章的关系钉死了。**阶段 0 第 8 章**讲的是编译器警告——它做的是 best-effort 的静态分析,能力有限(条件分支里的未初始化它就漏),所以那章结尾说「真正的兜底是 sanitizer」;**本阶段第 10 章**讲的 sanitizer 是**运行时动态插桩**,得把程序跑起来才抓得到、有约 2 倍开销、不进发布构建;**本章**的 clang-tidy 是**编译时静态分析**,不运行程序、开销几乎为零(只在编译/CI 阶段跑一次)、可以也应当进 CI 硬门。三者错位互补:编译器警告抓得到的大部分,sanitizer 兜运行时的底,静态分析补编译器看不见的语义毛病。三者**不能互相替代**——这也是为什么本仓 CI 把它们拆成三道独立的 job。
+到这里也能把本章和阶段 0 那两章的关系钉死了。**阶段 0 第 9 章**讲的是编译器警告——它做的是 best-effort 的静态分析,能力有限(条件分支里的未初始化它就漏),所以那章结尾说「真正的兜底是 sanitizer」;**本阶段第 10 章**讲的 sanitizer 是**运行时动态插桩**,得把程序跑起来才抓得到、有约 2 倍开销、不进发布构建;**本章**的 clang-tidy 是**编译时静态分析**,不运行程序、开销几乎为零(只在编译/CI 阶段跑一次)、可以也应当进 CI 硬门。三者错位互补:编译器警告抓得到的大部分,sanitizer 兜运行时的底,静态分析补编译器看不见的语义毛病。三者**不能互相替代**——这也是为什么本仓 CI 把它们拆成三道独立的 job。
 
 ## 本仓的活教材:从 `.clang-tidy` 到 CI 的 `static-analysis` 门
 
@@ -326,7 +326,7 @@ $ echo $?
 
 读法很简单——`apt` 装 `clang-tidy`(注意 Ubuntu LTS 上的 clang-tidy 版本未必有本机的 22.1.6 那么新,check 集会随版本变,这是「本地过、CI 红」的一个潜在来源),然后直接调上一节那个脚本。job 名字里的「**examples 硬门**」「**阶段4·Ch12 引入**」两条注释是刻意的——它告诉所有读 CI 的人:这道门是这一章立的、范围暂时只管 `examples/`、clib-utilities 还在外面(下面那段讲为啥)。
 
-五道门摆一起看,你就明白这套防线是怎么错位互补的。`build-examples`(gcc+clang 矩阵)担保「能编过」;`sanitize`(ASan+UBSan)担保「运行起来没有内存错和 UB」;`docs`(frontmatter+markdownlint)担保「文档格式合法」;`format-check` 担保「代码风格统一」;`static-analysis`(clang-tidy)担保「没有语义级的常见错」。前三道在阶段 0 第 16 章会逐行拆,`format-check` 在阶段 0 第 17 章讲 clang-format 时讲过,**本章立的 `static-analysis` 是补在它们之外的语义层**——格式对(`format-check` 过)、能编过(`build-examples` 过)、跑起来没崩(`sanitize` 过),代码仍然可能有 reserved identifier、narrowing、缺括号这些「语义毛病」,这道门就是治这个的。
+五道门摆一起看,你就明白这套防线是怎么错位互补的。`build-examples`(gcc+clang 矩阵)担保「能编过」;`sanitize`(ASan+UBSan)担保「运行起来没有内存错和 UB」;`docs`(frontmatter+markdownlint)担保「文档格式合法」;`format-check` 担保「代码风格统一」;`static-analysis`(clang-tidy)担保「没有语义级的常见错」。前三道在阶段 0 第 17 章会逐行拆,`format-check` 在阶段 0 第 18 章讲 clang-format 时讲过,**本章立的 `static-analysis` 是补在它们之外的语义层**——格式对(`format-check` 过)、能编过(`build-examples` 过)、跑起来没崩(`sanitize` 过),代码仍然可能有 reserved identifier、narrowing、缺括号这些「语义毛病」,这道门就是治这个的。
 
 ## cppcheck:另一套静态分析器(本机未装,诚实标注)
 
@@ -453,4 +453,4 @@ void freshError(CCSTDLib_FetchError* errorBuf) {
 - **ISO/IEC 9899:2011**:§7.1.3「Reserved identifiers」(双下划线、下划线+大写、文件作用域下划线开头的标识符保留给实现,`bugprone-reserved-identifier` 的依据);§6.3.1.3(有符号整数窄化是 implementation-defined,`bugprone-narrowing-conversions` 的依据);§6.5.4.1 语法(else 配最近的 if,dangling else 的根源)。
 - **clang-tidy 官方文档**:完整 check 清单(`clang.llvm.org/extra/clang-tidy/checks/`)、`-p`/`compile_commands.json` 的用法、`.clang-tidy` 配置文件格式。
 - **cppcheck**:`cppcheck.sourceforge.io`、`man cppcheck`(`--enable=all`、`--suppress=`、`--error-exitcode=`)。
-- **承接章节**:阶段 0 第 8 章(警告旗标,best-effort 静态分析的源头)、第 10 章(sanitizer,运行时动态)、第 17 章(clang-format,格式而非语义——和本章 clang-tidy 别混);本阶段第 5 章(CMake 的 `CMAKE_EXPORT_COMPILE_COMMANDS`)、第 1 章(头文件契约,reserved identifier 的延伸)。
+- **承接章节**:阶段 0 第 9 章(警告旗标,best-effort 静态分析的源头)、第 11 章(sanitizer,运行时动态)、第 18 章(clang-format,格式而非语义——和本章 clang-tidy 别混);本阶段第 5 章(CMake 的 `CMAKE_EXPORT_COMPILE_COMMANDS`)、第 1 章(头文件契约,reserved identifier 的延伸)。

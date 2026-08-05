@@ -28,7 +28,7 @@
 
 ## 现在到哪了
 
-主线六阶段已经全部写完上线,共 84 章:
+主线六阶段已经全部写完上线,共 85 章:
 
 ```mermaid
 flowchart LR
@@ -42,7 +42,7 @@ flowchart LR
 
 | 阶段 | 章 | 内容 |
 |---|---|---|
-| 0 开发环境 | 17 | 工具链 / 编译四阶段 / 链接与动态库 / 警告体系 / sanitizer / make / cmake / gdb / Git / CI / clang-format |
+| 0 开发环境 | 18 | 工具链 / VSCode+Clangd / 编译四阶段 / 链接与动态库 / 警告体系 / sanitizer / make / cmake / gdb / Git / CI / clang-format |
 | 1 C 基底 | 13 | 程序结构 / 类型与算术 / 运算符 / 控制流 / 函数 / 作用域 / 数组 / 字符串 / IO / 结构体联合枚举 |
 | 2 指针与内存 | 12 | 指针算术 / 动态内存 / 函数指针 / void\* 与字节操作 / 内存六区布局 |
 | 3 数据结构 | 12 | 链表 / 栈队列 / 动态数组 / 二叉树与 BST / 哈希表 / 查找排序 / 大 O |
@@ -53,10 +53,10 @@ flowchart LR
 
 ## 怎么读、怎么改
 
-不知道从哪开始?有两条路:
+不知道从哪开始?阶段 0 准备了一份[导读](./documents/00-dev-environment/index.md),把 18 章分成 🌱 必读(读完就能动手写 C)/ 🔧 推荐(写几天就离不开)/ ⚗️ 进阶选读(按需回查)三档。两条最常走的路:
 
-- **完整路线**:从[阶段 0 开发环境](./documents/00-dev-environment/01-toolchain-health-check.md)顺序学——17 章工具链打底,之后进 C 基底,体系最完整。
-- **先写起来**:急着动手?直接去[阶段 1 程序结构](./documents/01-c-basics/01-program-structure-and-compilation.md)开始写代码,工具链用到哪、回补哪(建议至少先扫一眼[工具链体检](./documents/00-dev-environment/01-toolchain-health-check.md))。
+- **萌新快速通道**:读完[工具链体检](./documents/00-dev-environment/01-toolchain-health-check.md)、[编译四阶段](./documents/00-dev-environment/03-save-temps-and-four-stages.md)两章 → 直接进[阶段 1](./documents/01-c-basics/) 写 C;阶段 0 其余内容撞墙了再回查。
+- **折腾工程师全读**:从头线性读 18 章,这是 C-Journey 的招牌体验——命令行优先、每章真跑 gcc 16 + clang 22、贴 ISO 条款。
 
 配套可编译示例在 `examples/`,完整项目在 `projects/`。改了东西,本地过两道门再提 PR:
 

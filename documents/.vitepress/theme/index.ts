@@ -40,27 +40,29 @@ const Layout = defineComponent({
             /* Hero 区移动端:ProofStrip 夹在标题与终端之间 */
             'home-hero-actions-after': () =>
                 h('div', { class: 'proof-on-mobile' }, [h(ProofStrip)]),
-            /* Hero 区桌面端:ProofStrip 在终端下方 */
+            /* Hero 区下方:ProofStrip(桌面)+ 在线 C 编译器 demo(放最上面,一进门就能玩) */
             'home-hero-after': () =>
-                h('div', { class: 'proof-on-desktop' }, [h(ProofStrip)]),
+                h('div', { class: 'home-after-hero' }, [
+                    h('div', { class: 'proof-on-desktop' }, [h(ProofStrip)]),
+                    h('div', { class: 'home-compiler-demo-wrap' }, [
+                        h('h2', { class: 'home-compiler-demo-title' }, '亲手玩:C 在浏览器里跑'),
+                        h('p', { class: 'home-compiler-demo-lead' },
+                            '改改下面的代码、点「运行」看输出,或点「看 x86-64 汇编」看 C 编成什么样 —— 全程调 godbolt 公共 API,无需装任何东西。'),
+                        h(OnlineCompilerDemo, {
+                            title: '指针改值:隔着地址动另一个变量',
+                            description: 'int* p = &n 让 p 指向 n;*p = 42 通过地址把 n 改成 42。把 42 改成别的数、或让 p 指向另一个变量,看 n 怎么变。',
+                            allowRun: true,
+                            allowX86Asm: true,
+                            sourcePath: '/demos/hero_demo.c',
+                        }),
+                    ]),
+                ]),
             /* Features 之前:提示横幅(给读者入口) */
             'home-features-before': () =>
                 h('div', { class: 'home-pre-features' }, [h(HomeTipBanner)]),
-            /* Features 之后:四阶段路线图 + 在线 C 编译器 demo(让访客一进门就能玩) */
+            /* Features 之后:四阶段路线图 */
             'home-features-after': () => h('div', { class: 'home-after-features' }, [
                 h(HomeRoadmap),
-                h('div', { class: 'home-compiler-demo-wrap' }, [
-                    h('h2', { class: 'home-compiler-demo-title' }, '亲手玩:C 在浏览器里跑'),
-                    h('p', { class: 'home-compiler-demo-lead' },
-                        '改改下面的代码、点「运行」看输出,或点「看 x86-64 汇编」看 C 编成什么样 —— 全程调 godbolt 公共 API,无需装任何东西。'),
-                    h(OnlineCompilerDemo, {
-                        title: '指针改值:隔着地址动另一个变量',
-                        description: 'int* p = &n 让 p 指向 n;*p = 42 通过地址把 n 改成 42。把 42 改成别的数、或让 p 指向另一个变量,看 n 怎么变。',
-                        allowRun: true,
-                        allowX86Asm: true,
-                        sourcePath: '/demos/hero_demo.c',
-                    }),
-                ]),
             ]),
             /* 顶栏右侧:字号切换器 */
             'nav-bar-content-after': () => h(FontSizeSwitcher),

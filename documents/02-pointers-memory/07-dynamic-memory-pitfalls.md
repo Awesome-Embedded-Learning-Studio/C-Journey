@@ -13,18 +13,18 @@ platform: host
 c_standard: [99, 11]
 prerequisites:
   - "阶段2·第6章：动态内存入门（malloc/free/calloc/realloc 用法、每块 free 一次）"
-  - "阶段 0·第10章：Sanitizer 门禁（UBSan/ASan 的 recover/abort 区别）"
+  - "阶段 0·第11章：Sanitizer 门禁（UBSan/ASan 的 recover/abort 区别）"
   - "阶段2·第1章：指针是什么（NULL、悬垂指针概念）"
 related:
   - "阶段2·第6章：动态内存入门（正确用法）、第12章：内存布局（栈 vs 堆、泄漏的内存地图）"
-  - "阶段 0·第10章：Sanitizer 门禁（ASan 抓栈越界/UAF/double-free/leak 的全景）"
+  - "阶段 0·第11章：Sanitizer 门禁（ASan 抓栈越界/UAF/double-free/leak 的全景）"
 ---
 
 # 动态内存的坑：UAF / double-free / 越界 / 泄漏，ASan 逐个抓
 
 ## 引言：第 6 章那条规矩的「违反面」
 
-第 6 章给了一条规矩：**每块 `malloc`/`calloc`/`realloc` 的内存，必须被 `free` 一次、且仅一次**。这一章把违反这条规矩（以及它周边）的每种典型错误，逐个真跑出来——`free` 了还用、`free` 两次、堆上越界、忘了 `free`。它们全是**未定义行为**：可能当场崩、可能「静悄悄」乱写别人内存埋下地雷、也可能什么都不发生。光靠人眼审查很难揪，好在 ASan（AddressSanitizer，阶段 0 第 10 章见过）能把这四种错误**精确分类、当场抓现行**——所以写动态内存的代码，`-fsanitize=address` 是必备护栏，这一章就是它的主场。注意 ASan 报错时那些地址、进程号每次跑都不一样，但「错误类型」(`heap-use-after-free`/`double-free`/`heap-buffer-overflow`/泄漏)是稳定的。
+第 6 章给了一条规矩：**每块 `malloc`/`calloc`/`realloc` 的内存，必须被 `free` 一次、且仅一次**。这一章把违反这条规矩（以及它周边）的每种典型错误，逐个真跑出来——`free` 了还用、`free` 两次、堆上越界、忘了 `free`。它们全是**未定义行为**：可能当场崩、可能「静悄悄」乱写别人内存埋下地雷、也可能什么都不发生。光靠人眼审查很难揪，好在 ASan（AddressSanitizer，阶段 0 第 11 章见过）能把这四种错误**精确分类、当场抓现行**——所以写动态内存的代码，`-fsanitize=address` 是必备护栏，这一章就是它的主场。注意 ASan 报错时那些地址、进程号每次跑都不一样，但「错误类型」(`heap-use-after-free`/`double-free`/`heap-buffer-overflow`/泄漏)是稳定的。
 
 ## use-after-free：`free` 了还在用
 
@@ -113,7 +113,7 @@ SUMMARY: AddressSanitizer: heap-buffer-overflow (.../ho+0x12d8) in main
 ==81576==ABORTING
 ```
 
-ASan 报 `heap-buffer-overflow`、`WRITE of size 4`（写了 4 字节）——和栈越界的 `stack-buffer-overflow`（第 10 章真跑过）是同源不同位置的报告，ASan 在每块 `malloc` 内存周围也埋了「红区」，越界一写就踩到、当场被抓住。堆越界的可怕之处和 UAF 类似：那块被踩的内存可能是**别的 `malloc` 来的数据**，你写坏的是不相干的别人数据，bug 表现得极其诡异、和出问题的代码隔着十万八千里。这就是为什么 `for (i=0; i<n; i++)` 里的边界必须严格 `< n`、为什么动态数组的「容量 vs 长度」要分清——第 6 章那种 `realloc` 扩容时算错新大小，就是堆越界的常见源头。
+ASan 报 `heap-buffer-overflow`、`WRITE of size 4`（写了 4 字节）——和栈越界的 `stack-buffer-overflow`（第 11 章真跑过）是同源不同位置的报告，ASan 在每块 `malloc` 内存周围也埋了「红区」，越界一写就踩到、当场被抓住。堆越界的可怕之处和 UAF 类似：那块被踩的内存可能是**别的 `malloc` 来的数据**，你写坏的是不相干的别人数据，bug 表现得极其诡异、和出问题的代码隔着十万八千里。这就是为什么 `for (i=0; i<n; i++)` 里的边界必须严格 `< n`、为什么动态数组的「容量 vs 长度」要分清——第 6 章那种 `realloc` 扩容时算错新大小，就是堆越界的常见源头。
 
 ## 内存泄漏：忘了 `free`
 
@@ -152,5 +152,5 @@ LSan 报 `detected memory leaks`、`400 byte(s) leaked in 1 allocation(s)`——
 - K. N. King《C Programming: A Modern Approach》第 17 章（动态内存的悬垂指针、内存泄漏）、第 18 章（UAF/double-free 惯例）
 - Robert C. Seacord《Effective C》第 6 章（动态内存常见错误:UAF/double-free/泄漏、ASan 与 MSan 的分工）
 - LLVM AddressSanitizer 文档（heap-use-after-free / double-free / heap-buffer-overflow / LeakSanitizer 各类报告的含义）
-- 阶段2·第6章：动态内存入门（正确用法）、阶段 0·第10章：Sanitizer 门禁（ASan/UBSan/MSan 全景、recover/abort）、第10章：数组（栈越界 stack-buffer-overflow 对照）
+- 阶段2·第6章：动态内存入门（正确用法）、阶段 0·第11章：Sanitizer 门禁（ASan/UBSan/MSan 全景、recover/abort）、第10章：数组（栈越界 stack-buffer-overflow 对照）
 - 阶段2·第12章：内存布局与生命周期（栈 vs 堆地图、泄漏的长期危害）

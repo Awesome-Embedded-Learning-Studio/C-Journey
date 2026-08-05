@@ -14,11 +14,11 @@ platform: host
 c_standard: [99, 11]
 prerequisites:
   - "第 12 章：基础 IO（三标准流 stdin/stdout/stderr、printf/scanf 是变参）"
-  - "阶段 0·第 9 章：标准与优化（-std=c11 与 gnu11 的 __STRICT_ANSI__ 分水岭）"
+  - "阶段 0·第 10 章：标准与优化（-std=c11 与 gnu11 的 __STRICT_ANSI__ 分水岭）"
   - "第 2 章：整型家族与 sizeof（size_t、定宽整型、sizeof 是编译期运算符）"
 related:
   - "第 2 章：进程的诞生（fork、写时复制，_exit 与 stdio 缓冲的进一步交锋）"
-  - "阶段 0·第 10 章：Sanitizer 门禁（ASan/UBSan，本章用它复核内存安全）"
+  - "阶段 0·第 11 章：Sanitizer 门禁（ASan/UBSan，本章用它复核内存安全）"
 ---
 
 # 文件 IO 与 fd：open/read/write/dup 与缓冲那点事
@@ -161,7 +161,7 @@ $ echo $?
 0                                                          # 居然编过了、零警告
 ```
 
-`strdup` 被门控得死死的——没有原型、gcc 14 起隐式声明从警告升级成硬 error（呼应阶段 0 第 9 章），编译直接失败、退出码 1。可 `open`/`close` 这两个同样属于 POSIX、同样不在 ISO C 里的调用，却**恰好漏网**、编过了还没半句警告（gcc、clang 都一样，退出码 0）。我把 glibc 在 `-std=c11` 下实际暴露的宏打出来看了一眼：`_POSIX_C_SOURCE`、`_DEFAULT_SOURCE` 都没定义、`__USE_POSIX` 也没开，门确实是关着的——但这几个基础调用就是从门缝里溜出来了（glibc 2.43 对 `<fcntl.h>`/`<unistd.h>` 里这几个历史悠久的核心入口放得格外松）。
+`strdup` 被门控得死死的——没有原型、gcc 14 起隐式声明从警告升级成硬 error（呼应阶段 0 第 10 章），编译直接失败、退出码 1。可 `open`/`close` 这两个同样属于 POSIX、同样不在 ISO C 里的调用，却**恰好漏网**、编过了还没半句警告（gcc、clang 都一样，退出码 0）。我把 glibc 在 `-std=c11` 下实际暴露的宏打出来看了一眼：`_POSIX_C_SOURCE`、`_DEFAULT_SOURCE` 都没定义、`__USE_POSIX` 也没开，门确实是关着的——但这几个基础调用就是从门缝里溜出来了（glibc 2.43 对 `<fcntl.h>`/`<unistd.h>` 里这几个历史悠久的核心入口放得格外松）。
 
 这种「有的漏、有的卡」是 libc 实现的细节、**不是标准承诺的**：换 musl、换老版 glibc、换 BSD，漏的不一定还漏。所以正确的姿势依然是**老老实实写 `#define _POSIX_C_SOURCE 200809L`**（或者干脆 `-std=gnu11`）——这样不管哪个 libc、不管用哪个 POSIX 调用，都能稳稳拿到声明。这里压一句教训：**断言 C/POSIX 行为之前一定自己真跑一遍**，我这次就靠记忆差点写错——以为「没 macro 一定编不过」，实际 `open` 偏偏能过。
 

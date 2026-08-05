@@ -18,7 +18,7 @@ prerequisites:
   - "阶段 0·第 1 章:工具链体检(gcc/clang 双跑纪律,本章覆盖率统一走 gcc)"
   - "阶段 4·第 5 章:CMake 工程化(CMAKE_C_FLAGS=--coverage 怎么注入、ctest 怎么跑)"
 related:
-  - "阶段 0·第 16 章:GitHub Actions(coverage 是 CI 的一道 job,本章逐行读 ci.yml)"
+  - "阶段 0·第 17 章:GitHub Actions(coverage 是 CI 的一道 job,本章逐行读 ci.yml)"
   - "阶段 4·第 12 章:静态分析门(同为 CI 门,clang-tidy 抓语义、gcov 量化测试,互补)"
   - "阶段 4·第 10 章:Sanitizer 门(ASan 抓内存错,gcov 量化测试覆盖,一个查错一个查测没测到)"
 ---
@@ -401,4 +401,4 @@ function CCDynamicArray_InsertSingle called 1 returned 100% blocks executed 69%
 - **`lcov` 项目**(<https://github.com/linux-test-project/lcov>):gcov 的前端,`--capture`/`--remove`/`--summary`/`genhtml` 的用法;CI 上 `apt install lcov` 即得。
 - **ISO/IEC 9899:2011 §7.19**(`stddef.h`):`NULL` 的定义来源(覆盖率用例里要用 `NULL` 得 include 它)。
 - **本仓活教材**:[`.github/workflows/ci.yml`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.github/workflows/ci.yml) 的 `coverage` job(`--coverage` 注入 + lcov 三步出总览)、[`projects/clib-utilities`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/tree/main/projects/clib-utilities)(被测对象,`CCDynamicArray.c` 139 行 14 函数,本机真跑 42.45%)。
-- **承接章节**:第 7 章(测试不再是 printf,本章量化它的覆盖)、第 12 章(静态分析门,同为 CI 门,一个查代码语义、一个量化测试)、阶段 0 第 16 章(GitHub Actions,`coverage` 是 CI 的一道 job)。
+- **承接章节**:第 7 章(测试不再是 printf,本章量化它的覆盖)、第 12 章(静态分析门,同为 CI 门,一个查代码语义、一个量化测试)、阶段 0 第 17 章(GitHub Actions,`coverage` 是 CI 的一道 job)。

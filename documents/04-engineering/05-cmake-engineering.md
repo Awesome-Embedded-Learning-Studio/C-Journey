@@ -1,6 +1,6 @@
 ---
 title: "CMake 工程化:target 语义、PRIVATE/PUBLIC/INTERFACE 与多配置"
-description: "阶段 0 第 12 章把 cmake -B build 两步走跑通了,但真到工程化规模,一道墙就砸上来——我把一堆 .c 抽成库给别人用,凭什么叫「链接我」?凭什么消费者能拿到我的头文件却碰不到我的内部细节?这一章把现代 CMake 的核心心法「target-centric」和传播三态讲透:PRIVATE 只自己编用、PUBLIC 自己+消费者都用、INTERFACE 只消费者用。我亲手造一个最小静态库 greeter,真跑出「消费者能 #include 到 PUBLIC 的 greeter.h、却够不着 PRIVATE 的 prefix.h」,并把 INTERFACE 挂的宏到消费者编译命令里抓出来。再补两个工程里真会咬人的:GLOB_RECURSE 收源「加文件不触发 reconfigure」的坑(故而 clib-utilities 改革改成了显式源表,逐行引它的 CMakeLists),以及 CMAKE_BUILD_TYPE=Debug/Release 多配置怎么自动选 -g 与 -O3 -DNDEBUG、连带 assert 在 Release 下静默的真跑。全 gcc16/clang22 真跑,贴真实输出与 flags.make。"
+description: "阶段 0 第 13 章把 cmake -B build 两步走跑通了,但真到工程化规模,一道墙就砸上来——我把一堆 .c 抽成库给别人用,凭什么叫「链接我」?凭什么消费者能拿到我的头文件却碰不到我的内部细节?这一章把现代 CMake 的核心心法「target-centric」和传播三态讲透:PRIVATE 只自己编用、PUBLIC 自己+消费者都用、INTERFACE 只消费者用。我亲手造一个最小静态库 greeter,真跑出「消费者能 #include 到 PUBLIC 的 greeter.h、却够不着 PRIVATE 的 prefix.h」,并把 INTERFACE 挂的宏到消费者编译命令里抓出来。再补两个工程里真会咬人的:GLOB_RECURSE 收源「加文件不触发 reconfigure」的坑(故而 clib-utilities 改革改成了显式源表,逐行引它的 CMakeLists),以及 CMAKE_BUILD_TYPE=Debug/Release 多配置怎么自动选 -g 与 -O3 -DNDEBUG、连带 assert 在 Release 下静默的真跑。全 gcc16/clang22 真跑,贴真实输出与 flags.make。"
 chapter: 4
 order: 5
 tags:
@@ -14,11 +14,11 @@ reading_time_minutes: 18
 platform: host
 c_standard: [11]
 prerequisites:
-  - "阶段 0·第 12 章:CMake 入门(cmake -B build 两步走、out-of-source 构建)"
-  - "阶段 0·第 6 章:链接与静态库(.a / undefined reference / 库顺序)"
+  - "阶段 0·第 13 章:CMake 入门(cmake -B build 两步走、out-of-source 构建)"
+  - "阶段 0·第 7 章:链接与静态库(.a / undefined reference / 库顺序)"
   - "第 1 章:头文件契约(include guard、extern 声明、PUBLIC/PRIVATE 的契约层伏笔)"
 related:
-  - "阶段 0·第 12 章:CMake 入门(本章是它的工程化深化)"
+  - "阶段 0·第 13 章:CMake 入门(本章是它的工程化深化)"
   - "第 1 章:头文件契约(target_* 三态是契约在构建系统层的落地)"
   - "第 2 章:API 设计与不透明类型(把 struct 藏进 .c,target 把内部分进 PRIVATE)"
 ---
@@ -27,13 +27,13 @@ related:
 
 ## 引言:从「能编出来」到「能给别人用」
 
-阶段 0 第 12 章我们把 `cmake -B build` 两步走跑通了——写一份 `CMakeLists.txt`,配置生成 Makefile,再 `cmake --build` 真编译,产物全进 `build/`、源码树干干净净。那是一个**单 target** 的最小场景:`add_executable(main main.c greet.c)`,一个可执行文件从头编到尾。可一旦项目长大,你马上会撞上一堵墙——我把一组 `.c` 抽成了一个**库**,凭什么叫「链接我」?更细的:我的库**内部**偷偷依赖了某个头文件、某个第三方库,调用我的人**根本不该知道**这些内部细节,怎么做到把内部藏起来、只把公开 API 暴露出去?
+阶段 0 第 13 章我们把 `cmake -B build` 两步走跑通了——写一份 `CMakeLists.txt`,配置生成 Makefile,再 `cmake --build` 真编译,产物全进 `build/`、源码树干干净净。那是一个**单 target** 的最小场景:`add_executable(main main.c greet.c)`,一个可执行文件从头编到尾。可一旦项目长大,你马上会撞上一堵墙——我把一组 `.c` 抽成了一个**库**,凭什么叫「链接我」?更细的:我的库**内部**偷偷依赖了某个头文件、某个第三方库,调用我的人**根本不该知道**这些内部细节,怎么做到把内部藏起来、只把公开 API 暴露出去?
 
-这堵墙就是现代 CMake 的核心:**target 语义**和它身上的**传播三态**——PRIVATE、PUBLIC、INTERFACE。这一章我们亲手造一个最小的真实静态库 `greeter`,把它身上这三态一条一条真跑给你看:消费者能 `#include` 到 PUBLIC 的头、能拿到 INTERFACE 挂的宏,却**够不着** PRIVATE 的内部头(真跑一个「故意 include 私有头」的消费者,当场编译失败)。再补两个工程里真会咬人的:用 `GLOB_RECURSE` 收源文件这个看似省事的写法,**加文件不触发重新配置**的经典坑(也就是为什么本仓库 `projects/clib-utilities` 的 CMakeLists 改革改成了显式源表——我逐行引它给你看),以及 `CMAKE_BUILD_TYPE=Debug/Release` 多配置怎么替你选 `-g` 与 `-O3 -DNDEBUG`、连带 `assert` 在 Release 下静默的真跑。前置阅读是阶段 0 第 12 章;本章在它之上往「工程化」走一层,不重复讲两步走和 out-of-source,默认你已经会。
+这堵墙就是现代 CMake 的核心:**target 语义**和它身上的**传播三态**——PRIVATE、PUBLIC、INTERFACE。这一章我们亲手造一个最小的真实静态库 `greeter`,把它身上这三态一条一条真跑给你看:消费者能 `#include` 到 PUBLIC 的头、能拿到 INTERFACE 挂的宏,却**够不着** PRIVATE 的内部头(真跑一个「故意 include 私有头」的消费者,当场编译失败)。再补两个工程里真会咬人的:用 `GLOB_RECURSE` 收源文件这个看似省事的写法,**加文件不触发重新配置**的经典坑(也就是为什么本仓库 `projects/clib-utilities` 的 CMakeLists 改革改成了显式源表——我逐行引它给你看),以及 `CMAKE_BUILD_TYPE=Debug/Release` 多配置怎么替你选 `-g` 与 `-O3 -DNDEBUG`、连带 `assert` 在 Release 下静默的真跑。前置阅读是阶段 0 第 13 章;本章在它之上往「工程化」走一层,不重复讲两步走和 out-of-source,默认你已经会。
 
 ## 一切围着 target 转:为什么不再写全局 include_directories
 
-先纠正一个最容易混的误解:**CMake 不是编译器,它也不「编译」任何东西**——它是构建系统的生成器,你写一份声明式的 `CMakeLists.txt` 描述「我要构建什么、依赖什么、链接谁」,它替你生成 Makefile(或 Ninja 文件),最后还是交给 `make`/`ninja` 去调 `gcc`/`clang` 真编译。阶段 0 第 12 章讲过这套两步走,这里不重复,我们直接进工程化的关键。
+先纠正一个最容易混的误解:**CMake 不是编译器,它也不「编译」任何东西**——它是构建系统的生成器,你写一份声明式的 `CMakeLists.txt` 描述「我要构建什么、依赖什么、链接谁」,它替你生成 Makefile(或 Ninja 文件),最后还是交给 `make`/`ninja` 去调 `gcc`/`clang` 真编译。阶段 0 第 13 章讲过这套两步走,这里不重复,我们直接进工程化的关键。
 
 老式 CMake 写法有一堆**全局**命令:`include_directories(...)`、`add_definitions(...)`、`link_directories(...)`。这些命令设一次,后面**所有** target 都吃——包括将来新加的、八竿子打不着的。工程小的时候无所谓,工程一大就乱成一锅粥:你根本说不清某个 `-I` 路径到底是给谁用的,排查头文件冲突时能让你翻半天。
 
@@ -409,7 +409,7 @@ endif()
 
 ## 多配置:CMAKE_BUILD_TYPE 怎么替你选旗标
 
-工程化的另一件常事是「同一个项目要编出不同配置」——开发期带调试信息(`-g`)好上 GDB,发布期激进优化、关掉 `assert`(`-O3 -DNDEBUG`)。阶段 0 第 9 章我们手拧过 `-g`/`-O`/`-DNDEBUG`,在 CMake 里这一整套靠一个变量 `CMAKE_BUILD_TYPE` 来切。它内置几种构建类型,最常用的就是 Debug 和 Release。我们写一个最小例子,它的 `main` 里有一条 `assert(1 == 2)`——Debug 下会触发、Release 下因为 `-DNDEBUG` 而静默:
+工程化的另一件常事是「同一个项目要编出不同配置」——开发期带调试信息(`-g`)好上 GDB,发布期激进优化、关掉 `assert`(`-O3 -DNDEBUG`)。阶段 0 第 10 章我们手拧过 `-g`/`-O`/`-DNDEBUG`,在 CMake 里这一整套靠一个变量 `CMAKE_BUILD_TYPE` 来切。它内置几种构建类型,最常用的就是 Debug 和 Release。我们写一个最小例子,它的 `main` 里有一条 `assert(1 == 2)`——Debug 下会触发、Release 下因为 `-DNDEBUG` 而静默:
 
 ```c
 /* multiconfig/demo.c */
@@ -445,7 +445,7 @@ demo: /tmp/cj/p4ch5/multiconfig/demo.c:7: main: Assertion `1 == 2 && ...' failed
 exit=134
 ```
 
-Debug 给的就是 `-g`(带调试信息,对应阶段 0 第 9 章「调试用 `-O0 -g`」),`NDEBUG` 没定义,所以 `assert(1 == 2)` 当场触发、程序 abort、退出码 134(128+SIGABRT 的 6)。再看 Release:
+Debug 给的就是 `-g`(带调试信息,对应阶段 0 第 10 章「调试用 `-O0 -g`」),`NDEBUG` 没定义,所以 `assert(1 == 2)` 当场触发、程序 abort、退出码 134(128+SIGABRT 的 6)。再看 Release:
 
 ```text
 $ cmake -B build-rel -DCMAKE_BUILD_TYPE=Release
@@ -459,15 +459,15 @@ exit=0
 
 Release 给的是 `-O3 -DNDEBUG`——`-O3` 激进优化,`-DNDEBUG` 定义了 `NDEBUG` 宏、`assert` 在 `<assert.h>` 里被这个宏关成了空操作(`((void)0)`),所以同一段代码这回直接跑到底、打印 `ran to completion`、退出 0。这就是 `CMAKE_BUILD_TYPE` 的全部价值:**开发期 Debug 调试、要发布或跑性能基准时切 Release,靠这一个变量切换,旗标 CMake 替你选好**——不用自己去 `if/else` 一堆 `-g`/`-O3`,这正是 CMake 比手写 Makefile 省心的地方。
 
-这里有个直接呼应阶段 0 第 9 章的细节要划重点。你大概注意到上面 `C_FLAGS` 那行里**没有** `-std=` 那一条——这个 demo 没设 `CMAKE_C_STANDARD`,CMake 用的就是编译器默认的 `-std=gnu11`(gnu 扩展开着),和我们第 9 章讲的「gcc 默认纵容 GNU 扩展、要严格 c11 得显式动手」一脉相承。要在 CMake 里钉死严格 C11,得显式写 `set(CMAKE_C_STANDARD 11)` 配 `set(CMAKE_C_STANDARD_REQUIRED ON)` 再配 `set(CMAKE_C_EXTENSIONS OFF)`——三件套齐了,CMake 才给你 `-std=c11` 而不是 `-std=gnu11`。这套纪律阶段 0 第 12 章讲过、第 9 章也讲过,这里不重复,只提醒一句:CMake 默认的姿态和 gcc 一样,是「能让你过就让你过」,要严格得自己动手。
+这里有个直接呼应阶段 0 第 10 章的细节要划重点。你大概注意到上面 `C_FLAGS` 那行里**没有** `-std=` 那一条——这个 demo 没设 `CMAKE_C_STANDARD`,CMake 用的就是编译器默认的 `-std=gnu11`(gnu 扩展开着),和我们第 9 章讲的「gcc 默认纵容 GNU 扩展、要严格 c11 得显式动手」一脉相承。要在 CMake 里钉死严格 C11,得显式写 `set(CMAKE_C_STANDARD 11)` 配 `set(CMAKE_C_STANDARD_REQUIRED ON)` 再配 `set(CMAKE_C_EXTENSIONS OFF)`——三件套齐了,CMake 才给你 `-std=c11` 而不是 `-std=gnu11`。这套纪律阶段 0 第 13 章讲过、第 9 章也讲过,这里不重复,只提醒一句:CMake 默认的姿态和 gcc 一样,是「能让你过就让你过」,要严格得自己动手。
 
 还有一个多配置的坑值得提一嘴:`CMAKE_BUILD_TYPE` 这套是**单配置生成器**(Unix Makefiles、Ninja)的玩法,你**必须**在配置期用 `-D` 指定一个类型、一个 build 目录对应一个类型。如果你用 **多配置生成器**(Visual Studio、Ninja Multi-Config、Xcode),配置期不指定类型、构建期用 `cmake --build build --config Debug` 来选——同一份工程、同一个 build 目录里能同时存在多套配置产物。这两种生成器的切换点不一样,新手在 Visual Studio 上跑 `cmake -DCMAKE_BUILD_TYPE=Release` 发现旗标没变,八成就是这个坑——单配置的那套在多配置生成器上**不生效**。Linux 上默认的 Unix Makefiles 是单配置,我们这套写法没问题;哪天换 Ninja Multi-Config,记得改用 `--config` 切。
 
 ## 小结
 
-工程化这一章我们把阶段 0 第 12 章那个「能编出来」的最小流程,推进到了「能给别人用」的工程化规模,核心就两件事。第一件是 **target 语义和传播三态**:现代 CMake 一切围着 target 转,属性挂在具体 target 身上而不是全局;给属性标 `PRIVATE`(只自己编用)、`PUBLIC`(自己+消费者都用)、`INTERFACE`(只消费者用),CMake 就会替你把「正确使用这个库所需的一切」按这三态自动传播——头文件路径、编译宏、链接库,消费者 link 进来就配齐,不用手写一个 `-I`/`-D`/`-l`。我们真跑出消费者能 `#include` 到 PUBLIC 的 `greeter.h`、能继承 INTERFACE 挂的 `GREETER_VIA_CMAKE` 宏,却**够不着** PRIVATE 的 `prefix.h`(`fatal error: prefix.h: No such file or directory`)——契约层的「接口与实现分离」到 CMake 这里被构建系统强制执行了。第二件是两个工程里真会咬人的:**GLOB_RECURSE 收源「加文件不触发重新配置」**的经典坑,故而本仓库 clib-utilities 改成了逐行列出的显式源表(我们逐行引了它的 CMakeLists,从 PUBLIC 的头目录、PUBLIC 的 `pthread dl`、到 PRIVATE 的 `-Wall -Wextra`,每处都是三态语义的实战落地);以及 **CMAKE_BUILD_TYPE 多配置**替你选 `-g`(Debug)与 `-O3 -DNDEBUG`(Release),连带 `assert` 在 Release 下静默的真跑——但要留心 CMake 默认给的是 `-std=gnu11` 不是 `-std=c11`,要严格 C11 得显式关 `CMAKE_C_EXTENSIONS`,还有单配置 vs 多配置生成器切换配置的姿势不一样。把这些吃透,你写出来的 CMakeLists 就不再是「能跑」的脚本,而是「有封装、有边界、可复用」的工程描述。
+工程化这一章我们把阶段 0 第 13 章那个「能编出来」的最小流程,推进到了「能给别人用」的工程化规模,核心就两件事。第一件是 **target 语义和传播三态**:现代 CMake 一切围着 target 转,属性挂在具体 target 身上而不是全局;给属性标 `PRIVATE`(只自己编用)、`PUBLIC`(自己+消费者都用)、`INTERFACE`(只消费者用),CMake 就会替你把「正确使用这个库所需的一切」按这三态自动传播——头文件路径、编译宏、链接库,消费者 link 进来就配齐,不用手写一个 `-I`/`-D`/`-l`。我们真跑出消费者能 `#include` 到 PUBLIC 的 `greeter.h`、能继承 INTERFACE 挂的 `GREETER_VIA_CMAKE` 宏,却**够不着** PRIVATE 的 `prefix.h`(`fatal error: prefix.h: No such file or directory`)——契约层的「接口与实现分离」到 CMake 这里被构建系统强制执行了。第二件是两个工程里真会咬人的:**GLOB_RECURSE 收源「加文件不触发重新配置」**的经典坑,故而本仓库 clib-utilities 改成了逐行列出的显式源表(我们逐行引了它的 CMakeLists,从 PUBLIC 的头目录、PUBLIC 的 `pthread dl`、到 PRIVATE 的 `-Wall -Wextra`,每处都是三态语义的实战落地);以及 **CMAKE_BUILD_TYPE 多配置**替你选 `-g`(Debug)与 `-O3 -DNDEBUG`(Release),连带 `assert` 在 Release 下静默的真跑——但要留心 CMake 默认给的是 `-std=gnu11` 不是 `-std=c11`,要严格 C11 得显式关 `CMAKE_C_EXTENSIONS`,还有单配置 vs 多配置生成器切换配置的姿势不一样。把这些吃透,你写出来的 CMakeLists 就不再是「能跑」的脚本,而是「有封装、有边界、可复用」的工程描述。
 
-带着这套 target 心法,后续章节我们会把 sanitizer(阶段 0 第 10 章)、CTest 测试、clang-format 质量门都挂进 CMake 的 target 上——它们全是 target 身上的属性,而不是全局开关,这条心法是一以贯之的。
+带着这套 target 心法,后续章节我们会把 sanitizer(阶段 0 第 11 章)、CTest 测试、clang-format 质量门都挂进 CMake 的 target 上——它们全是 target 身上的属性,而不是全局开关,这条心法是一以贯之的。
 
 ## 参考资源
 
@@ -475,5 +475,5 @@ Release 给的是 `-O3 -DNDEBUG`——`-O3` 激进优化,`-DNDEBUG` 定义了 `N
 - **CMake 官方手册**:`target_include_directories` / `target_compile_definitions` / `target_link_libraries`(`cmake --help-command target_link_libraries`)、`CMAKE_BUILD_TYPE`、`CMAKE_C_STANDARD`/`CMAKE_C_EXTENSIONS`、`file(GLOB ... CONFIGURE_DEPENDS)`。
 - **[Professional CMake: A Practical Guide](https://crascit.com/professional-cmake/)**(Craig Scott):target-centric 心法、usage requirement 传播、install/export 全签名讲得最系统的一本。
 - **本仓库 [projects/clib-utilities/CMakeLists.txt](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/projects/clib-utilities/CMakeLists.txt)**:一份改革过的真实多模块 CMake 工程,显式源表 + target_* 三态 + `pthread dl` PUBLIC 的活教材,本章逐行引用了它。
-- **阶段 0 第 9 章:标准与优化**——`-g`/`-O3`/`-DNDEBUG`/`-std=c11 vs gnu11` 的含义,CMake 的旗标就是它们的封装。
-- **阶段 0 第 12 章:CMake 入门**——`cmake -B build` 两步走、out-of-source 构建,本章是它的工程化深化。
+- **阶段 0 第 10 章:标准与优化**——`-g`/`-O3`/`-DNDEBUG`/`-std=c11 vs gnu11` 的含义,CMake 的旗标就是它们的封装。
+- **阶段 0 第 13 章:CMake 入门**——`cmake -B build` 两步走、out-of-source 构建,本章是它的工程化深化。

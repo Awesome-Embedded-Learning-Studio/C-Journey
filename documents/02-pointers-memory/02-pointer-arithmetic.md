@@ -144,4 +144,4 @@ $ gcc -std=c11 -Wall past_end.c -o pe && ./pe
 - K. N. King《C Programming: A Modern Approach》第 12 章 Pointers and Arrays（指针算术、用指针处理数组、`a[i]` 与 `*(a+i)`）、第 11 章（指针遍历）
 - Robert C. Seacord《Effective C》第 5 章·Pointer Arithmetic 小节
 - 第 10 章：数组（退化、`a[i]≡*(a+i)`、越界 UB）、第 2 章：整型与 `sizeof`（`size_t`/`%zu`）、阶段2·第1章：指针是什么（指针类型决定走几字节）
-- 阶段 0·第 4 章：编译看汇编（数组连续存储、地址布局）、阶段2·第5章：指针/数组/字符串统一视角、第 11 章：void* 与字节操作
+- 阶段 0·第 5 章：编译看汇编（数组连续存储、地址布局）、阶段2·第5章：指针/数组/字符串统一视角、第 11 章：void* 与字节操作

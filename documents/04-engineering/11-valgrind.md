@@ -15,7 +15,7 @@ platform: host
 c_standard: [99, 11]
 prerequisites:
   - "阶段 4·第 10 章(本仓库 10-sanitizer-deep.md):ASan/UBSan 的 -fsanitize=address,undefined 用法、红区机制、三段式读报告——本章是它的对照面"
-  - "阶段 0·第 10 章:Sanitizer 门禁(MSan/TSan 的提法,本章把 valgrind 补进来)"
+  - "阶段 0·第 11 章:Sanitizer 门禁(MSan/TSan 的提法,本章把 valgrind 补进来)"
   - "阶段 0·第 1 章:工具链体检(valgrind 是否装的检查思路)"
 related:
   - "阶段 4·第 10 章:ASan/UBSan(本章 sanitizer 那一侧的完整版)"

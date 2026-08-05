@@ -212,4 +212,4 @@ C 的基础 IO 在 `<stdio.h>`，`printf`/`scanf` 都是变参函数：第一个
 - K. N. King《C Programming: A Modern Approach》第 3 章 Formatted Input/Output（`printf` 格式控制、`scanf` 的 pattern-matching 机制与「How scanf Works」、漏 `&` 的后果、混淆 `printf` 与 `scanf`）
 - Robert C. Seacord《Effective C》第 7 章（`printf`/`puts`、格式化字符串漏洞：别让外部数据当格式串）
 - 第 3 章：整型提升、溢出与回绕（`size_t` 与 `%zu`）、第 10 章：数组（数组名退化、越界 UB）、第 11 章：C 字符串与不安全 libc（`%s` 与 char 数组、缓冲区溢出、`gets` 已删）
-- 阶段 0·第 8 章：警告旗标进阶（`-Wall`/`-Wformat=` 怎么救命）、阶段 5：系统编程（文件 IO：`fopen`/`fread`/`fwrite`/`fprintf`，`stdin`/`stdout` 本质是文件流）
+- 阶段 0·第 9 章：警告旗标进阶（`-Wall`/`-Wformat=` 怎么救命）、阶段 5：系统编程（文件 IO：`fopen`/`fread`/`fwrite`/`fprintf`，`stdin`/`stdout` 本质是文件流）

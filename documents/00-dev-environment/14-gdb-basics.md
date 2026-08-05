@@ -2,7 +2,7 @@
 title: "GDB 基础：在程序崩掉的地方停下来看现场"
 description: "程序段错误了，直接跑只收获一个 Segmentation fault、连 printf 的调试输出都看不到——这一章用 GDB 在崩掉的地方停下来。拿一个「算完阶乘再 NULL 解引用」的程序真跑：gdb run 触发 SIGSEGV，它告诉你崩在 crash.c 第几行、当时的调用栈、以及 p 是 (int*)0x0、x 是 120；再演示断点（break）、运行（run）、单步（next/step）、查看变量（print/display）、调用栈（backtrace）、继续（continue）这套基础流程。顺便说清一个坑：为什么直接跑时连 printf 的输出都丢了（stdout 非终端全缓冲 + 段错误未刷新）——这正是靠 printf 调试崩溃不可靠、GDB 直接读变量才靠谱的原因。"
 chapter: 0
-order: 13
+order: 14
 tags:
   - host
   - gdb
@@ -12,11 +12,11 @@ reading_time_minutes: 13
 platform: host
 c_standard: [11]
 prerequisites:
-  - "第 9 章：标准与优化（-g 调试信息，GDB 的前提）"
-  - "第 10 章：Sanitizer 门禁（出错自动报的「被动」路子，对照本章「主动」停下来看）"
+  - "第 10 章：标准与优化（-g 调试信息，GDB 的前提）"
+  - "第 11 章：Sanitizer 门禁（出错自动报的「被动」路子，对照本章「主动」停下来看）"
 related:
-  - "第 14 章：GDB 进阶（watchpoint、条件断点、core dump、TUI）"
-  - "第 4 章：编译阶段看汇编（-O2 下 <optimized out>，所以调试回 -O0）"
+  - "第 15 章：GDB 进阶（watchpoint、条件断点、core dump、TUI）"
+  - "第 5 章：编译阶段看汇编（-O2 下 <optimized out>，所以调试回 -O0）"
 ---
 
 # GDB 基础：在程序崩掉的地方停下来看现场
@@ -27,7 +27,7 @@ related:
 
 **GDB**（GNU Debugger）就是干这件事的：它让程序在你的掌控下运行，崩了就停在崩溃的那一行，让你查看「现场」——调用栈、当时每个变量的值、甚至内存。这一章我们拿一个故意会段错误的程序，把 GDB 最基础的那套流程（启动、断点、运行、单步、查看）真跑一遍。这套是后面所有调试的地基。
 
-先说明一个大前提（第 9 章讲过、这里再用）：**用 GDB 调试，程序必须带 `-g`，且用 `-O0` 编译**。没有 `-g`，GDB 只能给你一串内存地址、看不出对应源码第几行；开了 `-O2`，变量被优化没了你会满屏 `<optimized out>`。所以本章所有例子都是 `gcc -g -O0`。
+先说明一个大前提（第 10 章讲过、这里再用）：**用 GDB 调试，程序必须带 `-g`，且用 `-O0` 编译**。没有 `-g`，GDB 只能给你一串内存地址、看不出对应源码第几行；开了 `-O2`，变量被优化没了你会满屏 `<optimized out>`。所以本章所有例子都是 `gcc -g -O0`。
 
 ## 靶子程序：算完阶乘，然后 NULL 解引用
 
@@ -144,16 +144,16 @@ Program received signal SIGSEGV, Segmentation fault.
 - `list`（`l`）：看当前位置附近的源码，方便对照。
 - `quit`（`q`）：退出 GDB。
 
-这套命令能覆盖绝大多数「停下来看现场」的调试场景。更进阶的手段——在变量被改时停下来的 `watch`、带条件的 `break ... if`、崩溃后还能查的 core dump、分屏看源码/汇编的 TUI——我们留到第 14 章。
+这套命令能覆盖绝大多数「停下来看现场」的调试场景。更进阶的手段——在变量被改时停下来的 `watch`、带条件的 `break ... if`、崩溃后还能查的 core dump、分屏看源码/汇编的 TUI——我们留到第 15 章。
 
 ## 小结
 
-GDB 让你在程序崩掉或可疑的地方停下来，直接读内存里的变量值和调用栈，而不依赖容易被段错误吞掉的 printf。用它的前提是 `-g -O0` 编译（第 9 章讲过：没 `-g` 只有地址、开了 `-O2` 变量 `<optimized out>`）。最经典的用法是事后定位段错误：`gdb ./prog` 进去 `run`，崩了它会精确告诉你崩在哪个文件第几行（我们的例子是 `main () at crash.c:15`），再用 `bt` 看调用栈、`print p`/`info locals` 看当时变量（`p = 0x0`、`x = 120`），根因立刻浮现。主动调试靠断点（`break`）+ 运行（`run`）+ 单步（`next` 不进函数 / `step` 进函数）+ 查看（`print`/`display`/`info locals`）+ 继续（`continue`）这套流程，配合 `list` 对照源码。别忘了那个诚实的小坑：直接跑段错误时连 printf 的输出都可能丢（`stdout` 非终端全缓冲、被信号打死没刷新），所以崩了别指望 printf 救你、上 GDB。下一章我们继续往深了挖，看 watchpoint、条件断点、core dump 这些更趁手的兵器。
+GDB 让你在程序崩掉或可疑的地方停下来，直接读内存里的变量值和调用栈，而不依赖容易被段错误吞掉的 printf。用它的前提是 `-g -O0` 编译（第 10 章讲过：没 `-g` 只有地址、开了 `-O2` 变量 `<optimized out>`）。最经典的用法是事后定位段错误：`gdb ./prog` 进去 `run`，崩了它会精确告诉你崩在哪个文件第几行（我们的例子是 `main () at crash.c:15`），再用 `bt` 看调用栈、`print p`/`info locals` 看当时变量（`p = 0x0`、`x = 120`），根因立刻浮现。主动调试靠断点（`break`）+ 运行（`run`）+ 单步（`next` 不进函数 / `step` 进函数）+ 查看（`print`/`display`/`info locals`）+ 继续（`continue`）这套流程，配合 `list` 对照源码。别忘了那个诚实的小坑：直接跑段错误时连 printf 的输出都可能丢（`stdout` 非终端全缓冲、被信号打死没刷新），所以崩了别指望 printf 救你、上 GDB。下一章我们继续往深了挖，看 watchpoint、条件断点、core dump 这些更趁手的兵器。
 
 ## 参考资源
 
 - GDB 手册（`help` 命令在 GDB 内随时可查）：`run`/`break`/`next`/`step`/`continue`/`print`/`display`/`backtrace`/`frame`/`info locals`/`list`
-- 第 9 章：标准与优化（`-g` 调试信息、`-O0` 才好调试、`-O2` 下 `<optimized out>`）
-- 第 4 章：编译阶段看汇编（为什么 `-O2` 下 GDB 看不到变量）
-- 第 10 章：Sanitizer 门禁（ASan/UBSan 自动报错的「被动」路子，和本章「主动停下来」互补）
-- 第 14 章：GDB 进阶（`watch`、条件断点、core dump、TUI）
+- 第 10 章：标准与优化（`-g` 调试信息、`-O0` 才好调试、`-O2` 下 `<optimized out>`）
+- 第 5 章：编译阶段看汇编（为什么 `-O2` 下 GDB 看不到变量）
+- 第 11 章：Sanitizer 门禁（ASan/UBSan 自动报错的「被动」路子，和本章「主动停下来」互补）
+- 第 15 章：GDB 进阶（`watch`、条件断点、core dump、TUI）

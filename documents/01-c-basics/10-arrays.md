@@ -251,7 +251,7 @@ int main(void) {
 }
 ```
 
-裸跑（不加任何检测）时它多半会打印出一个莫名其妙的数字、装作什么都没发生——这正是 UB 的阴险之处。好在第 10 章那一套 sanitizer 门禁在这里正好派上用场，开 UBSan 当场就抓：
+裸跑（不加任何检测）时它多半会打印出一个莫名其妙的数字、装作什么都没发生——这正是 UB 的阴险之处。好在第 11 章那一套 sanitizer 门禁在这里正好派上用场，开 UBSan 当场就抓：
 
 ```text
 $ gcc -std=c11 -Wall -fsanitize=undefined oob.c -o oob && ./oob
@@ -260,7 +260,7 @@ oob.c:5:5: runtime error: load of address 0x7ffedcf50214 with insufficient space
 a[0]=10, a[4]=50, a[5]=0(越界,UB)
 ```
 
-UBSan 一字一句告诉你：`index 5 out of bounds for type 'int [5]'`——下标 5 超出了 5 元素数组的范围；第二条 `load of address ... with insufficient space` 是它在说「这个地址上根本没装下一个完整 `int` 的合法内存」。末尾打印的 `a[5]=0` 别当真——那只是越界读到栈上某个恰巧为 0 的字节，换个编译器或运行环境、它就可能是任意一个完全不同的怪数字（这正是 UB 的标志：结果不可预期，你永远不该依赖这个值）。有意思的是这里退出码还是 0，因为 UBSan 默认是「recover」模式（报错但继续跑，呼应阶段 0 第 10 章）；换成 ASan，态度就硬多了，直接判死刑：
+UBSan 一字一句告诉你：`index 5 out of bounds for type 'int [5]'`——下标 5 超出了 5 元素数组的范围；第二条 `load of address ... with insufficient space` 是它在说「这个地址上根本没装下一个完整 `int` 的合法内存」。末尾打印的 `a[5]=0` 别当真——那只是越界读到栈上某个恰巧为 0 的字节，换个编译器或运行环境、它就可能是任意一个完全不同的怪数字（这正是 UB 的标志：结果不可预期，你永远不该依赖这个值）。有意思的是这里退出码还是 0，因为 UBSan 默认是「recover」模式（报错但继续跑，呼应阶段 0 第 11 章）；换成 ASan，态度就硬多了，直接判死刑：
 
 ```text
 $ gcc -std=c11 -Wall -fsanitize=address oob.c -o oob_asan && ./oob_asan
@@ -358,5 +358,5 @@ m[1][2] = 8, *(*(m+1)+2) = 8
 - K. N. King《C Programming: A Modern Approach》第 8 章 Arrays（一维/多维/初始化/`sizeof` 求长度）、第 12 章 Pointers and Arrays（退化与下标的指针本质）
 - Robert C. Seacord《Effective C》第 2 章·Arrays 小节（`a[i] === *(a+i)`、多维是数组的数组）
 - 第 3 章：整型提升、溢出与回绕（`sizeof` 与 `size_t`）、第 8 章：函数（参数是副本）、第 9 章：作用域、存储期与 `static`
-- 阶段 0·第 10 章：Sanitizer 门禁（UBSan 抓越界、ASan 抓栈越界的 recover/abort 区别，本章越界验证正是用这套）
+- 阶段 0·第 11 章：Sanitizer 门禁（UBSan 抓越界、ASan 抓栈越界的 recover/abort 区别，本章越界验证正是用这套）
 - 第 11 章：C 字符串与不安全 libc（`char` 数组与 `\0`、越界读写的真实后果）、阶段 2：指针与内存（退化的彻底拆解、指针算术、`malloc`/`free` 动态数组）

@@ -1,6 +1,6 @@
 ---
 title: "ASan+UBSan 深入:复现本仓 CI 的 sanitizer 门"
-description: "阶段 0 第 10 章第一次认识 sanitizer——UBSan 抓溢出/移位、ASan 抓栈越界/UAF、shadow memory、recover vs abort、开销。这一章把镜头从『第一次认识』拉到 CI 工程视角:逐字复现 .github/workflows/ci.yml 里 sanitize job 的真实编译方式(CC=clang、CFLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer -g),自己拿这套 flags 编一组含错程序(栈越界/UAF/有符号溢出/use-after-scope),确认 ASan/UBSan 各抓什么、报出来长什么样;拆 ci.yml 第 44 行那条『覆盖盲区』注释——它只 sanitize 进了 CMake 子项目的代码,裸 .c 一律不进 sanitizer 门;再讲 ASAN_OPTIONS 怎么调 ASan 的脾气(halt_on_error / abort_on_error / detect_leaks)、-fsanitize-address-use-after-scope 怎么把『块作用域失效后还在用栈变量』这种阴间 bug 变成带 f8 shadow byte 的当场报告、以及 LSan(ASan 内置的 LeakSanitizer)在容器/seccomp 下的 ptrace 大坑。补 legacy 1-sanitizers 那篇没有的 CI 视角缺口。gcc 16.1.1 + clang 22.1.6 双真跑,贴真实输出 + ISO/POSIX 条款。"
+description: "阶段 0 第 11 章第一次认识 sanitizer——UBSan 抓溢出/移位、ASan 抓栈越界/UAF、shadow memory、recover vs abort、开销。这一章把镜头从『第一次认识』拉到 CI 工程视角:逐字复现 .github/workflows/ci.yml 里 sanitize job 的真实编译方式(CC=clang、CFLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer -g),自己拿这套 flags 编一组含错程序(栈越界/UAF/有符号溢出/use-after-scope),确认 ASan/UBSan 各抓什么、报出来长什么样;拆 ci.yml 第 44 行那条『覆盖盲区』注释——它只 sanitize 进了 CMake 子项目的代码,裸 .c 一律不进 sanitizer 门;再讲 ASAN_OPTIONS 怎么调 ASan 的脾气(halt_on_error / abort_on_error / detect_leaks)、-fsanitize-address-use-after-scope 怎么把『块作用域失效后还在用栈变量』这种阴间 bug 变成带 f8 shadow byte 的当场报告、以及 LSan(ASan 内置的 LeakSanitizer)在容器/seccomp 下的 ptrace 大坑。补 legacy 1-sanitizers 那篇没有的 CI 视角缺口。gcc 16.1.1 + clang 22.1.6 双真跑,贴真实输出 + ISO/POSIX 条款。"
 chapter: 4
 order: 10
 tags:
@@ -14,12 +14,12 @@ reading_time_minutes: 18
 platform: host
 c_standard: [11]
 prerequisites:
-  - "阶段 0·第 10 章:Sanitizer 门禁(第一次认识 sanitizer——UBSan/ASan/shadow memory/recover vs abort,本章是它的 CI 视角升级)"
-  - "阶段 0·第 16 章:GitHub Actions(CI 怎么把 sanitizer 变成一道门)"
-  - "阶段 0·第 8 章:警告旗标进阶(警告是 best-effort,所以需要 sanitizer 兜底)"
+  - "阶段 0·第 11 章:Sanitizer 门禁(第一次认识 sanitizer——UBSan/ASan/shadow memory/recover vs abort,本章是它的 CI 视角升级)"
+  - "阶段 0·第 17 章:GitHub Actions(CI 怎么把 sanitizer 变成一道门)"
+  - "阶段 0·第 9 章:警告旗标进阶(警告是 best-effort,所以需要 sanitizer 兜底)"
 related:
   - "第 1 章(legacy):ASan 与 UBSan 实战——堆越界/释放后使用/GCC16 shadow bytes(本章补它的 CI 工程视角)"
-  - "阶段 0·第 9 章:标准与优化(-O 让 UB 现形、-g 给 sanitizer 报错提供源码映射)"
+  - "阶段 0·第 10 章:标准与优化(-O 让 UB 现形、-g 给 sanitizer 报错提供源码映射)"
   - "第 11 章:Valgrind(sanitizer 之外另一条内存排查路线)"
 ---
 
@@ -27,7 +27,7 @@ related:
 
 ## 前置阅读:这篇和阶段 0 的那一章是什么关系
 
-如果你还没看过 **阶段 0 第 10 章《Sanitizer 门禁》**,先去看那一篇——它讲的是「sanitizer 是什么、怎么工作、UBSan/ASan 各管什么」,是入门的视角。这一章不再重复那些入门内容,镜头拉远一档:**站在 CI 工程的视角,看本仓库的 sanitizer 门是怎么落地的、它真实覆盖了什么、又有哪些盲区**。也就是说,阶段 0 那章解决「sanitizer 怎么用」,这一章解决「sanitizer 在一个真实仓库里**作为一个 CI job** 长什么样、怎么复现它、它的脾气怎么调、它管不到的角落在哪」。
+如果你还没看过 **阶段 0 第 11 章《Sanitizer 门禁》**,先去看那一篇——它讲的是「sanitizer 是什么、怎么工作、UBSan/ASan 各管什么」,是入门的视角。这一章不再重复那些入门内容,镜头拉远一档:**站在 CI 工程的视角,看本仓库的 sanitizer 门是怎么落地的、它真实覆盖了什么、又有哪些盲区**。也就是说,阶段 0 那章解决「sanitizer 怎么用」,这一章解决「sanitizer 在一个真实仓库里**作为一个 CI job** 长什么样、怎么复现它、它的脾气怎么调、它管不到的角落在哪」。
 
 另一篇要对照着看的是本阶段 legacy 的 **第 1 章《ASan 与 UBSan:让 C 的内存错误和未定义行为当场现形》**——那篇用的是 `gcc` 单编译器、贴了 GCC 16 的 shadow bytes(`fa`/`05`/`fd`)真跑。本章在它基础上补一个工程缺口:**真用 CI 的那套 flags(`CC=clang` + 同时跑 address/undefined + `-fno-omit-frame-pointer`)编一组程序,并把 gcc 和 clang 的输出差异摆出来**——你会发现同样一段含错代码,gcc 和 clang 报出来的东西不完全一样,这种差异在本地手敲 `gcc -fsanitize=address` 时是看不见的。
 
@@ -55,7 +55,7 @@ related:
         # 统一构建后,所有 examples(含 stage1 的位运算等)都将纳入 sanitizer。
 ```
 
-这扇门值得逐行读。第一,它 `apt` 装 `clang`(不装 `gcc`),然后把 `CC=clang` 塞进环境——意思是 sanitize 这一档**只用 clang 编**,而上面那个 `build-examples` job 才走 `gcc`/`clang` 矩阵。第二,真正的门面在那三个环境变量:`CFLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer -g`、`LDFLAGS=-fsanitize=address,undefined`。这三条就是整扇门的全部魔法:`-fsanitize=address,undefined` 同时开 ASan 和 UBSan(逗号分隔就是「两个都上」),`-fno-omit-frame-pointer` 保住栈帧基指针让栈回溯更完整(阶段 0 第 14 章 GDB 那篇讲过这个旋钮的作用),`-g` 给报错配源码行号。第三,`LDFLAGS` 那一行**也得带 `-fsanitize`**——这是个新手特别容易踩的点:sanitizer 不只是编译期插桩,它还**链接期**得把 ASan/UBSan 的运行时库(`libasan`/`libubsan`)链进来;你如果分 `gcc -c` 和 `gcc -o` 两步、只在编译那步加 `-fsanitize`,链接时会报 `undefined reference to __asan_*`。CI 用 `CFLAGS` + `LDFLAGS` 两条都带,就是为了把这个坑堵死。
+这扇门值得逐行读。第一,它 `apt` 装 `clang`(不装 `gcc`),然后把 `CC=clang` 塞进环境——意思是 sanitize 这一档**只用 clang 编**,而上面那个 `build-examples` job 才走 `gcc`/`clang` 矩阵。第二,真正的门面在那三个环境变量:`CFLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer -g`、`LDFLAGS=-fsanitize=address,undefined`。这三条就是整扇门的全部魔法:`-fsanitize=address,undefined` 同时开 ASan 和 UBSan(逗号分隔就是「两个都上」),`-fno-omit-frame-pointer` 保住栈帧基指针让栈回溯更完整(阶段 0 第 15 章 GDB 那篇讲过这个旋钮的作用),`-g` 给报错配源码行号。第三,`LDFLAGS` 那一行**也得带 `-fsanitize`**——这是个新手特别容易踩的点:sanitizer 不只是编译期插桩,它还**链接期**得把 ASan/UBSan 的运行时库(`libasan`/`libubsan`)链进来;你如果分 `gcc -c` 和 `gcc -o` 两步、只在编译那步加 `-fsanitize`,链接时会报 `undefined reference to __asan_*`。CI 用 `CFLAGS` + `LDFLAGS` 两条都带,就是为了把这个坑堵死。
 
 第四,最底下那两行注释(第 43-45 行)是这扇门**最该被读懂的一句**,它写的是「**目前仅覆盖 CMake 子项目(SC1-4)**」。翻译成人话就是:**CI 的 sanitizer 只 sanitize 了少数几个进了 CMake 的子项目,仓库里大量裸 `.c` 根本没过 sanitizer**。这件事我待会儿在「覆盖盲区」那一节单独拆,因为它直接影响你怎么信任这道门。
 
@@ -108,7 +108,7 @@ int main(void) {
 }
 ```
 
-第四个,留给后面单独讲「作用域外用」的那节,先放着。注意这三个例子我都加了 `volatile`——不是为了教风格,是因为不加的话 `-O2` 一上来编译器可能把整段 UB 优化没(阶段 0 第 9 章讲过这个现象),那 sanitizer 还没来得及抓、bug 先被编译器「消失」了,演示就崩了。`volatile` 强制编译器老老实实去访问内存,sanitizer 才抓得到。
+第四个,留给后面单独讲「作用域外用」的那节,先放着。注意这三个例子我都加了 `volatile`——不是为了教风格,是因为不加的话 `-O2` 一上来编译器可能把整段 UB 优化没(阶段 0 第 10 章讲过这个现象),那 sanitizer 还没来得及抓、bug 先被编译器「消失」了,演示就崩了。`volatile` 强制编译器老老实实去访问内存,sanitizer 才抓得到。
 
 ### 先用 CI 的 clang 编
 
@@ -124,7 +124,7 @@ $ echo $?
 0
 ```
 
-注意这个输出——它有点反直觉,值得停一下。我们期望的是 ASan 报一个漂亮的 `stack-buffer-overflow`,但 clang 实际上**先**被 UBSan 的 bounds 检查(`-fsanitize=undefined` 里包含的 `-fsanitize=bounds`)截胡了:`index 8 out of bounds for type 'int[4]'`,精确到 `oob.c:7:5`。报完之后程序**没有停**——`a[0] = 0` 还打印了、退出码还是 `0`。这是因为 **UBSan 默认是 recover 模式**(阶段 0 第 10 章讲过):它发现一处 UB 就报一行、然后继续往下跑,不终止进程。于是我们这一跑,clang 的 UBSan 把越界这件事拦在了「数组下标检查」那一关,ASan 那套 shadow memory 的 `stack-buffer-overflow` 报告反倒是被抢了戏、根本没出场。
+注意这个输出——它有点反直觉,值得停一下。我们期望的是 ASan 报一个漂亮的 `stack-buffer-overflow`,但 clang 实际上**先**被 UBSan 的 bounds 检查(`-fsanitize=undefined` 里包含的 `-fsanitize=bounds`)截胡了:`index 8 out of bounds for type 'int[4]'`,精确到 `oob.c:7:5`。报完之后程序**没有停**——`a[0] = 0` 还打印了、退出码还是 `0`。这是因为 **UBSan 默认是 recover 模式**(阶段 0 第 11 章讲过):它发现一处 UB 就报一行、然后继续往下跑,不终止进程。于是我们这一跑,clang 的 UBSan 把越界这件事拦在了「数组下标检查」那一关,ASan 那套 shadow memory 的 `stack-buffer-overflow` 报告反倒是被抢了戏、根本没出场。
 
 这就是「同时开 address 和 undefined」会遇到的第一个微妙:两个 sanitizer 谁先看到错误、谁就先报,而后到的那个可能就看不到这次的错误了。换个例子看 UAF,UAF 不在 UBSan 的管辖范围(它是内存访问越界/释放后用,ASan 才管),所以这次该是 ASan 出场了:
 
@@ -214,7 +214,7 @@ $ echo $?
 
 ### ASan 报告怎么读:三段式 + shadow
 
-上面 `oob.c` 那份 gcc 输出信息量很大,我们把读法钉一下,因为它和 legacy 第 1 章那篇是一致的套路,记住一次就够。一份 ASan 报告通常有三段:第一段是**错误类型 + 出错位置**——`ERROR: AddressSanitizer: stack-buffer-overflow` 告诉你这是什么错,`WRITE of size 4 at ... thread T0` 告诉你是一次 4 字节的写,`#0 ... in main oob.c:7` 把出错位置钉到源码行。第二段是**受害者定位**——`[64, 80) 'a' (line 5) <== Memory access at offset 96 overflows this variable` 这句最值钱,它直接点名:你在第 5 行定义的数组 `a`(在栈上占 `[64,80)` 这 16 字节),被偏移到 96 的那次访问撑爆了——这种「越界发生在哪一行、受害者是哪个变量」级别的定位,靠 `printf` 调试法能查半天。第三段是 **shadow bytes**——那张把每 8 字节真实内存映射成 1 字节状态的影子表,`f1`/`f2`/`f3` 是栈的三种 redzone(左/中/右),越界踩中的 `[f3]` 被方括号标出来,这就是 ASan「给每个栈变量前后埋一圈禁区」机制的直接证据。前两个阶段 0 第 10 章和 legacy 第 1 章已经讲透,这里不重复。
+上面 `oob.c` 那份 gcc 输出信息量很大,我们把读法钉一下,因为它和 legacy 第 1 章那篇是一致的套路,记住一次就够。一份 ASan 报告通常有三段:第一段是**错误类型 + 出错位置**——`ERROR: AddressSanitizer: stack-buffer-overflow` 告诉你这是什么错,`WRITE of size 4 at ... thread T0` 告诉你是一次 4 字节的写,`#0 ... in main oob.c:7` 把出错位置钉到源码行。第二段是**受害者定位**——`[64, 80) 'a' (line 5) <== Memory access at offset 96 overflows this variable` 这句最值钱,它直接点名:你在第 5 行定义的数组 `a`(在栈上占 `[64,80)` 这 16 字节),被偏移到 96 的那次访问撑爆了——这种「越界发生在哪一行、受害者是哪个变量」级别的定位,靠 `printf` 调试法能查半天。第三段是 **shadow bytes**——那张把每 8 字节真实内存映射成 1 字节状态的影子表,`f1`/`f2`/`f3` 是栈的三种 redzone(左/中/右),越界踩中的 `[f3]` 被方括号标出来,这就是 ASan「给每个栈变量前后埋一圈禁区」机制的直接证据。前两个阶段 0 第 11 章和 legacy 第 1 章已经讲透,这里不重复。
 
 ## 读懂 CI 那行注释:sanitize 门到底覆盖了什么
 
@@ -248,7 +248,7 @@ examples/stage0-compiling-and-debug/2/src.c
 
 `examples/hello.c`、`stage1-armc-basics/Exp1/var.c`、`stage0-compiling-and-debug/*` 下那一堆——**这些裸 `.c` 全都没有被 `build_examples.py` 扫到,自然也就从来没有过 sanitizer 门**。这就是注释说的「盲区」的全部含义,而且范围比字面看到的「SC1-4」要具体得多:**整个 stage0/stage1 的示例代码,sanitize job 根本没碰过**。
 
-这件事对读者(也对仓库维护者)的意义是:**别把「CI 过了 sanitizer」当成「整个仓库的代码都干净」**。它当下只担保 `stage5-tcp-socket/SC1-4` 这四个 CMake 子项目里没有 ASan/UBSan 抓得到的内存错和 UB;其它目录的 `.c` 要么靠 `build-examples` job(那个只编译、不 sanitize)做个「能编过」的担保,要么连编都没编进 CI。注释里那句「待 Phase 3 根 CMakeLists 统一构建后……都将纳入 sanitizer」,说的就是**修这个盲区的计划**:等仓库有个根 CMakeLists 把所有裸 `.c` 都收编成 CMake 目标,盲区才会消失。在那之前,你本地写裸 `.c` 时,**手敲一遍 `gcc -std=c11 -O1 -g -fsanitize=address,undefined your.c`** 是唯一能给自己补上这道门的办法——这正是阶段 0 第 10 章那一套用法的真正动机。
+这件事对读者(也对仓库维护者)的意义是:**别把「CI 过了 sanitizer」当成「整个仓库的代码都干净」**。它当下只担保 `stage5-tcp-socket/SC1-4` 这四个 CMake 子项目里没有 ASan/UBSan 抓得到的内存错和 UB;其它目录的 `.c` 要么靠 `build-examples` job(那个只编译、不 sanitize)做个「能编过」的担保,要么连编都没编进 CI。注释里那句「待 Phase 3 根 CMakeLists 统一构建后……都将纳入 sanitizer」,说的就是**修这个盲区的计划**:等仓库有个根 CMakeLists 把所有裸 `.c` 都收编成 CMake 目标,盲区才会消失。在那之前,你本地写裸 `.c` 时,**手敲一遍 `gcc -std=c11 -O1 -g -fsanitize=address,undefined your.c`** 是唯一能给自己补上这道门的办法——这正是阶段 0 第 11 章那一套用法的真正动机。
 
 ## 调 ASan 的脾气:ASAN_OPTIONS 三件套
 
@@ -282,7 +282,7 @@ $ ASAN_OPTIONS=help=1 ./uaf_g 2>&1 | grep -A1 "abort_on_error"
 		  error report. (Current Value: false)
 ```
 
-`Current Value: false`——这是个反直觉的点:虽然我们嘴上一直说「ASan 默认 abort」,但**严格意义上的 `abort(3)` 默认是关的**,默认走的是 `_exit()`。想拿 ASan 报错时的 core dump 进 GDB 事后分析(阶段 0 第 14 章讲过 core dump),就得显式 `ASAN_OPTIONS=abort_on_error=1`。这是个细节,但偶尔会用上,值得记一笔。
+`Current Value: false`——这是个反直觉的点:虽然我们嘴上一直说「ASan 默认 abort」,但**严格意义上的 `abort(3)` 默认是关的**,默认走的是 `_exit()`。想拿 ASan 报错时的 core dump 进 GDB 事后分析(阶段 0 第 15 章讲过 core dump),就得显式 `ASAN_OPTIONS=abort_on_error=1`。这是个细节,但偶尔会用上,值得记一笔。
 
 第三个,**`detect_leaks`**——它开关 ASan 内置的 LeakSanitizer(LSan)。LSan 在程序退出时扫一遍堆,把「`malloc` 了却没 `free`」的内存报出来。我们写一个故意泄漏的程序看效果:
 
@@ -375,7 +375,7 @@ $ echo $?
 
 ## 把开销也量一下,好决定它该开在哪
 
-sanitizer 不是免费的午餐,这件事阶段 0 第 10 章量过一次(0.072s → 0.120s 的开销)。我们这章用同样的方法、同样的本机,再量一次,好让结论对得上今天的工具链。受试程序是一个 800 万元素的数组循环写满再求和(`cost.c`,纯密集内存访问):
+sanitizer 不是免费的午餐,这件事阶段 0 第 11 章量过一次(0.072s → 0.120s 的开销)。我们这章用同样的方法、同样的本机,再量一次,好让结论对得上今天的工具链。受试程序是一个 800 万元素的数组循环写满再求和(`cost.c`,纯密集内存访问):
 
 ```text
 $ gcc -std=c11 -O2 cost.c -o cost_plain
@@ -390,7 +390,7 @@ cost_plain: min=23ms median=23ms
 cost_asan:  min=46ms median=49ms
 ```
 
-23ms 对 46-49ms,大约 **2 倍**——这和 ASan 经典的「约 2 倍速度开销 + 数倍内存占用(shadow memory)」对得上,UBSan 的开销通常更小(它不维护 shadow、只在算术前后插检查)。这个 2 倍就是为什么 ci.yml 把 sanitizer 单独拆成一个 job、而不是塞进主 `build-examples` job:你想让「能不能编过」这道门**快**(所以 build-examples 不带 sanitizer、几秒跑完),让「有没有内存错」这道门**慢但只跑一次**(sanitize 单独一个 job、带 2 倍开销也无所谓,反正 CI 是并行的)。这背后是同一个工程取舍——**sanitizer 是调试和 CI 的工具,不进发布构建**:交付给用户的二进制是关掉 sanitizer、带正常 `-O2` 的。这一点阶段 0 第 10 章说过的铁律,在 CI 工程视角下依然成立,而且更明显——你看 ci.yml 里 `sanitize` job 编出来的产物,从来不会被打包成 release artifact,它就是为了**在那个 job 里跑一遍、用退出码判红绿、然后丢掉**。
+23ms 对 46-49ms,大约 **2 倍**——这和 ASan 经典的「约 2 倍速度开销 + 数倍内存占用(shadow memory)」对得上,UBSan 的开销通常更小(它不维护 shadow、只在算术前后插检查)。这个 2 倍就是为什么 ci.yml 把 sanitizer 单独拆成一个 job、而不是塞进主 `build-examples` job:你想让「能不能编过」这道门**快**(所以 build-examples 不带 sanitizer、几秒跑完),让「有没有内存错」这道门**慢但只跑一次**(sanitize 单独一个 job、带 2 倍开销也无所谓,反正 CI 是并行的)。这背后是同一个工程取舍——**sanitizer 是调试和 CI 的工具,不进发布构建**:交付给用户的二进制是关掉 sanitizer、带正常 `-O2` 的。这一点阶段 0 第 11 章说过的铁律,在 CI 工程视角下依然成立,而且更明显——你看 ci.yml 里 `sanitize` job 编出来的产物,从来不会被打包成 release artifact,它就是为了**在那个 job 里跑一遍、用退出码判红绿、然后丢掉**。
 
 ## 小结
 
@@ -399,9 +399,9 @@ cost_asan:  min=46ms median=49ms
 ## 参考资源
 
 - **本仓 CI**:[`.github/workflows/ci.yml`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.github/workflows/ci.yml) 的 `sanitize` job(第 31-45 行),`build_examples.py` 的 `glob("**/CMakeLists.txt")`——覆盖盲区的根因。
-- **阶段 0·第 10 章:Sanitizer 门禁**——sanitizer 入门视角(UBSan/ASan/shadow memory/recover vs abort/开销),本章是它的 CI 升级。
+- **阶段 0·第 11 章:Sanitizer 门禁**——sanitizer 入门视角(UBSan/ASan/shadow memory/recover vs abort/开销),本章是它的 CI 升级。
 - **本阶段 legacy 第 1 章:ASan 与 UBSan 实战**——GCC 16 的 shadow bytes(`fa`/`05`/`fd`)真跑,本章补它的 CI 工程视角。
 - **ISO/IEC 9899:2011**:§6.5 第 5 段(有符号整数溢出 UB)、§6.5.7 第 3 段(移位指数大于等于位宽 UB)。
 - **POSIX**:`ptrace(2)`——LSan 扫描进程内存所依赖的系统调用,容器/seccomp 限制的根源。
 - **Clang / GCC 手册**:`-fsanitize=address,undefined`、`-fsanitize-address-use-after-scope`、`-fno-sanitize-recover=`、`ASAN_OPTIONS`(`halt_on_error` / `abort_on_error` / `detect_leaks`)、AddressSanitizer Wiki(use-after-scope 的 shadow byte `f8` 语义)。
-- **阶段 0·第 14 章:GDB 进阶**——`ASAN_OPTIONS=abort_on_error=1` 抓 core dump 后,进 GDB 事后分析的那条路。
+- **阶段 0·第 15 章:GDB 进阶**——`ASAN_OPTIONS=abort_on_error=1` 抓 core dump 后,进 GDB 事后分析的那条路。

@@ -218,4 +218,4 @@ gcc 的 `-Wall` 能在编译期就警告 `'p' is used uninitialized`——又一
 - K. N. King《C Programming: A Modern Approach》第 11 章 Pointers（11.1 指针变量的机器级含义、11.2 `&` 与 `*` 运算符、指针必须初始化）
 - Robert C. Seacord《Effective C》第 2 章·Pointer Types 小节（指针类型、对象与指针的关系）
 - 第 1 章：程序结构与编译四阶段（变量在内存里）、第 2 章：整型与 `sizeof`、第 10 章：数组（数组名退化为指针、`a[i]≡*(a+i)`）、第 12 章：基础 IO（`%p`、`&` 取地址给 `scanf`、类型不匹配 UB）
-- 阶段 0·第 4 章：编译阶段看汇编（内存段布局）、第 10 章：Sanitizer 门禁（本章 NULL/野指针验证用 ASan）、阶段2·第 2 章：指针算术、第 8 章：多级指针
+- 阶段 0·第 5 章：编译阶段看汇编（内存段布局）、第 11 章：Sanitizer 门禁（本章 NULL/野指针验证用 ASan）、阶段2·第 2 章：指针算术、第 8 章：多级指针

@@ -2,7 +2,7 @@
 title: "make 入门：让多文件构建只重编该重编的"
 description: "前面十章我们都在敲「gcc 单个文件」，这一章走向真正的工程——多文件、有头文件、改一个文件不想全量重编。从 make 的三要素（目标/依赖/命令）讲起，第一坑就地踩（命令行必须用 TAB 缩进，空格直接 missing separator），真跑一个三文件项目（greet.h/greet.c/main.c）的 Makefile：全量构建、改 greet.c 只重编 greet.o 的增量、改 greet.h 两个 .o 都重编的头文件依赖、make: up to date、make clean。再把变量（CC/CFLAGS，命令行 make CC=clang 覆盖）、= vs := 的展开时机、自动变量（$@ $< $^）、模式规则（%.o: %.c）、.PHONY 伪目标一个个真跑一遍。"
 chapter: 0
-order: 11
+order: 12
 tags:
   - host
   - make
@@ -13,17 +13,17 @@ platform: host
 c_standard: [11]
 prerequisites:
   - "第 1 章：工具链体检（gcc 基本用法）"
-  - "第 2 章：编译四阶段全景（.c → .o → 可执行，-c 停在哪）"
+  - "第 3 章：编译四阶段全景（.c → .o → 可执行，-c 停在哪）"
 related:
-  - "第 12 章：CMake 入门（在 make 之上再封一层）"
-  - "第 16 章：GitHub Actions（CI 里调用构建）"
+  - "第 13 章：CMake 入门（在 make 之上再封一层）"
+  - "第 17 章：GitHub Actions（CI 里调用构建）"
 ---
 
 # make 入门：让多文件构建只重编该重编的
 
 ## 引言：从敲一行 gcc 到管理一堆文件
 
-前面十章，我们编译程序的方式一直是「敲一行 gcc」：`gcc hello.c -o hello`。单文件时这没毛病。但真正的工程不会只有一个文件——你会有 `main.c` 负责流程、`greet.c` 负责某个功能、它们共享一个 `greet.h` 头文件（第 5、6 章讲过 `.o` 和链接）。这时候手动管理编译就难受了：你得先 `gcc -c main.c`、`gcc -c greet.c` 编出两个 `.o`，再 `gcc main.o greet.o -o main` 链接；更烦的是，你只改了 `greet.c` 一个文件，却得把所有 `.o` 重新编一遍——文件一多，全量重编动辄几十秒到几分钟，开发节奏全毁。
+前面十章，我们编译程序的方式一直是「敲一行 gcc」：`gcc hello.c -o hello`。单文件时这没毛病。但真正的工程不会只有一个文件——你会有 `main.c` 负责流程、`greet.c` 负责某个功能、它们共享一个 `greet.h` 头文件（第 6、7 章讲过 `.o` 和链接）。这时候手动管理编译就难受了：你得先 `gcc -c main.c`、`gcc -c greet.c` 编出两个 `.o`，再 `gcc main.o greet.o -o main` 链接；更烦的是，你只改了 `greet.c` 一个文件，却得把所有 `.o` 重新编一遍——文件一多，全量重编动辄几十秒到几分钟，开发节奏全毁。
 
 `make` 解决的就是这两件事：**它自动算出「谁依赖谁」，然后只重新编译那些真正改动过的文件**（这叫增量编译）。你把「目标—依赖—怎么编」写进一个叫 `Makefile` 的文件里，之后敲一句 `make`，它自己判断该重编什么。这一章我们从零写一个多文件的 Makefile，每一步都真跑。
 
@@ -101,7 +101,7 @@ $ ./main
 hello, make!
 ```
 
-make 看出 `main` 依赖两个 `.o`，而它们还不存在，于是先把 `main.c`、`greet.c` 各编成 `.o`（第 2 章讲的 `-c` 停在汇编后），最后链接成 `main`。跑一下，输出 `hello, make!`。
+make 看出 `main` 依赖两个 `.o`，而它们还不存在，于是先把 `main.c`、`greet.c` 各编成 `.o`（第 3 章讲的 `-c` 停在汇编后），最后链接成 `main`。跑一下，输出 `hello, make!`。
 
 ## 增量编译：make 的核心价值
 
@@ -232,6 +232,6 @@ make 用一行行「目标:依赖 + TAB 开头的命令」组成的 Makefile，�
 ## 参考资源
 
 - GNU Make 手册：规则的语法、`$@`/`$<`/`$^` 自动变量、`%` 模式规则、`= vs := vs ?= vs +=`、`.PHONY`、内置（隐式）规则与自动推导、`-MMD` 自动依赖生成
-- 第 2 章：编译四阶段全景（`-c` 停在汇编后、`.o` 再链接成可执行，对应 Makefile 里每条 `.o` 规则）
-- 第 6 章：链接与静态库（`main.o greet.o -o main` 这一步链接到底做了什么）
-- 第 12 章：CMake 入门（在 make 之上生成 Makefile，管跨平台和依赖）
+- 第 3 章：编译四阶段全景（`-c` 停在汇编后、`.o` 再链接成可执行，对应 Makefile 里每条 `.o` 规则）
+- 第 7 章：链接与静态库（`main.o greet.o -o main` 这一步链接到底做了什么）
+- 第 13 章：CMake 入门（在 make 之上生成 Makefile，管跨平台和依赖）

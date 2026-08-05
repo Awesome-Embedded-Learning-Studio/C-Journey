@@ -1,6 +1,6 @@
 ---
 title: "静态库、动态库与链接顺序:亲手造一次 undefined reference"
-description: "阶段 0 第 6 章讲过链接器是什么、阶段 0 第 7 章讲过 dlopen 怎么运行期加载——这一章夹在中间,专讲『链接期』本身:符号解析怎么把一个 undefined reference 真正诊断清楚、静态库那个坑哭无数人的顺序陷阱为什么是『左到右单趟扫描』、装好一个 .so 之后程序运行期到底去哪找它(RPATH/RUNPATH/$ORIGIN)、以及 -fvisibility=hidden 怎么让一个库只导出该导出的符号。最后拿本仓 examples/stage4-cmake-lib 当活教材,把 install/export/find_package 的全链路端到端真跑一遍:用 CMake 装它、消费者 find_package(Mathlib) 链上跑通,并诚实记录 CMake 默认给可执行埋的绝对路径 RUNPATH。全 gcc16+clang22 真跑,贴真实输出。"
+description: "阶段 0 第 7 章讲过链接器是什么、阶段 0 第 8 章讲过 dlopen 怎么运行期加载——这一章夹在中间,专讲『链接期』本身:符号解析怎么把一个 undefined reference 真正诊断清楚、静态库那个坑哭无数人的顺序陷阱为什么是『左到右单趟扫描』、装好一个 .so 之后程序运行期到底去哪找它(RPATH/RUNPATH/$ORIGIN)、以及 -fvisibility=hidden 怎么让一个库只导出该导出的符号。最后拿本仓 examples/stage4-cmake-lib 当活教材,把 install/export/find_package 的全链路端到端真跑一遍:用 CMake 装它、消费者 find_package(Mathlib) 链上跑通,并诚实记录 CMake 默认给可执行埋的绝对路径 RUNPATH。全 gcc16+clang22 真跑,贴真实输出。"
 chapter: 4
 order: 6
 tags:
@@ -14,13 +14,13 @@ reading_time_minutes: 19
 platform: host
 c_standard: [11]
 prerequisites:
-  - "阶段 0·第 6 章:链接与静态库(undefined reference/multiple definition/ar rcs 入门)"
-  - "阶段 0·第 7 章:动态库与 dlopen(.so/-fPIC/dlopen,本章只讲链接期不碰运行期加载)"
+  - "阶段 0·第 7 章:链接与静态库(undefined reference/multiple definition/ar rcs 入门)"
+  - "阶段 0·第 8 章:动态库与 dlopen(.so/-fPIC/dlopen,本章只讲链接期不碰运行期加载)"
   - "第 1 章:头文件契约(extern 声明、ODR,本章是它的链接器落地)"
   - "第 5 章:CMake 工程化(target 语义、PUBLIC/PRIVATE,本章 install/export 那段要用)"
 related:
-  - "阶段 0·第 6 章:链接与静态库(本章是它的工程化深化,讲透顺序陷阱与运行期查找)"
-  - "阶段 0·第 7 章:动态库与 dlopen(运行期加载归它,链接期归本章)"
+  - "阶段 0·第 7 章:链接与静态库(本章是它的工程化深化,讲透顺序陷阱与运行期查找)"
+  - "阶段 0·第 8 章:动态库与 dlopen(运行期加载归它,链接期归本章)"
   - "第 5 章:CMake 工程化(install/export/find_package 那段是它的延伸)"
 ---
 
@@ -28,13 +28,13 @@ related:
 
 ## 引言:链接期到底管什么,跟运行期怎么分
 
-前置阅读是阶段 0 第 6 章和第 7 章——那里讲过链接器 `ld` 是谁(`gcc` 在背后替你调)、`undefined reference` 长什么样、`dlopen` 怎么在程序跑起来之后临时加载一个 `.so`。这一章不再重复这些入门,默认你已经会;我们专攻工程化阶段真会咬人的四件事:**符号解析怎么诊断 `undefined reference`、静态库的顺序陷阱为什么是单趟扫描、动态库装好之后运行期去哪找(`RPATH`/`RUNPATH`/`$ORIGIN`)、以及 `-fvisibility=hidden` 怎么收敛一个库的导出符号**。最后把这四件事接到真实工程上——拿本仓库 `examples/stage4-cmake-lib` 那个能产 `.a`+`.so`+`install`+`export` 的活教材,把 CMake 的 install→export→`find_package` 全链路端到端跑通,顺便诚实记录 CMake 默认给可执行埋的那条 RUNPATH 是绝对路径、迁机器会跟着走。
+前置阅读是阶段 0 第 7 章和第 8 章——那里讲过链接器 `ld` 是谁(`gcc` 在背后替你调)、`undefined reference` 长什么样、`dlopen` 怎么在程序跑起来之后临时加载一个 `.so`。这一章不再重复这些入门,默认你已经会;我们专攻工程化阶段真会咬人的四件事:**符号解析怎么诊断 `undefined reference`、静态库的顺序陷阱为什么是单趟扫描、动态库装好之后运行期去哪找(`RPATH`/`RUNPATH`/`$ORIGIN`)、以及 `-fvisibility=hidden` 怎么收敛一个库的导出符号**。最后把这四件事接到真实工程上——拿本仓库 `examples/stage4-cmake-lib` 那个能产 `.a`+`.so`+`install`+`export` 的活教材,把 CMake 的 install→export→`find_package` 全链路端到端跑通,顺便诚实记录 CMake 默认给可执行埋的那条 RUNPATH 是绝对路径、迁机器会跟着走。
 
 先划清那条线(和阶段 0 一致):**链接器怎么扫符号、按什么顺序、`RPATH`/`RUNPATH` 的语义、`-fvisibility` 的行为,全是 `ld`/`gcc`/ELF 的实现现实,ISO C 不管**。语言层面唯一沾边的,是 §6.9 那条「每个外部链接标识符恰有一次外部定义」(违反是 UB,§6.9¶5)——`undefined reference` 和 `multiple definition` 这两个链接错误,本质都是链接器在实现层帮你拦下了符号没着落或多重定义的情况。至于它**怎么扫、扫几趟、去哪找库**,标准没说,是工具链的现实,我们真跑来看。
 
 ## 符号解析:`undefined reference` 到底在抱怨什么
 
-链接器把一堆 `.o` 拼成可执行文件时,核心活儿之一是**符号解析**:每个 `.o` 里那些没定义的符号(阶段 0 第 5 章用 `nm` 看见的 `U` 大写),要去别的 `.o` 或库里找定义、对上号;对不上,链接器就甩 `undefined reference` 拒绝生成可执行文件。先造一个最小的多文件工程,亲手复现一次,把诊断的套路焊死。
+链接器把一堆 `.o` 拼成可执行文件时,核心活儿之一是**符号解析**:每个 `.o` 里那些没定义的符号(阶段 0 第 6 章用 `nm` 看见的 `U` 大写),要去别的 `.o` 或库里找定义、对上号;对不上,链接器就甩 `undefined reference` 拒绝生成可执行文件。先造一个最小的多文件工程,亲手复现一次,把诊断的套路焊死。
 
 ```c
 /* add.c */
@@ -100,7 +100,7 @@ clang: error: linker command failed with exit code 1 (use -v to see invocation)
 
 ## 静态库的顺序陷阱:为什么 `-lfoo -lbar` 换个顺序就炸
 
-把几个 `.o` 用 `ar rcs` 打包成静态库 `libxxx.a`,链接时用 `-lxxx -L<dir>` 取用,这套阶段 0 第 6 章讲过。这里要钉死的是**静态库之间、库与对象之间的命令行顺序**——它能让同样的代码一个顺序能跑、换个顺序就 `undefined reference`,而报错信息和上一节「漏链 `.o`」**一模一样**,极易误判成代码写错了。根源是链接器扫命令行的方式:**从左到右,只单趟,扫过的不回头**。
+把几个 `.o` 用 `ar rcs` 打包成静态库 `libxxx.a`,链接时用 `-lxxx -L<dir>` 取用,这套阶段 0 第 7 章讲过。这里要钉死的是**静态库之间、库与对象之间的命令行顺序**——它能让同样的代码一个顺序能跑、换个顺序就 `undefined reference`,而报错信息和上一节「漏链 `.o`」**一模一样**,极易误判成代码写错了。根源是链接器扫命令行的方式:**从左到右,只单趟,扫过的不回头**。
 
 造两个有依赖关系的库来复现——上层 `foo_compute` 调用底层 `bar_value`,分别打成 `libfoo.a` 和 `libbar.a`:
 
@@ -166,7 +166,7 @@ foo_compute() = 22
 
 ## 装好 .so 之后,运行期去哪找:`RPATH`/`RUNPATH`/`$ORIGIN`
 
-静态库在**链接期**就把代码抽进可执行文件了(阶段 0 第 6 章);动态库 `.so` 不一样——链接期只在可执行文件里记一句「我要 `libxxx.so`」,真正的代码要等**程序启动时由动态链接器加载进来**(阶段 0 第 7 章那个一直留 `U` 的 `printf@GLIBC` 就是这么填上地址的)。这节要解决的问题是:**程序启动那一刻,动态链接器去文件系统的哪些地方找 `libxxx.so`?**
+静态库在**链接期**就把代码抽进可执行文件了(阶段 0 第 7 章);动态库 `.so` 不一样——链接期只在可执行文件里记一句「我要 `libxxx.so`」,真正的代码要等**程序启动时由动态链接器加载进来**(阶段 0 第 8 章那个一直留 `U` 的 `printf@GLIBC` 就是这么填上地址的)。这节要解决的问题是:**程序启动那一刻,动态链接器去文件系统的哪些地方找 `libxxx.so`?**
 
 造一个最小动态库 + 消费者,把它装到子目录 `./libs/`,看运行期查找的行为:
 
@@ -520,7 +520,7 @@ target_link_libraries(ns_consumer PRIVATE Mathlib::mathlib_shared)
 - `man ld`(`--start-group`/`--end-group`、`-rpath`、`--disable-new-dtags`、库顺序的权威说明)
 - `man ld.so`(动态链接器/加载器:`RPATH`/`RUNPATH`、`$ORIGIN`、`LD_LIBRARY_PATH`、库搜索顺序——这套查找规则的标准出处)
 - `man readelf`(看 ELF 动态段 `DT_RPATH`/`DT_RUNPATH`/`DT_NEEDED`/`DT_SONAME` 各条目)
-- `man dlopen`(运行期加载接口;注意 `dlsym` 返回 `void*` 转函数指针靠 POSIX 保证,ISO C 不管——见阶段 0 第 7 章)
+- `man dlopen`(运行期加载接口;注意 `dlsym` 返回 `void*` 转函数指针靠 POSIX 保证,ISO C 不管——见阶段 0 第 8 章)
 - GCC 手册:`-fvisibility`/`-fvisibility=hidden`、`-fPIC`、`-shared`、`-Wl,`
 - CMake 文档:`install(TARGETS ... EXPORT ...)`、`CMakePackageConfigHelpers`(`write_basic_package_version_file`)、`find_package` 的 Config 模式、`BUILD_RPATH`/`INSTALL_RPATH`/`CMAKE_BUILD_RPATH_USE_ORIGIN`
 - ISO/IEC 9899:2011 §6.9 / §6.9¶5(外部定义:每个外部链接标识符恰有一次外部定义;违反为 UB——`undefined reference`/`multiple definition` 是链接器在实现层拦下的现实)

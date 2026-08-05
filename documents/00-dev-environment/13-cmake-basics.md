@@ -1,8 +1,8 @@
 ---
 title: "CMake 入门：在 make 之上声明「要构建什么」"
-description: "上一章手写的 Makefile 在小项目里够用，但工程一大、一跨平台、一要接第三方库，手维护依赖和平台分支就开始吃力。这一章在 make 之上再封一层 CMake：用一份声明式的 CMakeLists.txt 描述「我要构建什么」，由 CMake 替你生成对应平台的构建文件。拿上一章的 greet 项目真跑：cmake -B build 配置（生成 Makefile）、cmake --build build 编译、out-of-source 构建（源码树保持干净）；看 CMAKE_BUILD_TYPE=Debug/Release 分别给出 -g 和 -O3 -DNDEBUG（呼应第 9 章的 -O/-g）；以及 -G Ninja 换一个底层生成器（同一份 CMakeLists 生成 build.ninja 而非 Makefile）。还点出一个呼应第 9 章的细节：CMake 默认给你 -std=gnu11 不是 c11。"
+description: "上一章手写的 Makefile 在小项目里够用，但工程一大、一跨平台、一要接第三方库，手维护依赖和平台分支就开始吃力。这一章在 make 之上再封一层 CMake：用一份声明式的 CMakeLists.txt 描述「我要构建什么」，由 CMake 替你生成对应平台的构建文件。拿上一章的 greet 项目真跑：cmake -B build 配置（生成 Makefile）、cmake --build build 编译、out-of-source 构建（源码树保持干净）；看 CMAKE_BUILD_TYPE=Debug/Release 分别给出 -g 和 -O3 -DNDEBUG（呼应第 10 章的 -O/-g）；以及 -G Ninja 换一个底层生成器（同一份 CMakeLists 生成 build.ninja 而非 Makefile）。还点出一个呼应第 10 章的细节：CMake 默认给你 -std=gnu11 不是 c11。"
 chapter: 0
-order: 12
+order: 13
 tags:
   - host
   - cmake
@@ -12,11 +12,11 @@ reading_time_minutes: 13
 platform: host
 c_standard: [11]
 prerequisites:
-  - "第 11 章：make 入门（CMake 生成的就是 Makefile）"
-  - "第 9 章：标准与优化（-g / -O3 / -std=gnu11 的含义）"
+  - "第 12 章：make 入门（CMake 生成的就是 Makefile）"
+  - "第 10 章：标准与优化（-g / -O3 / -std=gnu11 的含义）"
 related:
-  - "第 10 章：Sanitizer 门禁（CMake 里开 sanitizer 的旗标）"
-  - "第 17 章：格式化与质量门（在 CMake 里挂 clang-format、sanitizer、测试）"
+  - "第 11 章：Sanitizer 门禁（CMake 里开 sanitizer 的旗标）"
+  - "第 18 章：格式化与质量门（在 CMake 里挂 clang-format、sanitizer、测试）"
 ---
 
 # CMake 入门：在 make 之上声明「要构建什么」
@@ -41,7 +41,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 add_executable(main main.c greet.c)
 ```
 
-逐行读：`cmake_minimum_required(VERSION 3.10)` 声明这个工程需要的最低 CMake 版本（CMake 4.x 起对很老的版本号不再兼容，所以别写 2.x）；`project(greet C)` 给工程起名，并声明语言是 C；`set(CMAKE_C_STANDARD 11)` 设 C 标准为 C11（对应第 9 章的 `-std=c11` 那条纪律，只是换个地方钉），`CMAKE_C_STANDARD_REQUIRED ON` 保证「不够这个标准的编译器直接报错」而不是悄悄降级；最后 `add_executable(main main.c greet.c)` 声明「我要一个叫 `main` 的可执行文件，源文件是这两个」——注意这里**不再手写编译命令和依赖**，你只说「目标 + 源文件」，剩下的 CMake 全替你算。和上一章那个手写每条 `gcc -c` 的 Makefile 比，这份 CMakeLists 只描述「要什么」，不描述「怎么做」——这就是「声明式」。
+逐行读：`cmake_minimum_required(VERSION 3.10)` 声明这个工程需要的最低 CMake 版本（CMake 4.x 起对很老的版本号不再兼容，所以别写 2.x）；`project(greet C)` 给工程起名，并声明语言是 C；`set(CMAKE_C_STANDARD 11)` 设 C 标准为 C11（对应第 10 章的 `-std=c11` 那条纪律，只是换个地方钉），`CMAKE_C_STANDARD_REQUIRED ON` 保证「不够这个标准的编译器直接报错」而不是悄悄降级；最后 `add_executable(main main.c greet.c)` 声明「我要一个叫 `main` 的可执行文件，源文件是这两个」——注意这里**不再手写编译命令和依赖**，你只说「目标 + 源文件」，剩下的 CMake 全替你算。和上一章那个手写每条 `gcc -c` 的 Makefile 比，这份 CMakeLists 只描述「要什么」，不描述「怎么做」——这就是「声明式」。
 
 ## 两步走：先配置，再构建
 
@@ -81,7 +81,7 @@ CMakeCache.txt  CMakeFiles/  Makefile  cmake_install.cmake  main
 
 ## Debug / Release：CMAKE_BUILD_TYPE
 
-CMake 内置了几种「构建类型」，最常用的是 Debug 和 Release。区别直接体现在编译旗标上——和我们第 9 章手拧的 `-g`、`-O` 是一回事，只是 CMake 按构建类型替你选好了：
+CMake 内置了几种「构建类型」，最常用的是 Debug 和 Release。区别直接体现在编译旗标上——和我们第 10 章手拧的 `-g`、`-O` 是一回事，只是 CMake 按构建类型替你选好了：
 
 ```text
 $ cmake -B build-dbg -DCMAKE_BUILD_TYPE=Debug
@@ -95,9 +95,9 @@ Debug:   C_FLAGS = -g           -std=gnu11
 Release: C_FLAGS = -O3 -DNDEBUG -std=gnu11
 ```
 
-Debug 给 `-g`（带调试信息，对应第 9 章「调试用 -O0 -g」），Release 给 `-O3 -DNDEBUG`（`-O3` 是激进优化、`-DNDEBUG` 关掉 `assert` 宏，对应「发布构建」）。所以开发期用 Debug 调试、要发布或跑性能基准时切 Release，靠的就是这一个 `CMAKE_BUILD_TYPE`，不必自己去 if/else 旗标——这正是 CMake 比手写 Makefile 省心的地方。
+Debug 给 `-g`（带调试信息，对应第 10 章「调试用 -O0 -g」），Release 给 `-O3 -DNDEBUG`（`-O3` 是激进优化、`-DNDEBUG` 关掉 `assert` 宏，对应「发布构建」）。所以开发期用 Debug 调试、要发布或跑性能基准时切 Release，靠的就是这一个 `CMAKE_BUILD_TYPE`，不必自己去 if/else 旗标——这正是 CMake 比手写 Makefile 省心的地方。
 
-这里有个直接呼应第 9 章的细节要划重点：两种类型里都带了 `-std=gnu11`，**不是 `-std=c11`**。因为 CMake 的 `CMAKE_C_EXTENSIONS` 这个开关默认是 `ON`，它给的是带 GNU 扩展的 `gnu11`。如果你像本课程第 1 章那样要求「严格 c11、不要 GNU 扩展」，得显式 `set(CMAKE_C_EXTENSIONS OFF)`，CMake 才会给你 `-std=c11`。这种「CMake 默认纵容扩展」的行为，和第 9 章讲的「gcc 默认 `-std=gnuXX`」是一脉相承的——默认姿态都是「能让你过就让你过」，要严格得自己动手。
+这里有个直接呼应第 10 章的细节要划重点：两种类型里都带了 `-std=gnu11`，**不是 `-std=c11`**。因为 CMake 的 `CMAKE_C_EXTENSIONS` 这个开关默认是 `ON`，它给的是带 GNU 扩展的 `gnu11`。如果你像本课程第 1 章那样要求「严格 c11、不要 GNU 扩展」，得显式 `set(CMAKE_C_EXTENSIONS OFF)`，CMake 才会给你 `-std=c11`。这种「CMake 默认纵容扩展」的行为，和第 10 章讲的「gcc 默认 `-std=gnuXX`」是一脉相承的——默认姿态都是「能让你过就让你过」，要严格得自己动手。
 
 ## 生成器：同一份 CMakeLists，换一个底层
 
@@ -122,16 +122,16 @@ $ cmake --build build-ninja
 
 ## 往大一点想：target、依赖、找库
 
-我们这个例子太小，看不出 CMake 比 make 强在哪。但只要你把项目想象得再大一点，CMake 的价值就浮现了：多个目标用 `add_executable` / `add_library` 各建一个，目标之间的依赖用 `target_link_libraries(main greet)` 一行声明（CMake 自动算传递顺序，不像第 6 章手动链接时要操心库的排列顺序）；头文件搜索路径用 `target_include_directories(main PRIVATE include/)`；接第三方库用 `find_package(OpenSSL REQUIRED)` 然后链接——这些在 make 里全是手写、还容易跨平台出错的事，CMake 用几条声明就涵盖了。这些属于「CMake 进阶」，我们在用到时（尤其第 17 章把 clang-format、sanitizer、测试挂进 CMake 时）再展开，这里你只要建立一个印象：CMake 的声明式写法能撑住工程化规模，而手写 Makefile 撑不住。
+我们这个例子太小，看不出 CMake 比 make 强在哪。但只要你把项目想象得再大一点，CMake 的价值就浮现了：多个目标用 `add_executable` / `add_library` 各建一个，目标之间的依赖用 `target_link_libraries(main greet)` 一行声明（CMake 自动算传递顺序，不像第 7 章手动链接时要操心库的排列顺序）；头文件搜索路径用 `target_include_directories(main PRIVATE include/)`；接第三方库用 `find_package(OpenSSL REQUIRED)` 然后链接——这些在 make 里全是手写、还容易跨平台出错的事，CMake 用几条声明就涵盖了。这些属于「CMake 进阶」，我们在用到时（尤其第 18 章把 clang-format、sanitizer、测试挂进 CMake 时）再展开，这里你只要建立一个印象：CMake 的声明式写法能撑住工程化规模，而手写 Makefile 撑不住。
 
 ## 小结
 
-CMake 是「构建系统的生成器」：你写一份声明式的 `CMakeLists.txt` 描述「要构建什么目标、依赖什么」，CMake 替你生成对应平台和生成器的构建文件——在 Linux 上默认是一份 Makefile，也能 `-G Ninja` 换成 `build.ninja`，所以 CMake 不是取代 make，而是取代「你手写 Makefile」，关系是「CMakeLists → CMake → Makefile/Ninja → make/ninja 编译」。用法固定两步：`cmake -B build` 配置（探测环境、生成构建文件、写 CMakeCache.txt 缓存），`cmake --build build` 构建（跨生成器的统一命令），改了 CMakeLists 要重跑配置、光 build 不够；用 `-B` 做的是 out-of-source 构建，产物全在 build 子目录、源码树保持干净。构建类型 `CMAKE_BUILD_TYPE` 按 Debug/Release 自动选旗标（我们真跑看到 Debug 给 `-g`、Release 给 `-O3 -DNDEBUG`，对应第 9 章手拧的 `-g`/`-O`）；但要留心 CMake 默认的 `CMAKE_C_EXTENSIONS=ON` 给的是 `-std=gnu11` 不是 `-std=c11`，要严格 c11 得显式 OFF——这和 gcc 默认纵容 GNU 扩展是一回事。下一章我们从构建转到调试，拿起 GDB，看怎么在程序跑崩的地方停下来、一步一步看现场。
+CMake 是「构建系统的生成器」：你写一份声明式的 `CMakeLists.txt` 描述「要构建什么目标、依赖什么」，CMake 替你生成对应平台和生成器的构建文件——在 Linux 上默认是一份 Makefile，也能 `-G Ninja` 换成 `build.ninja`，所以 CMake 不是取代 make，而是取代「你手写 Makefile」，关系是「CMakeLists → CMake → Makefile/Ninja → make/ninja 编译」。用法固定两步：`cmake -B build` 配置（探测环境、生成构建文件、写 CMakeCache.txt 缓存），`cmake --build build` 构建（跨生成器的统一命令），改了 CMakeLists 要重跑配置、光 build 不够；用 `-B` 做的是 out-of-source 构建，产物全在 build 子目录、源码树保持干净。构建类型 `CMAKE_BUILD_TYPE` 按 Debug/Release 自动选旗标（我们真跑看到 Debug 给 `-g`、Release 给 `-O3 -DNDEBUG`，对应第 10 章手拧的 `-g`/`-O`）；但要留心 CMake 默认的 `CMAKE_C_EXTENSIONS=ON` 给的是 `-std=gnu11` 不是 `-std=c11`，要严格 c11 得显式 OFF——这和 gcc 默认纵容 GNU 扩展是一回事。下一章我们从构建转到调试，拿起 GDB，看怎么在程序跑崩的地方停下来、一步一步看现场。
 
 ## 参考资源
 
 - CMake 官方教程与 `cmake --help-command`（`cmake_minimum_required`/`project`/`set`/`add_executable`/`target_*`/`find_package`）
 - CMake 手册：`CMAKE_BUILD_TYPE`（Debug/Release/RelWithDebInfo/MinSizeRel）、`CMAKE_C_STANDARD`/`CMAKE_C_EXTENSIONS`、生成器（`-G`，Unix Makefiles / Ninja）、`cmake --build` 跨生成器构建
-- 第 9 章：标准与优化（`-g`/`-O3`/`-std=c11 vs gnu11` 的含义，CMake 的旗标就是它们的封装）
-- 第 11 章：make 入门（CMake 默认生成的 Makefile 长什么样、`cmake --build` 内部在调 make）
-- 第 17 章：格式化与质量门（CMake 里挂 clang-format、sanitizer、CTest 的实战）
+- 第 10 章：标准与优化（`-g`/`-O3`/`-std=c11 vs gnu11` 的含义，CMake 的旗标就是它们的封装）
+- 第 12 章：make 入门（CMake 默认生成的 Makefile 长什么样、`cmake --build` 内部在调 make）
+- 第 18 章：格式化与质量门（CMake 里挂 clang-format、sanitizer、CTest 的实战）

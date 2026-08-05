@@ -1,8 +1,8 @@
 ---
 title: "GDB 进阶：条件断点、watchpoint 与 core dump"
-description: "第 13 章那套断点/单步够用，但有三类场景它会让你很累：循环跑到第 1000 次才出 bug（无条件断点得按 999 次 continue）、一个变量被不知道哪里改坏了、程序在 CI 或别人机器上崩了没法当场调试。这一章真跑 GDB 的三件进阶兵器来对付它们：条件断点（break ... if，循环只在第 7 次停）、watchpoint（watch，变量一被改就停，自动给你 Old/New 值）、core dump（程序崩溃后留下内存快照，事后 gdb 读 core 看现场，不用重新跑）。顺带说清一个现代系统的坑：core 文件默认被 systemd-coredump 接管、不在当前目录，所以用 gdb 的 generate-core-file 自己生成更可靠。"
+description: "第 14 章那套断点/单步够用，但有三类场景它会让你很累：循环跑到第 1000 次才出 bug（无条件断点得按 999 次 continue）、一个变量被不知道哪里改坏了、程序在 CI 或别人机器上崩了没法当场调试。这一章真跑 GDB 的三件进阶兵器来对付它们：条件断点（break ... if，循环只在第 7 次停）、watchpoint（watch，变量一被改就停，自动给你 Old/New 值）、core dump（程序崩溃后留下内存快照，事后 gdb 读 core 看现场，不用重新跑）。顺带说清一个现代系统的坑：core 文件默认被 systemd-coredump 接管、不在当前目录，所以用 gdb 的 generate-core-file 自己生成更可靠。"
 chapter: 0
-order: 14
+order: 15
 tags:
   - host
   - gdb
@@ -12,19 +12,19 @@ reading_time_minutes: 12
 platform: host
 c_standard: [11]
 prerequisites:
-  - "第 13 章：GDB 基础单步（断点/单步/查看的那套地基）"
+  - "第 14 章：GDB 基础单步（断点/单步/查看的那套地基）"
 related:
-  - "第 10 章：Sanitizer 门禁（ASan 报 use-after-free 的栈，和 core dump 互补）"
-  - "第 4 章：编译阶段看汇编（TUI 里对照看汇编）"
+  - "第 11 章：Sanitizer 门禁（ASan 报 use-after-free 的栈，和 core dump 互补）"
+  - "第 5 章：编译阶段看汇编（TUI 里对照看汇编）"
 ---
 
 # GDB 进阶：条件断点、watchpoint 与 core dump
 
 ## 引言：基础够用，但有些 bug 要更趁手的兵器
 
-第 13 章那套「断点 + 单步 + 查看」是地基，绝大多数调试都靠它。但有三种场景，光靠基础命令会把你累死：第一，一个循环跑到第 1000 次才出 bug，你用无条件断点停在循环体里，得按 999 次 `continue` 才熬到出错那一次；第二，某个变量不知被代码哪个角落改坏了，你不知道该在哪儿设断点；第三，程序在 CI 或用户机器上崩了，你没法「当场」开 gdb 复现。这一章的真跑兵器分别对付它们：**条件断点**、**watchpoint**、**core dump**。
+第 14 章那套「断点 + 单步 + 查看」是地基，绝大多数调试都靠它。但有三种场景，光靠基础命令会把你累死：第一，一个循环跑到第 1000 次才出 bug，你用无条件断点停在循环体里，得按 999 次 `continue` 才熬到出错那一次；第二，某个变量不知被代码哪个角落改坏了，你不知道该在哪儿设断点；第三，程序在 CI 或用户机器上崩了，你没法「当场」开 gdb 复现。这一章的真跑兵器分别对付它们：**条件断点**、**watchpoint**、**core dump**。
 
-我们准备两个靶子。一个是会段错误的 `crash.c`（第 13 章那个，算完阶乘再 NULL 解引用），用来讲 core dump；另一个是 `loop.c`，一个简单的累加循环，用来讲条件断点和 watchpoint：
+我们准备两个靶子。一个是会段错误的 `crash.c`（第 14 章那个，算完阶乘再 NULL 解引用），用来讲 core dump；另一个是 `loop.c`，一个简单的累加循环，用来讲条件断点和 watchpoint：
 
 ```c
 #include <stdio.h>
@@ -124,19 +124,19 @@ $1 = (int *) 0x0
 $2 = 120
 ```
 
-`gdb 可执行文件 core文件` 这种用法，GDB 一加载就告诉你「这个 core 是哪个程序产生的、死于什么信号」，然后 `bt`、`print p`、`print x` 全都能用——和第 13 章「当场调试」得到的信息一模一样，但**程序根本没重跑**。这就是 core dump 的价值：崩溃那一刻的现场被冻结进了文件，你可以把它从 CI、从用户机器拷回来，慢慢分析。生产环境里，给程序开好 core（或配合 systemd-coredump 的 `coredumpctl`）是事后排障的关键基础设施。
+`gdb 可执行文件 core文件` 这种用法，GDB 一加载就告诉你「这个 core 是哪个程序产生的、死于什么信号」，然后 `bt`、`print p`、`print x` 全都能用——和第 14 章「当场调试」得到的信息一模一样，但**程序根本没重跑**。这就是 core dump 的价值：崩溃那一刻的现场被冻结进了文件，你可以把它从 CI、从用户机器拷回来，慢慢分析。生产环境里，给程序开好 core（或配合 systemd-coredump 的 `coredumpctl`）是事后排障的关键基础设施。
 
 ## 其他几把趁手的小刀
 
-再顺手介绍几个调试时常省事的小命令。`set var sum = 100` 可以在调试时**强行改变量的值**——你想「如果 sum 是 100，后面会怎样」，不必改源码重编，直接改完 `continue` 看效果，试假设特别快。`finish` 让程序一直跑到**当前函数返回**并停在返回点（钻进一个函数看完了想跳出来用它）。`until`（简写 `u`）跑到指定行，常用来「跳出当前循环的剩余迭代」。最后是 **TUI**（终端界面）：`layout src` 把屏幕分成「源码 + 命令」两栏，`layout split` 还能加一栏汇编，断点/单步时源码会高亮当前行，对照着看比 `list` 一次次翻舒服得多（退出 TUI 用 `tui disable` 或 `Ctrl-X A`）。这些加上第 13 章的基础命令，你的调试工具箱就相当齐全了。
+再顺手介绍几个调试时常省事的小命令。`set var sum = 100` 可以在调试时**强行改变量的值**——你想「如果 sum 是 100，后面会怎样」，不必改源码重编，直接改完 `continue` 看效果，试假设特别快。`finish` 让程序一直跑到**当前函数返回**并停在返回点（钻进一个函数看完了想跳出来用它）。`until`（简写 `u`）跑到指定行，常用来「跳出当前循环的剩余迭代」。最后是 **TUI**（终端界面）：`layout src` 把屏幕分成「源码 + 命令」两栏，`layout split` 还能加一栏汇编，断点/单步时源码会高亮当前行，对照着看比 `list` 一次次翻舒服得多（退出 TUI 用 `tui disable` 或 `Ctrl-X A`）。这些加上第 14 章的基础命令，你的调试工具箱就相当齐全了。
 
 ## 小结
 
-第 13 章的断点/单步是地基，这一章补三件对付疑难场景的兵器。**条件断点** `break 位置 if 条件` 只在条件成立时停，专治「循环/递归第 N 次才出错」（我们真跑让循环只在 `i==7` 停，`print` 确认 sum=21），省去按几百次 continue。**watchpoint** `watch 变量` 在变量被修改时自动停并显示 Old/New 值，专治「值被不知道哪里改坏」（要在变量进入作用域后才能 watch，定位完赶紧 `delete`，软件 watchpoint 很慢）。**core dump** 把崩溃那一刻的内存冻结成文件，事后 `gdb 可执行文件 core` 不重跑程序就能 `bt`/`print` 看现场（我们用 `generate-core-file` 生成、`gdb crash crash.core` 读出 SIGSEGV 在 crash.c:15、p=0x0/x=120），专治「没法当场复现的崩溃」（CI、用户机器）。注意现代 Linux 的 core 多被 `systemd-coredump` 接管（`core_pattern` 以 `|` 开头）、当前目录不落 core 文件，用 `generate-core-file` 自己生成最省心。再加 `set var`（调试时改变量试假设）、`finish`/`until`（控制执行）、TUI（`layout src` 分屏看源码），日常调试就够用了。下一章我们离开调试，回到工程协作——看 Git 工作流怎么管住代码的版本和多人改动。
+第 14 章的断点/单步是地基，这一章补三件对付疑难场景的兵器。**条件断点** `break 位置 if 条件` 只在条件成立时停，专治「循环/递归第 N 次才出错」（我们真跑让循环只在 `i==7` 停，`print` 确认 sum=21），省去按几百次 continue。**watchpoint** `watch 变量` 在变量被修改时自动停并显示 Old/New 值，专治「值被不知道哪里改坏」（要在变量进入作用域后才能 watch，定位完赶紧 `delete`，软件 watchpoint 很慢）。**core dump** 把崩溃那一刻的内存冻结成文件，事后 `gdb 可执行文件 core` 不重跑程序就能 `bt`/`print` 看现场（我们用 `generate-core-file` 生成、`gdb crash crash.core` 读出 SIGSEGV 在 crash.c:15、p=0x0/x=120），专治「没法当场复现的崩溃」（CI、用户机器）。注意现代 Linux 的 core 多被 `systemd-coredump` 接管（`core_pattern` 以 `|` 开头）、当前目录不落 core 文件，用 `generate-core-file` 自己生成最省心。再加 `set var`（调试时改变量试假设）、`finish`/`until`（控制执行）、TUI（`layout src` 分屏看源码），日常调试就够用了。下一章我们离开调试，回到工程协作——看 Git 工作流怎么管住代码的版本和多人改动。
 
 ## 参考资源
 
 - GDB 手册：`break ... if`（条件断点）、`watch`/`rwatch`/`awatch`（watchpoint）、`generate-core-file`/`gcore`、core 文件用法、`set var`、`finish`/`until`、TUI（`layout`）
 - `core`（5）手册页、`/proc/sys/kernel/core_pattern`、`systemd-coredump` / `coredumpctl`（现代发行版的 core 处理）
-- 第 13 章：GDB 基础单步（断点/单步/查看的地基）
-- 第 10 章：Sanitizer 门禁（ASan 报 use-after-free 给出的栈，和 core dump 是「自动报 vs 事后查」两条互补的路）
+- 第 14 章：GDB 基础单步（断点/单步/查看的地基）
+- 第 11 章：Sanitizer 门禁（ASan 报 use-after-free 给出的栈，和 core dump 是「自动报 vs 事后查」两条互补的路）

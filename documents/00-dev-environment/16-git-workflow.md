@@ -2,7 +2,7 @@
 title: "Git 工作流：管住代码的版本与协作"
 description: "前面讲完了编译、构建、调试，这一章管「代码本身的版本」。从一个临时仓库真跑 Git 工作流：搞清工作区/暂存区/版本库三个区（add/commit 在区间搬改动）、init/add/commit/log 的基础提交、git status 和 git diff 看改动、git switch -c 开 feature 分支、git merge --no-ff 合并，最后用 git log --graph 画出分叉与合并的历史。顺带说清 commit message 的约定写法（conventional commits：feat/fix/docs…）和本项目的几条硬约定——在 next 分支上写、永不 git push（推送由维护者统一处理）、commit 不带 Co-Authored-By——以及 .gitignore 该挡什么。"
 chapter: 0
-order: 15
+order: 16
 tags:
   - host
   - git
@@ -13,15 +13,15 @@ c_standard: [11]
 prerequisites:
   - "命令行基础（无强前置章节）"
 related:
-  - "第 16 章：GitHub Actions（把质量门挂在 Git 的 push/PR 上跑）"
-  - "第 11 章：make 入门 / 第 12 章：CMake 入门（CI 里调用的构建工具）"
+  - "第 17 章：GitHub Actions（把质量门挂在 Git 的 push/PR 上跑）"
+  - "第 12 章：make 入门 / 第 13 章：CMake 入门（CI 里调用的构建工具）"
 ---
 
 # Git 工作流：管住代码的版本与协作
 
 ## 引言：为什么 C 工程也要 Git
 
-写代码写久了你一定会遇到这几件事：改着改着把原本能跑的代码改坏了、想退回去却不知道改之前长什么样；两个人同时改一个文件、合到一起时打架；线上出了问题、想知道「这行是谁什么时候改成这样的」。这些痛，**Git** 就是用来治的——它给你的代码拍快照、让你随时回到任何一个历史版本、让多人在不同分支上并行开发再合并。而且 Git 不只是「存代码」，本课程后面第 16 章的 CI（持续集成）就是挂在 Git 的提交/合并事件上自动跑的。这一章我们建一个临时仓库，把 Git 日常最常用的那一套真跑一遍。
+写代码写久了你一定会遇到这几件事：改着改着把原本能跑的代码改坏了、想退回去却不知道改之前长什么样；两个人同时改一个文件、合到一起时打架；线上出了问题、想知道「这行是谁什么时候改成这样的」。这些痛，**Git** 就是用来治的——它给你的代码拍快照、让你随时回到任何一个历史版本、让多人在不同分支上并行开发再合并。而且 Git 不只是「存代码」，本课程后面第 17 章的 CI（持续集成）就是挂在 Git 的提交/合并事件上自动跑的。这一章我们建一个临时仓库，把 Git 日常最常用的那一套真跑一遍。
 
 为了不污染本项目的真实仓库，我们在 `/tmp` 下开一个全新的临时仓库来演示（下面所有命令都在它里面跑）：
 
@@ -166,4 +166,4 @@ Git 用三个区管你的改动：工作区（编辑器里的文件）、暂存�
 - `git --help` / Pro Git 书（`add`/`commit`/`log`/`status`/`diff`/`branch`/`switch`/`merge`/`push`/`pull`、暂存区概念）
 - Conventional Commits 规范（`feat`/`fix`/`docs`/`refactor`/`test`/`style`/`chore` 类型词）
 - 本项目 [AGENTS.md](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/AGENTS.md)（`next` 分支、不 push、commit 不带 Co-Authored-By 的硬约定）
-- 第 16 章：GitHub Actions（CI 挂在 Git 的提交/合并事件上）
+- 第 17 章：GitHub Actions（CI 挂在 Git 的提交/合并事件上）

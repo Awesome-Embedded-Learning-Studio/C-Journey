@@ -17,7 +17,7 @@ prerequisites:
   - "第 9 章：作用域、存储期与 static（全局与局部变量的存储期）"
 related:
   - "第 3 章：exec 家族与 wait（fork+exec 标准模式、wait/waitpid 收尸、僵尸进程的完整处理）"
-  - "阶段 0·第 10 章：Sanitizer 门禁（ASan/UBSan，本章用它复核父子内存）"
+  - "阶段 0·第 11 章：Sanitizer 门禁（ASan/UBSan，本章用它复核父子内存）"
 ---
 
 # 进程的诞生：fork、写时复制与 stdio 缓冲陷阱

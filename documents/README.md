@@ -1,6 +1,6 @@
 # 学习文档（documents）
 
-这里是 C-Journey 的全部知识点文档,按阶段分目录。主线六阶段(0-5)已经写完,共 84 章;阶段 6(嵌入式)/ 7(capstone)/ 进阶尚未动笔。
+这里是 C-Journey 的全部知识点文档,按阶段分目录。主线六阶段(0-5)已经写完,共 85 章;阶段 6(嵌入式)/ 7(capstone)/ 进阶尚未动笔。
 
 每章都按同一套规矩来:frontmatter 齐全、代码用 gcc 16 + clang 22 真编真跑(ASan/UBSan 抓 UB)、贴真实终端输出、引 ISO/IEC 9899 条款号。声音是「折腾工程师」——坑就地讲、不套预警框、小结走散文。完整规矩在 [.claude/writing-style.md](../.claude/writing-style.md),动手写之前先看一眼。
 
@@ -12,14 +12,16 @@
 
 ## 目录索引
 
-### 阶段 0 · 开发环境与编译(17 章) — [00-dev-environment/](./00-dev-environment/)
+### 阶段 0 · 开发环境与编译(18 章) — [00-dev-environment/](./00-dev-environment/) · [导读:必读 vs 选读](./00-dev-environment/index.md)
 
-- 01 [工具链体检](./00-dev-environment/01-toolchain-health-check.md) · 02 [编译四阶段全景(-save-temps)](./00-dev-environment/02-save-temps-and-four-stages.md) · 03 [预处理深入](./00-dev-environment/03-preprocessor-deep-dive.md)
-- 04 [编译阶段看汇编](./00-dev-environment/04-compile-to-assembly.md) · 05 [目标文件与符号](./00-dev-environment/05-object-files-and-symbols.md) · 06 [链接与静态库](./00-dev-environment/06-linking-and-static-libs.md) · 07 [动态库与 dlopen](./00-dev-environment/07-dynamic-libs-and-dlopen.md)
-- 08 [警告旗标进阶](./00-dev-environment/08-warning-flags.md) · 09 [标准与优化](./00-dev-environment/09-standards-and-optimization.md) · 10 [Sanitizer 门禁](./00-dev-environment/10-sanitizer-gate.md)
-- 11 [make 入门](./00-dev-environment/11-make-basics.md) · 12 [CMake 入门](./00-dev-environment/12-cmake-basics.md)
-- 13 [GDB 基础](./00-dev-environment/13-gdb-basics.md) · 14 [GDB 进阶](./00-dev-environment/14-gdb-advanced.md)
-- 15 [Git 工作流](./00-dev-environment/15-git-workflow.md) · 16 [GitHub Actions](./00-dev-environment/16-github-actions.md) · 17 [格式化与质量门](./00-dev-environment/17-format-and-quality-gate.md)
+> 🌱 必读(读完就能写 C)· 🔧 推荐(写几天就离不开)· ⚗️ 进阶选读(按需回查)——分层理由见 [导读](./00-dev-environment/index.md)
+
+- 🌱 01 [工具链体检](./00-dev-environment/01-toolchain-health-check.md) · 🔧 02 [VSCode + Clangd](./00-dev-environment/02-vscode-clangd-setup.md) · 🌱 03 [编译四阶段全景(-save-temps)](./00-dev-environment/03-save-temps-and-four-stages.md) · ⚗️ 04 [预处理深入](./00-dev-environment/04-preprocessor-deep-dive.md)
+- ⚗️ 05 [编译阶段看汇编](./00-dev-environment/05-compile-to-assembly.md) · ⚗️ 06 [目标文件与符号](./00-dev-environment/06-object-files-and-symbols.md) · ⚗️ 07 [链接与静态库](./00-dev-environment/07-linking-and-static-libs.md) · ⚗️ 08 [动态库与 dlopen](./00-dev-environment/08-dynamic-libs-and-dlopen.md)
+- 🔧 09 [警告旗标进阶](./00-dev-environment/09-warning-flags.md) · 🔧 10 [标准与优化](./00-dev-environment/10-standards-and-optimization.md) · ⚗️ 11 [Sanitizer 门禁](./00-dev-environment/11-sanitizer-gate.md)
+- 🔧 12 [make 入门](./00-dev-environment/12-make-basics.md) · ⚗️ 13 [CMake 入门](./00-dev-environment/13-cmake-basics.md)
+- ⚗️ 14 [GDB 基础](./00-dev-environment/14-gdb-basics.md) · ⚗️ 15 [GDB 进阶](./00-dev-environment/15-gdb-advanced.md)
+- ⚗️ 16 [Git 工作流](./00-dev-environment/16-git-workflow.md) · ⚗️ 17 [GitHub Actions](./00-dev-environment/17-github-actions.md) · ⚗️ 18 [格式化与质量门](./00-dev-environment/18-format-and-quality-gate.md)
 
 ### 阶段 1 · C 语言基底(13 章) — [01-c-basics/](./01-c-basics/) · [导读入口](./01-c-basics/index.md)
 

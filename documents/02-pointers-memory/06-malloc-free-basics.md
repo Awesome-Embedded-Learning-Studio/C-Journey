@@ -166,4 +166,4 @@ $ gcc -std=c11 -Wall realloc_basic.c -o rb && ./rb
 - K. N. King《C Programming: A Modern Approach》第 17 章（动态内存分配:`malloc`/`free`、动态数组、`realloc`）
 - Robert C. Seacord《Effective C》第 6 章（`malloc`/`free` 约定、检查 `NULL`、`realloc` 的正确用法）
 - 第 9 章：作用域、存储期与 `static`（自动存储期 vs 动态存储期）、第 2 章：`sizeof`、第 10 章：数组（`p[i]≡*(p+i)`）、阶段2·第1章：指针（`NULL`、`void*`）
-- 阶段2·第7章：动态内存的坑（UAF/double-free/泄漏,ASan 抓）、第12章：内存布局（栈 vs 堆全景图）、阶段 0·第10章：Sanitizer 门禁（ASan/LeakSanitizer）
+- 阶段2·第7章：动态内存的坑（UAF/double-free/泄漏,ASan 抓）、第12章：内存布局（栈 vs 堆全景图）、阶段 0·第11章：Sanitizer 门禁（ASan/LeakSanitizer）

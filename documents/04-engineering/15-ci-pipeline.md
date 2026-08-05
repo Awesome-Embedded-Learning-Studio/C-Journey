@@ -1,6 +1,6 @@
 ---
 title: "把质量门拼成流水线:扩展本仓 ci.yml"
-description: "前面几章一道一道立的门——build_examples 担保「每个示例能编」、sanitize 抓运行时 UB/内存、clang-tidy 抓编译时语义、gcov/lcov 量化测试盖到哪、frontmatter+markdownlint 守文档、clang-format 守代码风格——这一章把它们拼成一条 CI 流水线,看六道门是怎么在每次 push/PR 上并行各跑一份的。不重复阶段 0 第 16 章那次对「4-job 版 ci.yml」的逐行拆解,本章只讲扩展后的全景:逐 job 概览 build-examples(gcc/clang 矩阵)、sanitize(ASan+UBSan)、docs(frontmatter+markdownlint)、format-check(clang-format --dry-run --Werror)、static-analysis(clang-tidy)、coverage(gcov/lcov)每道门干啥,核心是分清「硬门 vs 报告模式」——build_examples/sanitize/format/clang-tidy 是硬门(失败断 CI),docs 的 frontmatter 也是硬门、markdownlint 同理,而 build_examples 脚本内部还有 KNOWN_LEGACY 双模式(projects 里的嵌入式 MCU/汇编老工程走 report 模式、失败只打日志不断 CI),coverage 这道门只生报告、不做阈值断言(是 advisory)。讲 concurrency:cancel-in-progress 让同分支新推送取消上一轮在跑的旧 CI,省排队。讲怎么加新门:照葫芦画瓢加一个 job——装工具、跑脚本、靠脚本退出码非 0 断 CI。真跑:本地用 /tmp/cj/p4ch15/gate_echo.sh 串起三道本地能跑的硬门(build_examples/clang_tidy_check/validate_frontmatter),贴退出码 0 的真实汇总。承接第 12 章(clang-tidy 门)+第 13 章(coverage 门)——本章把这两道和前几道一起拼进 ci.yml 全景。"
+description: "前面几章一道一道立的门——build_examples 担保「每个示例能编」、sanitize 抓运行时 UB/内存、clang-tidy 抓编译时语义、gcov/lcov 量化测试盖到哪、frontmatter+markdownlint 守文档、clang-format 守代码风格——这一章把它们拼成一条 CI 流水线,看六道门是怎么在每次 push/PR 上并行各跑一份的。不重复阶段 0 第 17 章那次对「4-job 版 ci.yml」的逐行拆解,本章只讲扩展后的全景:逐 job 概览 build-examples(gcc/clang 矩阵)、sanitize(ASan+UBSan)、docs(frontmatter+markdownlint)、format-check(clang-format --dry-run --Werror)、static-analysis(clang-tidy)、coverage(gcov/lcov)每道门干啥,核心是分清「硬门 vs 报告模式」——build_examples/sanitize/format/clang-tidy 是硬门(失败断 CI),docs 的 frontmatter 也是硬门、markdownlint 同理,而 build_examples 脚本内部还有 KNOWN_LEGACY 双模式(projects 里的嵌入式 MCU/汇编老工程走 report 模式、失败只打日志不断 CI),coverage 这道门只生报告、不做阈值断言(是 advisory)。讲 concurrency:cancel-in-progress 让同分支新推送取消上一轮在跑的旧 CI,省排队。讲怎么加新门:照葫芦画瓢加一个 job——装工具、跑脚本、靠脚本退出码非 0 断 CI。真跑:本地用 /tmp/cj/p4ch15/gate_echo.sh 串起三道本地能跑的硬门(build_examples/clang_tidy_check/validate_frontmatter),贴退出码 0 的真实汇总。承接第 12 章(clang-tidy 门)+第 13 章(coverage 门)——本章把这两道和前几道一起拼进 ci.yml 全景。"
 chapter: 4
 order: 15
 tags:
@@ -14,12 +14,12 @@ reading_time_minutes: 13
 platform: host
 c_standard: [11]
 prerequisites:
-  - "阶段 0·第 16 章:GitHub Actions(那里逐行拆了原来的 4-job ci.yml,本章是它扩展到 6 道门后的全景,不重复逐行)"
+  - "阶段 0·第 17 章:GitHub Actions(那里逐行拆了原来的 4-job ci.yml,本章是它扩展到 6 道门后的全景,不重复逐行)"
   - "第 12 章:静态分析门(static-analysis 这道 CI 门就是它立的,本章把它拼进流水线)"
   - "第 13 章:覆盖率门(coverage 这道 CI 门就是它立的,本章把它拼进流水线)"
-  - "阶段 0·第 10 章:Sanitizer 门禁(sanitize job 就是它,本章看它在流水线里的位置)"
+  - "阶段 0·第 11 章:Sanitizer 门禁(sanitize job 就是它,本章看它在流水线里的位置)"
 related:
-  - "阶段 0·第 17 章:格式化与质量门(format-check job 的 clang-format 详解)"
+  - "阶段 0·第 18 章:格式化与质量门(format-check job 的 clang-format 详解)"
   - "第 10 章:ASan+UBSan 深入(sanitize job 的运行时检查)"
 ---
 
@@ -29,9 +29,9 @@ related:
 
 到这里,工程化阶段攒下的门已经够摆一条流水线了。`build_examples.py` 担保「每个示例都编得过」(gcc 和 clang 各编一遍)、`sanitize` 拿 ASan+UBSan 抓运行时的内存错和 UB、`clang-tidy` 抓编译时的语义毛病(reserved identifier、narrowing、缺括号)、`gcov/lcov` 把测试盖到了哪里量化成数字、`validate_frontmatter.py`+`markdownlint` 守文档的元信息和写法、`clang-format` 守代码风格。每一道在前面章节都单独立过、单独真跑过。
 
-问题是——**谁来保证每次提交都把它们一道不漏地全跑一遍?** 阶段 0 第 16 章已经回答过这个问题:GitHub Actions,把质量门挂在 `push`/`pull_request` 上自动跑。那一章我们逐行拆了当时的 `ci.yml`——四道 job(`build-examples`/`sanitize`/`docs`/`format-check`)。可打那以后,本仓又立了两道新门:第 12 章的 `static-analysis`(clang-tidy)和第 13 章的 `coverage`(gcov/lcov)。于是 `ci.yml` 从四道扩到了**六道**。
+问题是——**谁来保证每次提交都把它们一道不漏地全跑一遍?** 阶段 0 第 17 章已经回答过这个问题:GitHub Actions,把质量门挂在 `push`/`pull_request` 上自动跑。那一章我们逐行拆了当时的 `ci.yml`——四道 job(`build-examples`/`sanitize`/`docs`/`format-check`)。可打那以后,本仓又立了两道新门:第 12 章的 `static-analysis`(clang-tidy)和第 13 章的 `coverage`(gcov/lcov)。于是 `ci.yml` 从四道扩到了**六道**。
 
-本章干的就是把扩展后的全景讲清楚,**不重复阶段 0 第 16 章那次逐行拆解**——yml 的 `on`/`jobs`/`steps`/`runs-on`/`uses` 这些语法那里讲透了,这里只看「扩展后六道门怎么排、谁是硬门谁是报告、怎么再加一道」。读的是仓库里真实的 [.github/workflows/ci.yml](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.github/workflows/ci.yml),本地用 `/tmp/cj/p4ch15/gate_echo.sh` 把三道本地能跑的硬门串起来真跑一遍,贴退出码 0 的汇总——这就是 GitHub 上那颗绿勾背后实际发生的事。
+本章干的就是把扩展后的全景讲清楚,**不重复阶段 0 第 17 章那次逐行拆解**——yml 的 `on`/`jobs`/`steps`/`runs-on`/`uses` 这些语法那里讲透了,这里只看「扩展后六道门怎么排、谁是硬门谁是报告、怎么再加一道」。读的是仓库里真实的 [.github/workflows/ci.yml](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.github/workflows/ci.yml),本地用 `/tmp/cj/p4ch15/gate_echo.sh` 把三道本地能跑的硬门串起来真跑一遍,贴退出码 0 的汇总——这就是 GitHub 上那颗绿勾背后实际发生的事。
 
 ## 扩展后的全景:六道门怎么排
 
@@ -59,7 +59,7 @@ jobs:
   coverage:         ...  # cmake --coverage + ctest + lcov
 ```
 
-`on` 那段定义触发条件:`push` 到 `main`(以及那个集成分支 `feat/integrate-old-c-code`)、对 `main` 发 `pull_request`——一推代码或一更新 PR,六道门就并行开跑。语法细节(why `runs-on: ubuntu-latest`、`uses: actions/checkout@v4` 是干嘛、matrix 怎么展开)阶段 0 第 16 章逐行拆过,这里不重复。
+`on` 那段定义触发条件:`push` 到 `main`(以及那个集成分支 `feat/integrate-old-c-code`)、对 `main` 发 `pull_request`——一推代码或一更新 PR,六道门就并行开跑。语法细节(why `runs-on: ubuntu-latest`、`uses: actions/checkout@v4` 是干嘛、matrix 怎么展开)阶段 0 第 17 章逐行拆过,这里不重复。
 
 值得在全景这一层先说清的是 `concurrency` 那三行。它的 `group` 用 `ci-${{ github.ref }}` 把「同一个分支」的 CI 跑归成一组,`cancel-in-progress: true` 意思是——**同一个分支,如果你又推了新代码,就把上一轮还在跑的 CI 取消掉**。想象一下你对着一个 PR 连推三次 commit:第一次推完 CI 开跑、要跑几分钟;还没跑完你又推了第二次,这时候第一次那轮已经白跑了(代码已经不是最新),`cancel-in-progress` 就把它掐了、把算力让给第二次;第三次同理掐第二次。这样既省 GitHub Actions 的额度、也让 PR 页面上的 CI 状态始终对应最新一次推送。代价是——如果你那轮 CI 里跑到一半就被掐、有些 job 没跑完,你就看不到它们的完整结果,不过反正它们要被新一轮覆盖、这个代价可以接受。
 
@@ -157,7 +157,7 @@ jobs:
           git ls-files 'examples/*.c' 'examples/*.h' | xargs clang-format --dry-run --Werror
 ```
 
-最后一步是裁决点:`git ls-files` 列出 examples 下所有纳入 git 的 `.c`/`.h`,`xargs` 把它们喂给 `clang-format --dry-run --Werror`。`--dry-run` 只检查不改文件、`--Werror` 把「格式不合规」当错误——任一文件格式不对、退出码非 0、CI 红。注意它用 `git ls-files` 而不是 `find`,好处是只检查纳入版本控制的文件、不碰构建产物或临时垃圾。这一道和本仓根目录的 `.clang-format` 是一对:CI 这边只检查、本地该用 `clang-format -i` 改(阶段 0 第 17 章讲过)。硬门。
+最后一步是裁决点:`git ls-files` 列出 examples 下所有纳入 git 的 `.c`/`.h`,`xargs` 把它们喂给 `clang-format --dry-run --Werror`。`--dry-run` 只检查不改文件、`--Werror` 把「格式不合规」当错误——任一文件格式不对、退出码非 0、CI 红。注意它用 `git ls-files` 而不是 `find`,好处是只检查纳入版本控制的文件、不碰构建产物或临时垃圾。这一道和本仓根目录的 `.clang-format` 是一对:CI 这边只检查、本地该用 `clang-format -i` 改(阶段 0 第 18 章讲过)。硬门。
 
 ### `static-analysis`:clang-tidy,第 12 章立的语义门
 
@@ -341,4 +341,4 @@ CI 把前面几章一道道立的门拼成一条流水线,挂在每次 `push`/`p
 
 - **本仓活教材**:[`.github/workflows/ci.yml`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/.github/workflows/ci.yml)(六道 job 的真实配置)、[`scripts/build_examples.py`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/scripts/build_examples.py)(`KNOWN_LEGACY` 双模式在这)、[`scripts/clang_tidy_check.py`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/scripts/clang_tidy_check.py)、[`scripts/validate_frontmatter.py`](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/scripts/validate_frontmatter.py)。
 - **GitHub Actions 文档**:workflow 语法(`on`/`jobs`/`steps`/`runs-on`)、`strategy.matrix` 矩阵、`concurrency`(含 `cancel-in-progress`)、`DavidAnson/markdownlint-cli2-action`(第三方 action 的版本化复用)。
-- **承接章节**:阶段 0 第 16 章(那里逐行拆了原来的 4-job ci.yml、本章是它扩到 6 道门后的全景)、第 12 章(static-analysis 这道门的来历)、第 13 章(coverage 这道门的来历)、阶段 0 第 10 章(sanitize job 的源头)、第 17 章(format-check job 的 clang-format 详解)。
+- **承接章节**:阶段 0 第 17 章(那里逐行拆了原来的 4-job ci.yml、本章是它扩到 6 道门后的全景)、第 12 章(static-analysis 这道门的来历)、第 13 章(coverage 这道门的来历)、阶段 0 第 11 章(sanitize job 的源头)、第 18 章(format-check job 的 clang-format 详解)。

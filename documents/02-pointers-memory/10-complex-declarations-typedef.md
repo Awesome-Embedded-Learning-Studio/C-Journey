@@ -17,7 +17,7 @@ prerequisites:
   - "第 2 章：整型家族与 sizeof（sizeof 验证类型大小、size_t 用 %zu）"
 related:
   - "阶段2·第4章：const 限定（const vs #define 对照；本章 typedef 也是「编译期类型层」而非文本替换）"
-  - "阶段 0·第3章：预处理深入（#define 文本替换，与 typedef 的本质区别）"
+  - "阶段 0·第4章：预处理深入（#define 文本替换，与 typedef 的本质区别）"
 ---
 
 # 复杂声明与 typedef：右左法则拆解、用别名拯救可读性
@@ -238,5 +238,5 @@ C 声明之所以能堆出 `int (*arr[3])(int)` 这种吓人的样子,根子在�
 - Brian W. Kernighan & Dennis M. Ritchie《The C Programming Language》第 5.12 节（复杂声明、`cdecl` 程序）
 - Andrew Koenig《C Traps and Pitfalls》第 3 章（声明带来的陷阱）
 - 阶段2·第8章：多级指针与指针数组（指针数组 `int*[]` vs 数组指针 `int(*)[5]`、右左法则引子）、第9章：函数指针（`int (*fp)(int)`）
-- 阶段2·第4章：const 限定（`const` vs `#define` 对照——本章 `typedef` 也是编译期类型层而非文本替换）、阶段0·第3章：预处理深入（`#define` 文本替换）
+- 阶段2·第4章：const 限定（`const` vs `#define` 对照——本章 `typedef` 也是编译期类型层而非文本替换）、阶段0·第4章：预处理深入（`#define` 文本替换）
 - 第 2 章：整型家族与 sizeof（`sizeof` 验证类型大小、`size_t` 用 `%zu` 打印）

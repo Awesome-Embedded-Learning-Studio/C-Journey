@@ -2,7 +2,7 @@
 title: "预处理深入：宏展开、头文件膨胀与条件编译"
 description: "课程第 0 章第三篇：一头扎进编译第一站——预处理。用 gcc -E 让宏副作用的优先级坑、条件编译的 -D 开关、#include 的搜索路径、宏尾分号炸出的 'else without if' 全部当场现形。建立『预处理只做文本替换、不懂 C 语法』的硬直觉。"
 chapter: 0
-order: 3
+order: 4
 tags:
   - host
   - toolchain
@@ -12,10 +12,10 @@ reading_time_minutes: 14
 platform: host
 c_standard: [11]
 prerequisites:
-  - "第 2 章：编译四阶段全景（-save-temps）"
+  - "第 3 章：编译四阶段全景（-save-temps）"
 related:
-  - "第 8 章：警告旗标进阶（-Wpedantic 抓非标扩展）"
-  - "第 4 章：编译阶段看汇编"
+  - "第 9 章：警告旗标进阶（-Wpedantic 抓非标扩展）"
+  - "第 5 章：编译阶段看汇编"
 ---
 
 # 预处理深入：宏展开、头文件膨胀与条件编译
@@ -178,5 +178,5 @@ $ gcc -std=c11 -E semi_bad.c | grep -nA3 'if (x'
 
 - ISO/IEC 9899 §6.10 预处理（§6.10.1 条件包含、§6.10.2 源文件包含、§6.10.3 宏展开与重扫描）
 - GCC 手册：`-E`、`-D`、`-Wp,-v`、`-H`（打印包含树）
-- 第 2 章：编译四阶段全景（`.i` 是预处理产物的全景视角）
-- 第 8 章：警告旗标进阶（`-Wpedantic` 如何抓非标扩展）
+- 第 3 章：编译四阶段全景（`.i` 是预处理产物的全景视角）
+- 第 9 章：警告旗标进阶（`-Wpedantic` 如何抓非标扩展）

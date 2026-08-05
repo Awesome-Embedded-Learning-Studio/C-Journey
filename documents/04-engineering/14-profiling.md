@@ -14,8 +14,8 @@ reading_time_minutes: 18
 platform: host
 c_standard: [99, 11]
 prerequisites:
-  - "阶段 0·第 9 章:标准与优化(-std/-O/-g,本章 benchmark 全程 -O2,要先懂优化级别)"
-  - "阶段 0·第 10 章:Sanitizer 门禁(本章会反复强调「别拿带 -fsanitize 的二进制做 benchmark」)"
+  - "阶段 0·第 10 章:标准与优化(-std/-O/-g,本章 benchmark 全程 -O2,要先懂优化级别)"
+  - "阶段 0·第 11 章:Sanitizer 门禁(本章会反复强调「别拿带 -fsanitize 的二进制做 benchmark」)"
   - "阶段 0·第 1 章:工具链体检(本机有没有装 perf/gprof 的检查思路)"
 related:
   - "阶段 4·第 1 章:头文件契约(_POSIX_C_SOURCE 怎么解锁 POSIX 符号,本章 clock_gettime 会用到)"
@@ -26,7 +26,7 @@ related:
 
 ## 引言:从「感觉慢」到「量得出慢在哪」
 
-前置阅读:阶段 0 的第 9 章把 `-O` 优化级别讲透了,第 10 章把 sanitizer 当成正确性那一侧的默认开关。这一章换一个维度——**程序是对的,但它跑得不够快**。正确性靠 sanitizer 当场抓,性能则要靠**计时器**告诉你「这段耗多少毫秒」、靠**剖析器(profiler)**告诉你「这点时间花在哪个函数的哪条语句上」。两边的工具链完全不同,别拿 ASan 的二进制去 benchmark——后文会真跑给你看它慢多少倍。
+前置阅读:阶段 0 的第 10 章把 `-O` 优化级别讲透了,第 11 章把 sanitizer 当成正确性那一侧的默认开关。这一章换一个维度——**程序是对的,但它跑得不够快**。正确性靠 sanitizer 当场抓,性能则要靠**计时器**告诉你「这段耗多少毫秒」、靠**剖析器(profiler)**告诉你「这点时间花在哪个函数的哪条语句上」。两边的工具链完全不同,别拿 ASan 的二进制去 benchmark——后文会真跑给你看它慢多少倍。
 
 阶段 0 那几章里,性能只是顺带提了一句「`-O2` 比 `-O0` 快」。这一章是它的工程化深度面:我们要回答三个递进的问题——**慢,到底是墙钟慢还是 CPU 烧得多?慢在哪个函数?为什么那个函数慢?**。三个问题对应三件工具:`clock_gettime` 拆时钟、`gprof` 看调用图、`perf` 钻进微架构事件。本机(gcc 16.1.1 / clang 22.1.6,WSL2 x86_64,AMD Ryzen 7 5800H,L1d 32 KiB/核、L2 512 KiB/核、L3 16 MiB、cacheline 64 字节)上 `clock_gettime` 和 `gprof` 都真跑、贴真实输出;`perf` **没装**(`command -v perf` 找不到),那一段我老实标注「本机未装、只讲原理」,不编一条 perf 的输出糊弄你。诚实地写工具能用与不能用,是这一章的底线。
 
@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
 }
 ```
 
-注意两件事:其一,**迭代数从命令行 `argv` 传进来**,不是写死成常量——写死了 `-O2` 会把循环折叠成编译期常量、机器码里根本没循环可测(阶段 0 第 9 章细讲过这个坑,这里不重复);其二,累加结果赋给了 `volatile long s` 再 return,这一步是**防优化**的命根子,不保住结果编译器会判定「这个循环没副作用」直接删掉。这两步在 benchmark 里不是装饰,是让测量诚实的底线。编译时除了 `-O2 -pg`,还得加一个关键的 `-fno-inline`——原因下一段当场演给你看:
+注意两件事:其一,**迭代数从命令行 `argv` 传进来**,不是写死成常量——写死了 `-O2` 会把循环折叠成编译期常量、机器码里根本没循环可测(阶段 0 第 10 章细讲过这个坑,这里不重复);其二,累加结果赋给了 `volatile long s` 再 return,这一步是**防优化**的命根子,不保住结果编译器会判定「这个循环没副作用」直接删掉。这两步在 benchmark 里不是装饰,是让测量诚实的底线。编译时除了 `-O2 -pg`,还得加一个关键的 `-fno-inline`——原因下一段当场演给你看:
 
 ```text
 $ gcc -std=c11 -Wall -Wextra -O2 -fno-inline -pg work_tree.c -o work_tree_pg
@@ -389,7 +389,7 @@ perf 不是想用就能用的。内核有个 sysctl 叫 `perf_event_paranoid`,�
 
 讲完工具再讲方法,因为工具用错了,数据全是垃圾。benchmark 不是「跑一次拿个数字」,它有自己的纪律。**第一,先 warmup 再测**:第一次访问一段内存会触发缺页(操作系统现分配物理页、建立页表映射),这开销不该算进你的测量;所以正式计时前先跑一遍把内存全触及、把指令 cache 填满,再开始计时。本章的 stride bench 在计时前先 `for` 一遍把数组填满、matrix scan 也一样,就是这个道理。**第二,重复多次取代表值**:单次测量受系统负载、CPU 频率动态调节(`cpufreq` turbo)、其他进程抢占影响,误差可能 20% 以上;跑 5-10 次取中位数或最小值,比单次可信得多。本章的 stride bench 内部跑 5 个 pass,就是这个用意。
 
-**第三条是和阶段 0 第 10 章呼应的红线:别拿带 sanitizer 的二进制做 benchmark。** ASan/UBSan 是编译期插桩,它在每条内存访问前后都加检查代码,程序会显著变慢、行为也不再代表真实发布版。我用本章的 stride bench 真跑对照给你看——同一个 `.c`,一份 `-O2` 编、一份 `-O2 -fsanitize=address,undefined` 编,跑步长 1 的扫描:
+**第三条是和阶段 0 第 11 章呼应的红线:别拿带 sanitizer 的二进制做 benchmark。** ASan/UBSan 是编译期插桩,它在每条内存访问前后都加检查代码,程序会显著变慢、行为也不再代表真实发布版。我用本章的 stride bench 真跑对照给你看——同一个 `.c`,一份 `-O2` 编、一份 `-O2 -fsanitize=address,undefined` 编,跑步长 1 的扫描:
 
 ```text
 $ gcc -std=c11 -Wall -Wextra -O2 stride_bench.c -o stride_plain
@@ -404,7 +404,7 @@ stride   1 :   0.0439 s   41943040 elems   1.05 ns/elem
 
 ## 把「为什么慢」量成数字:cache 局部性微基准
 
-讲完工具链,最后用一个真实微基准把「为什么那个函数慢」量成数字,收口这一章的方法论。这一节和阶段 0 第 9 章里提过的「`-O` 级别影响速度」是不同维度:那里讲的是编译器优化,这里讲的是**程序和内存层次结构的契合度**——也就是 cache 局部性。现代 CPU 和内存之间有道越来越宽的鸿沟:一条寄存器运算大概 1 个周期(<1 纳秒),而去主存(DRAM)取一个数据要 200-300 个周期(上百纳秒),差两个数量级。这道鸿沟靠**缓存(cache)**填,本机 Ryzen 7 5800H 的延迟阶梯是:L1d 32 KiB/核 ~1ns、L2 512 KiB/核 ~3ns、L3 16 MiB 共享 ~12ns、主存 ~100ns。cache 按 **cacheline**(本机和绝大多数 x86/ARM 都是 64 字节一行)为单位搬运——CPU 要读地址 `A` 的一个字节,实际把 `A` 所在的整行 64 字节搬进 L1。这一设计决定了「快」的关键是两种局部性:**空间局部性**(顺序访问,搬一次的 64 字节里能用上多个,均摊几乎免费)和**时间局部性**(刚用过的数据接着用,还在 cache 里)。
+讲完工具链,最后用一个真实微基准把「为什么那个函数慢」量成数字,收口这一章的方法论。这一节和阶段 0 第 10 章里提过的「`-O` 级别影响速度」是不同维度:那里讲的是编译器优化,这里讲的是**程序和内存层次结构的契合度**——也就是 cache 局部性。现代 CPU 和内存之间有道越来越宽的鸿沟:一条寄存器运算大概 1 个周期(<1 纳秒),而去主存(DRAM)取一个数据要 200-300 个周期(上百纳秒),差两个数量级。这道鸿沟靠**缓存(cache)**填,本机 Ryzen 7 5800H 的延迟阶梯是:L1d 32 KiB/核 ~1ns、L2 512 KiB/核 ~3ns、L3 16 MiB 共享 ~12ns、主存 ~100ns。cache 按 **cacheline**(本机和绝大多数 x86/ARM 都是 64 字节一行)为单位搬运——CPU 要读地址 `A` 的一个字节,实际把 `A` 所在的整行 64 字节搬进 L1。这一设计决定了「快」的关键是两种局部性:**空间局部性**(顺序访问,搬一次的 64 字节里能用上多个,均摊几乎免费)和**时间局部性**(刚用过的数据接着用,还在 cache 里)。
 
 光说不练是嘴炮,写一个最小的微基准,把「连续访问」和「大步长跳跃访问」的差距**量成每个元素的均摊延迟**。造一个 32 MiB 的 `int` 数组(远超 16 MiB 的 L3,每次访问几乎都得看 cache 命不命中),分别用步长 1(连续,cacheline 搬一次喂 16 个 int)、16(正好每 cacheline 取一个)、128(每 8 个 cacheline 才取一个)扫描:
 
@@ -613,7 +613,7 @@ matrix 200x200 (0.2 MiB)
 - [Brendan Gregg — Linux Performance](https://www.brendangregg.com/linuxperf.html)(perf、火焰图、性能分析的权威资料集)
 - [`perf` Wiki — Tutorial](https://perf.wiki.kernel.org/index.php/Tutorial)(`perf stat`/`record`/`report` 与 `perf_event_paranoid` 详解)
 - [Drepper — *What Every Programmer Should Know About Memory*](https://people.freebsd.org/~lstewart/articles/cpumemory.pdf)(cache/cacheline/局部性部分的进阶读物,本章微基准的理论背景)
-- 本仓库相关章节:[阶段 4·第 1 章头文件契约](`_POSIX_C_SOURCE` 解锁 POSIX 符号的纪律)、[阶段 0·第 9 章标准与优化](`-O2` 与编译期常量折叠,benchmark 必须 `argv` 驱动迭代的原因)、[阶段 0·第 10 章 Sanitizer 门禁](「别拿 sanitizer 二进制做 benchmark」那条红线的来由)
+- 本仓库相关章节:[阶段 4·第 1 章头文件契约](`_POSIX_C_SOURCE` 解锁 POSIX 符号的纪律)、[阶段 0·第 10 章标准与优化](`-O2` 与编译期常量折叠,benchmark 必须 `argv` 驱动迭代的原因)、[阶段 0·第 11 章 Sanitizer 门禁](「别拿 sanitizer 二进制做 benchmark」那条红线的来由)
 
 ---
 *整理自作者笔记,按 C-Journey 写作规范重写;clock_gettime / gprof / 微基准数据均在 AMD Ryzen 7 5800H / gcc 16.1.1 + clang 22.1.6 本机实测捕获。perf 部分为概念指引(本机 WSL2 未安装 perf),其余输出均为真实运行结果。*

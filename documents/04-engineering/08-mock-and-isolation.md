@@ -15,10 +15,10 @@ c_standard: [11]
 prerequisites:
   - "阶段 4·第 7 章:测试不再是 printf(assert / 测试该断言什么、本章是它的进阶——测『有依赖』的代码)"
   - "阶段 4·第 1 章:头文件契约(翻译单元、链接器在执法——本章 --wrap/weak 都是链接器的活)"
-  - "阶段 0·第 5 章:目标文件与符号(nm 看 T/U/W 符号、本章靠 nm 验证 weak 覆盖)"
+  - "阶段 0·第 6 章:目标文件与符号(nm 看 T/U/W 符号、本章靠 nm 验证 weak 覆盖)"
 related:
   - "阶段 4·第 6 章:库与链接(--wrap、weak 都是链接期手段,本章是它的测试化应用)"
-  - "阶段 0·第 8 章:warning 标志(-Wall -Wextra 是本章每个真跑的底线)"
+  - "阶段 0·第 9 章:warning 标志(-Wall -Wextra 是本章每个真跑的底线)"
 ---
 
 # Mock 与隔离:用 cmocka 思路纯 C 手写一个最小 mock
@@ -346,4 +346,4 @@ Ch7 我们测的是纯函数,这一章往前走一步,测「有依赖」的代�
 - **GNU ld 手册 `--wrap=symbol`**(<https://sourceware.org/binutils/docs/ld/Options.html>):搜 `--wrap`,讲清「对 `symbol` 的引用改写成 `__wrap_symbol`、对 `__real_symbol` 的引用改写成原 `symbol`」的完整规则——这就是 mock 里调 `__real_read` 还能走真实 `read` 的原理。
 - **ISO/IEC 9899:2011 §6.9 弱符号与外部定义**:`__attribute__((weak))` 是 gcc/clang 扩展、不在 ISO C 标准里,但「同名符号强弱选择」的语义在 ELF 规范(SYSTEM V Application Binary Interface,「Symbol Table」一节)里有完整定义——`W`/`V`/`T` 这些 `nm` 标志的含义都源自那里。
 - **Test Double(Martin Fowler)**(<https://martinfowler.com/bliki/TestDouble.html>):把 dummy / stub / spy / mock / fake 这几个容易混的词分得清清楚楚——本章的 `mock_time`、`__wrap_read` 严格说是 stub(按预设返回),真正的 mock 还要验证「被调时参数对不对」,两者边界读这篇最准。
-- **阶段 0·第 5 章:目标文件与符号**:本章靠 `nm` 看 `T`/`W`/`b` 这些符号标志验证 mock 生效,那些标志的含义在那章讲过。
+- **阶段 0·第 6 章:目标文件与符号**:本章靠 `nm` 看 `T`/`W`/`b` 这些符号标志验证 mock 生效,那些标志的含义在那章讲过。

@@ -266,4 +266,4 @@ C 的字符串不是独立类型，而是「以 `\0` 结尾的 `char` 数组」�
 - K. N. King《C Programming: A Modern Approach》第 13 章 Strings（字面量存储、char 数组 vs char 指针、`<string.h>` 家族、`strcpy`/`strcat` 的越界陷阱）
 - Robert C. Seacord《Effective C》第 7 章 Characters and Strings（C 字符串表示、legacy 函数的缓冲区安全问题、bounds-checked 接口）
 - 第 4 章：浮点、字符、常量与隐式转换（`char` 是小整数）、第 10 章：数组（char 数组、退化、越界访问是 UB）
-- 阶段 0·第 10 章：Sanitizer 门禁（本章缓冲区溢出验证正是用 ASan 那一套）、阶段 2：指针与内存（`char*` 的彻底拆解、动态字符串）
+- 阶段 0·第 11 章：Sanitizer 门禁（本章缓冲区溢出验证正是用 ASan 那一套）、阶段 2：指针与内存（`char*` 的彻底拆解、动态字符串）

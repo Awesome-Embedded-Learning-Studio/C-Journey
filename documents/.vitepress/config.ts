@@ -44,13 +44,18 @@ function buildSidebar() {
             .readdirSync(stageDir)
             .filter((f) => /^\d+-.*\.md$/.test(f))
             .sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
+        const items = files.map((f) => ({
+            text: sidebarLabel(path.join(stageDir, f), f),
+            link: `/${stage.dir}/${f.replace(/\.md$/, '')}`,
+        }))
+        /* 该阶段若有 index.md 导读门户,在组顶部挂一项(子目录 index.md 的默认路由 = 目录路径) */
+        if (fs.existsSync(path.join(stageDir, 'index.md'))) {
+            items.unshift({ text: '📖 导读', link: `/${stage.dir}/` })
+        }
         return {
             text: stage.name,
             collapsed: true, /* 默认折叠阶段、点击展开;当前阅读章所在阶段 VitePress 自动展开 */
-            items: files.map((f) => ({
-                text: sidebarLabel(path.join(stageDir, f), f),
-                link: `/${stage.dir}/${f.replace(/\.md$/, '')}`,
-            })),
+            items,
         }
     })
 }
@@ -69,8 +74,9 @@ export default defineConfig({
        仓库浏览时有效,但 Pages 站只 serve documents/,会 404。放行这类跳出 srcDir 的 ../../ 链接,
        保留站内链接的 dead-link 检查。(后续把这些改成 GitHub 绝对 URL 更彻底,见优化清单) */
     ignoreDeadLinks: [/\/\.\.\//],
-    /* index.md/README 走首页 Hero,不参与侧栏渲染 */
-    srcExclude: ['01-c-basics/index.md', 'README.md'],
+    /* documents/README.md 是仓库内导航(GitHub 浏览用),不进站;各阶段子目录的 index.md 是导读
+       门户,进站、且由 buildSidebar 在阶段组顶部挂「📖 导读」入口 */
+    srcExclude: ['README.md'],
     head: [
         /* favicon(锈橙 C) */
         ['link', { rel: 'icon', href: '/C-Journey/favicon.svg', type: 'image/svg+xml' }],

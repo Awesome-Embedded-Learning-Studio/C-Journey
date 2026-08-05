@@ -15,12 +15,12 @@ reading_time_minutes: 17
 platform: host
 c_standard: [11]
 prerequisites:
-  - "阶段 0·第 13 章:GDB 基础(run/break/next/step/print/bt 那套地基)"
-  - "阶段 0·第 14 章:GDB 进阶(条件断点、watchpoint、core dump、generate-core-file)"
-  - "阶段 0·第 9 章:标准与优化(-g/-O0/-O2/-DNDEBUG,本章变量失踪的根因在它)"
+  - "阶段 0·第 14 章:GDB 基础(run/break/next/step/print/bt 那套地基)"
+  - "阶段 0·第 15 章:GDB 进阶(条件断点、watchpoint、core dump、generate-core-file)"
+  - "阶段 0·第 10 章:标准与优化(-g/-O0/-O2/-DNDEBUG,本章变量失踪的根因在它)"
   - "阶段 4·第 1 章:头文件契约(本章是工程化调试深度,接它定下的工程化基调)"
 related:
-  - "阶段 0·第 10 章:Sanitizer 门禁(ASan 报 UAF 给出的栈,和 gdb 是「自动报 vs 交互查」两条互补路)"
+  - "阶段 0·第 11 章:Sanitizer 门禁(ASan 报 UAF 给出的栈,和 gdb 是「自动报 vs 交互查」两条互补路)"
   - "阶段 4·第 1 章:Sanitizer asan/ubsan(本章多线程 UAF 用 ASan 复核根因)"
 ---
 
@@ -28,9 +28,9 @@ related:
 
 ## 引言:单线程那套 gdb,撞上多线程和 -O2 就不够用了
 
-阶段 0 第 13、14 章我们把 gdb 那套「断点 + 单步 + watchpoint + core dump」真跑了一遍——单线程程序崩了,`gdb run` 进去 `bt` 看栈、`print` 读变量,根因立马浮现。可一旦程序长大,两堵墙会同时砸上来。第一堵,**多线程**:你的程序跑着好几个线程,其中一个段错误了,直接跑你只看到一句 `Segmentation fault` 和 139 退出码,**根本不知道是哪个线程炸的**——更别说其他线程当时正在干嘛、是不是它们间接导致了崩溃。第二堵,**优化**:`-O2` 一开,你满怀信心 `gdb run` 进去 `print temp`,屏幕冷冷地回你一句 `<optimized out>`——变量「失踪」了,而且这次不是你写错了,是编译器把变量优化没了。
+阶段 0 第 14、15 章我们把 gdb 那套「断点 + 单步 + watchpoint + core dump」真跑了一遍——单线程程序崩了,`gdb run` 进去 `bt` 看栈、`print` 读变量,根因立马浮现。可一旦程序长大,两堵墙会同时砸上来。第一堵,**多线程**:你的程序跑着好几个线程,其中一个段错误了,直接跑你只看到一句 `Segmentation fault` 和 139 退出码,**根本不知道是哪个线程炸的**——更别说其他线程当时正在干嘛、是不是它们间接导致了崩溃。第二堵,**优化**:`-O2` 一开,你满怀信心 `gdb run` 进去 `print temp`,屏幕冷冷地回你一句 `<optimized out>`——变量「失踪」了,而且这次不是你写错了,是编译器把变量优化没了。
 
-这一章就专治这两堵墙,顺手补一件阶段 0 没碰的「更早抓现场」的兵器。前置阅读是阶段 0 第 13、14 章(那套断点/单步/watchpoint/core dump 的地基)和第 9 章(`-g`/`-O0`/`-O2` 的含义)——本章默认你已经会,只讲它们没碰的深度。三件事分别对应:**多线程调试**(`thread apply all bt` 看全线程栈、`thread N`/`info threads` 切到出事线程)、**catch signal**(把信号到达变成显式 catchpoint,比事后 `bt` 抓得更早)、**-O2 变量失踪**(为什么 `print` 显示 `<optimized out>`、怎么用 `volatile` 或 `-O0` 调试版兜底)。gdb 17.2 全程真跑。
+这一章就专治这两堵墙,顺手补一件阶段 0 没碰的「更早抓现场」的兵器。前置阅读是阶段 0 第 14、15 章(那套断点/单步/watchpoint/core dump 的地基)和第 10 章(`-g`/`-O0`/`-O2` 的含义)——本章默认你已经会,只讲它们没碰的深度。三件事分别对应:**多线程调试**(`thread apply all bt` 看全线程栈、`thread N`/`info threads` 切到出事线程)、**catch signal**(把信号到达变成显式 catchpoint,比事后 `bt` 抓得更早)、**-O2 变量失踪**(为什么 `print` 显示 `<optimized out>`、怎么用 `volatile` 或 `-O0` 调试版兜底)。gdb 17.2 全程真跑。
 
 ## 靶子:两线程,一个释放了缓冲还往里写
 
@@ -108,7 +108,7 @@ int main(void) {
 }
 ```
 
-这里有两个工程细节得交代清楚,免得你后面踩。第一,`usleep` 需要给 `_DEFAULT_SOURCE`(或等价的 `_BSD_SOURCE`/`_XOPEN_SOURCE`)——严格 `-std=c11` 模式下 glibc 头里这个函数是藏起来的,不加这个宏,gcc 直接报 `implicit declaration of function 'usleep'`;这正呼应阶段 0 第 9 章那条「严格标准模式会收窄可见接口」。第二,我故意没让事故线程直接写「free 但还悬空」的指针,而是 free 完**立刻置 NULL 再写**——纯悬空指针写已释放内存,能不能炸取决于那块页有没有被回收/重用,时灵时不灵;置 NULL 后写就是铁定 SEGV 的 NULL 解引用,演示稳定。真实代码里的 use-after-free 不会这么乖,但调试技法是同一套。
+这里有两个工程细节得交代清楚,免得你后面踩。第一,`usleep` 需要给 `_DEFAULT_SOURCE`(或等价的 `_BSD_SOURCE`/`_XOPEN_SOURCE`)——严格 `-std=c11` 模式下 glibc 头里这个函数是藏起来的,不加这个宏,gcc 直接报 `implicit declaration of function 'usleep'`;这正呼应阶段 0 第 10 章那条「严格标准模式会收窄可见接口」。第二,我故意没让事故线程直接写「free 但还悬空」的指针,而是 free 完**立刻置 NULL 再写**——纯悬空指针写已释放内存,能不能炸取决于那块页有没有被回收/重用,时灵时不灵;置 NULL 后写就是铁定 SEGV 的 NULL 解引用,演示稳定。真实代码里的 use-after-free 不会这么乖,但调试技法是同一套。
 
 照例 `-g -O0 -pthread` 编出来,先直接跑一次看现象:
 
@@ -233,11 +233,11 @@ Thread 3 "mt_crash" hit Catchpoint 1 (signal SIGSEGV), worker_bad (arg=0x0) at m
 
 那 `catch signal` 到底比默认多了什么?有三点真正值钱。其一,它是**显式且有编号**的——`info break` 能看见它,你能 `delete 1` 把它删掉、`disable 1` 临时关掉,管理上和断点同构;而默认的「信号到达就停」是一种行为、不是一个可管理对象。其二,它能**精确选信号**——`catch signal SIGSEGV SIGFPE` 只在这两种信号上停,`SIGPIPE` 之类的放过;调试网络程序时这一手特别有用,因为 `SIGPIPE` 经常刷屏,你只想在真正的崩溃信号上停。其三,它常配合 `handle 信号 stop/nostop` 用:`handle SIGSEGV stop` 让 gdb 收到这个信号时停下来(默认就是),`handle SIGSEGV nostop` 则反过来让 gdb 收到也不停、把它直接交给程序的 signal handler——你的程序自己装了 `sigaction` 处理 SIGSEGV 时,这个区分就关键了。这三点合起来,`catch signal` 是「我想把信号投递变成一个可管理的、可选信号的断点」时的正式兵器;事后 `bt` 是默认行为,够用就别加 catchpoint,要精细控制信号时它才出场。
 
-顺带提一句阶段 0 第 14 章讲过的 core dump 在多线程里仍然成立:程序崩了之后 `generate-core-file mt.core` 存一份全进程快照,事后 `gdb ./mt_crash mt.core` 进去照样能 `thread apply all bt`——区别只是 core 是**冻结的死现场**,不能 `continue`、不能改线程,但所有线程的栈和变量都在。多线程偶发崩溃、没法当场复现时,core 是唯一能事后穿越回现场的路子,别忘了这条路。
+顺带提一句阶段 0 第 15 章讲过的 core dump 在多线程里仍然成立:程序崩了之后 `generate-core-file mt.core` 存一份全进程快照,事后 `gdb ./mt_crash mt.core` 进去照样能 `thread apply all bt`——区别只是 core 是**冻结的死现场**,不能 `continue`、不能改线程,但所有线程的栈和变量都在。多线程偶发崩溃、没法当场复现时,core 是唯一能事后穿越回现场的路子,别忘了这条路。
 
 ## -O2 的变量失踪:为什么 print 显示 <optimized out>
 
-前面两节的前提都是 `-g -O0` 编译——阶段 0 第 9、13 章讲过,这是 GDB 调试的标准姿势。可工程里真发布的是 `-O2` 优化版,你拿一个 `-O2` 编出来的程序进 gdb,大概率会撞上这句话:
+前面两节的前提都是 `-g -O0` 编译——阶段 0 第 10、14 章讲过,这是 GDB 调试的标准姿势。可工程里真发布的是 `-O2` 优化版,你拿一个 `-O2` 编出来的程序进 gdb,大概率会撞上这句话:
 
 ```text
 (gdb) print data
@@ -419,9 +419,9 @@ fr = <optimized out>
 
 但 `volatile` 不是免费午餐,它有代价,所以**别满工程乱撒**。它屏蔽了常量折叠、寄存器分配这些优化,标了 `volatile` 的变量运行时会慢(每次都走内存而不是寄存器);而且 `volatile` 只保证「这个变量的读写不被优化掉」,它**不保证线程同步**(很多人误以为 `volatile` 能当锁用,这是错的——多线程同步要用 mutex/原子操作,`volatile` 在 C 标准里只管「不被优化」,跟可见性/有序性无关,这一点 ISO C11 §6.7.3 和 C11 §5.1.2.4 都没给它背书)。所以正确用法是:**平时别加,只在「这段代码我正在用 GDB 调,某个变量 print 不出来」时局部给它标上 `volatile`、调完再删掉**——它是个调试期的临时拐杖,不是常规生产代码的写法。
 
-真正可靠的兜底是第二个、也是最简单的:**回到 `-O0` 调试版**。优化关掉,所有变量都老老实实在栈上,`break` 行号不漂、`print` 全读得到、`weighted_sum` 也作为一个真实函数存在(可以 `break` 进去单步),就像前面 `-O0` 那段演示的那样。工程上常见的做法是用 CMake 的 `CMAKE_BUILD_TYPE` 开两个 build 目录(阶段 0 第 12 章 / 阶段 4 第 5 章讲过):一个 Debug(`-g -O0`)专供调试、一个 Release(`-O2 -DNDEBUG`)专供发布。出 bug 时用 Debug 版复现、GDB 里看个通透,改完再用 Release 版验证优化版也没问题。`-O0` 调试版是兜底,`volatile` 是「Release 版非调不可时的临时拐杖」,两条路配合。
+真正可靠的兜底是第二个、也是最简单的:**回到 `-O0` 调试版**。优化关掉,所有变量都老老实实在栈上,`break` 行号不漂、`print` 全读得到、`weighted_sum` 也作为一个真实函数存在(可以 `break` 进去单步),就像前面 `-O0` 那段演示的那样。工程上常见的做法是用 CMake 的 `CMAKE_BUILD_TYPE` 开两个 build 目录(阶段 0 第 13 章 / 阶段 4 第 5 章讲过):一个 Debug(`-g -O0`)专供调试、一个 Release(`-O2 -DNDEBUG`)专供发布。出 bug 时用 Debug 版复现、GDB 里看个通透,改完再用 Release 版验证优化版也没问题。`-O0` 调试版是兜底,`volatile` 是「Release 版非调不可时的临时拐杖」,两条路配合。
 
-最后插一句和 sanitizer 的关系。前面那个 `mt_crash.c` 的 UAF 根因,如果你先用 ASan 编一版(阶段 0 第 10 章 / 阶段 4 第 1 章),它**自动就把根因报出来了**,根本不用你手动 `thread apply all bt`:
+最后插一句和 sanitizer 的关系。前面那个 `mt_crash.c` 的 UAF 根因,如果你先用 ASan 编一版(阶段 0 第 11 章 / 阶段 4 第 1 章),它**自动就把根因报出来了**,根本不用你手动 `thread apply all bt`:
 
 ```text
 $ gcc -std=c11 -Wall -Wextra -g -O0 -fsanitize=address -pthread mt_crash.c -o mt_asan
@@ -437,7 +437,7 @@ ASan 直接告诉你「地址 0x0、WRITE、`worker_bad` 第 43 行」——根�
 
 ## 小结
 
-阶段 0 第 13、14 章那套断点/单步/watchpoint/core dump 是地基,这一章补上三件它没碰的深度。多线程程序崩了,你不知道是哪个线程炸的——`thread apply all bt` 一条命令把所有线程的栈全打出来,出事线程、并发线程、阻塞在 `pthread_join` 的主线程各居其位,一眼穿透(我们真跑两线程 UAF,gdb 命中 Thread 3 的 `worker_bad` 第 43 行,`info locals` 给出 `round=3`、`print shared_buf` 是 `0x0`);想读别的线程用 `info threads` 列出编号、`thread N` 切过去,后续 `bt`/`print` 全作用在新线程上。`catch signal SIGSEGV` 把信号投递变成一个有编号、可选信号、能配条件的显式 catchpoint,比默认的「事后 bt」更精细——调试网络程序想只在意 SIGSEGV 放过 SIGPIPE 时它出场。`-O2` 一开,GDB 满屏 `<optimized out>`——根因是编译器内联 + 常量折叠把变量从内存里抹掉了(`objdump` 真跑出 `main` 塌缩成 7 条指令、`weighted_sum` 符号整个消失、`break` 设不上),断点行号还会漂(`-O2` 下第 18 行的断点跳到第 21 行的 `printf`);兜底有两条:局部加 `volatile` 强制编译器留内存位置(代价是屏蔽优化、且不保证线程同步,只当临时拐杖),或干脆回到 `-O0` 调试版用 CMake 的 Debug/Release 双 build 切换。多线程 UAF 这种 bug,gdb 和 ASan 是互补的两条路——ASan 第一时间报根因到行,gdb 兜底深挖全线程栈,真实工作流常常两条一起用。下一章我们继续在工程化深度里走,看更复杂的并发原语怎么和这套调试技法配合。
+阶段 0 第 14、15 章那套断点/单步/watchpoint/core dump 是地基,这一章补上三件它没碰的深度。多线程程序崩了,你不知道是哪个线程炸的——`thread apply all bt` 一条命令把所有线程的栈全打出来,出事线程、并发线程、阻塞在 `pthread_join` 的主线程各居其位,一眼穿透(我们真跑两线程 UAF,gdb 命中 Thread 3 的 `worker_bad` 第 43 行,`info locals` 给出 `round=3`、`print shared_buf` 是 `0x0`);想读别的线程用 `info threads` 列出编号、`thread N` 切过去,后续 `bt`/`print` 全作用在新线程上。`catch signal SIGSEGV` 把信号投递变成一个有编号、可选信号、能配条件的显式 catchpoint,比默认的「事后 bt」更精细——调试网络程序想只在意 SIGSEGV 放过 SIGPIPE 时它出场。`-O2` 一开,GDB 满屏 `<optimized out>`——根因是编译器内联 + 常量折叠把变量从内存里抹掉了(`objdump` 真跑出 `main` 塌缩成 7 条指令、`weighted_sum` 符号整个消失、`break` 设不上),断点行号还会漂(`-O2` 下第 18 行的断点跳到第 21 行的 `printf`);兜底有两条:局部加 `volatile` 强制编译器留内存位置(代价是屏蔽优化、且不保证线程同步,只当临时拐杖),或干脆回到 `-O0` 调试版用 CMake 的 Debug/Release 双 build 切换。多线程 UAF 这种 bug,gdb 和 ASan 是互补的两条路——ASan 第一时间报根因到行,gdb 兜底深挖全线程栈,真实工作流常常两条一起用。下一章我们继续在工程化深度里走,看更复杂的并发原语怎么和这套调试技法配合。
 
 ## 参考资源
 
@@ -446,8 +446,8 @@ ASan 直接告诉你「地址 0x0、WRITE、`worker_bad` 第 43 行」——根�
 - **GCC 手册**:`-O0`/`-O2` 优化等级对调试信息与变量位置的影响、`-g` 调试信息级别、`-pthread` 多线程编译链接。
 - **`man pthread_create`** / **`man 7 pthreads`**:POSIX 线程模型、LWP 与线程的关系(本章 `info threads` 输出里 `LWP` 的来源)。
 - **`man signal`** / **`man 7 signal`**:SIGSEGV 等信号的默认动作(段错误把进程终止),`catch signal` 的语义基础。
-- **阶段 0 第 13 章:GDB 基础**——`run`/`break`/`next`/`step`/`print`/`bt`/`info locals` 的地基,本章默认你会。
-- **阶段 0 第 14 章:GDB 进阶**——条件断点、watchpoint、core dump、`generate-core-file`,本章多线程段仍可走 core 这条事后路。
-- **阶段 0 第 9 章:标准与优化**——`-g`/`-O0`/`-O2`/`-DNDEBUG` 的含义,本章「变量失踪」根因在它。
-- **阶段 0 第 10 章 / 阶段 4 第 1 章:Sanitizer(ASan/UBSan)**——多线程 UAF 的自动根因报告,和本章 gdb 交互调试互补。
+- **阶段 0 第 14 章:GDB 基础**——`run`/`break`/`next`/`step`/`print`/`bt`/`info locals` 的地基,本章默认你会。
+- **阶段 0 第 15 章:GDB 进阶**——条件断点、watchpoint、core dump、`generate-core-file`,本章多线程段仍可走 core 这条事后路。
+- **阶段 0 第 10 章:标准与优化**——`-g`/`-O0`/`-O2`/`-DNDEBUG` 的含义,本章「变量失踪」根因在它。
+- **阶段 0 第 11 章 / 阶段 4 第 1 章:Sanitizer(ASan/UBSan)**——多线程 UAF 的自动根因报告,和本章 gdb 交互调试互补。
 - **阶段 4 第 5 章:CMake 工程化**——`CMAKE_BUILD_TYPE` 的 Debug(`-g -O0`)/Release(`-O2 -DNDEBUG`)双 build 切换,本章 `-O2` 调试困难时的工程兜底。
