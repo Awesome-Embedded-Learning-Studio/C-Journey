@@ -110,3 +110,5 @@ documents/.vitepress/.build-cache/
 *.local
 pnpm-debug.log*
 _tmp_/
+
+pnpm-workspace.yaml

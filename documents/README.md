@@ -73,4 +73,4 @@
 
 - [examples/](../examples/) — 按阶段的可编译示例(stage0 编译调试 / stage1 C 基础 / stage4 CMake 库工程 / stage5 TCP socket,均带 CMakeLists,CI 硬门编译)
 - [projects/](../projects/) — 完整项目(clib-utilities、embedded-mcu、os-from-scratch、song、tiny-c-stdlib)
-- [exercises/](../exercises/) — 练习题(按阶段规划中)
+- [exercises/](./exercises/) — 练习与作业（Homework / Lab / Project 按阶段组织，五档难度 L1~L5，参考答案附知识点链接；阶段 0/1 已上线，阶段 2~5 陆续补齐）

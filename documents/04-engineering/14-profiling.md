@@ -207,7 +207,7 @@ $ (time ./work_tree_pg 80000000) >/dev/null
 ./work_tree_pg 80000000 > /dev/null  0.60s user 0.00s system 99% cpu 0.601 total
 ```
 
-读法:`user` 0.60 秒是循环在用户态烧的 CPU;`system` 0.00 秒说明几乎没陷内核(没有系统调用、没有缺页);`total` 0.601 秒是墙钟;`99% cpu` 说明这几乎是个**纯 CPU-bound** 程序,瓶颈就是算力本身。如果这里 `cpu` 只有 5%,那说明程序大部分时间在阻塞(等磁盘、等网络),优化方向就完全不是「让它算更快」,而是「减少等待」。bash 的 `time -p` 给的是 `real/user/sys` 三行格式,语义一样:real 是墙钟、user+sys 是 CPU 时间。看到 `user+sys` 远小于 `real`,就去找阻塞点;看到 `user+sys ≈ real` 且占比高,才值得往剖析和 cache 那一侧走——也就是下面两段的主题。
+读法:`user` 0.60 秒是循环在用户态烧的 CPU;`system` 0.00 秒说明几乎没陷内核(没有系统调用、没有缺页);`total` 0.601 秒是墙钟;`99% cpu` 说明这几乎是个**纯 CPU-bound** 程序,瓶颈就是算力本身。如果这里 `cpu` 只有 5%,那说明程序大部分时间在阻塞(等磁盘、等网络),优化方向就完全不是「让它算更快」,而是「减少等待」。bash 的 `time -p` 给的是 `real/user/sys` 三行格式,语义一样:real 是墙钟、user+sys 是 CPU 时间。看到 `user+sys` 远小于 `real`,就去找阻塞点;看到 $user+sys ≈ real$ 且占比高,才值得往剖析和 cache 那一侧走——也就是下面两段的主题。
 
 ## 第二件:剖析——慢在哪个函数
 

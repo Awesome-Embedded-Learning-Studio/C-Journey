@@ -169,6 +169,9 @@ function hashBuildInputs(): string {
     const stageDir = join(DOCUMENTS, stage.dir)
     inputs.push([stage.dir, existsSync(stageDir) ? hashDir(stageDir) : ''])
   }
+  // exercises/(练习体系)不在六阶段目录内,但同样参与 build,必须纳入内容 hash,否则练习分批上线时缓存误命中。
+  const exDir = join(DOCUMENTS, 'exercises')
+  inputs.push(['exercises', existsSync(exDir) ? hashDir(exDir) : ''])
   for (const [label, value] of inputs) {
     h.update(`${label}:${value}\n`)
   }
@@ -241,7 +244,7 @@ async function main() {
 
   const totalMd = STAGES.reduce(
     (n, s) => n + countMdFiles(join(DOCUMENTS, s.dir)), 0,
-  ) + countMdFiles(join(DOCUMENTS, 'index.md'))
+  ) + countMdFiles(join(DOCUMENTS, 'index.md')) + countMdFiles(join(DOCUMENTS, 'exercises'))
 
   if (cached) {
     // ── Step 2/3 (cached): 复用上次 dist ─────────────────────
