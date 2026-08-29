@@ -1,6 +1,6 @@
 ---
-title: "工具链体检：在本机把 gcc/clang/gdb/make/cmake 都跑通"
-description: "课程第 0 章第一篇：在 WSL2/Linux 上逐个验证 gcc、clang、gdb、make、cmake、ninja 真能用，亲手跑出第一条 gcc hello.c，并当场揭开 gcc 16 默认 C23、clang 22 默认 C17 的标准分歧——这就是全课程『永远显式钉 -std』纪律的由来。"
+title: "工具链体检：还没写一行 C，先把这套家当验明正身"
+description: "重写版第一篇：在 WSL2/Linux 上把 gcc 16.1.1、clang 22.1.8、make/cmake/ninja、gdb 17.2、clang-format、git 逐个 --version 验明，-dumpmachine 报出 x86_64-pc-linux-gnu；examples/hello.c 双编译器各编各跑，file 确认两边同为 ELF 64-bit PIE 动态链接、cmp 却从第 41 字节起分道扬镳；再用 __STDC_VERSION__ 探针（ISO/IEC 9899 §6.10.8 / §6.10.9）当场揭出 gcc 16 默认 gnu23、clang 22 默认 gnu17 的标准分歧，-std=c11 与 -std=c23 显式对齐、-Wall -Wextra 双编译器零警告——「永远显式传 -std」这条全书纪律，就立在这一章的真跑输出上。"
 chapter: 0
 order: 1
 tags:
@@ -13,63 +13,73 @@ c_standard: [11, 17, 23]
 prerequisites:
   - "命令行基础"
 related:
-  - "第 3 章：编译四阶段全景（-save-temps）"
-  - "第 10 章：标准与优化：-std 选项、-O 级别与 -g 调试信息"
+  - "第 2 章：VSCode + Clangd，把工具链接进编辑器"
+  - "第 3 章：编译四阶段与汇编透视（-save-temps）"
+  - "第 9 章：标准与优化：-std 选项、-O 级别与 -g 调试信息"
+  - "第 10 章：Sanitizer 门禁"
 ---
 
-# 工具链体检：在本机把 gcc/clang/gdb/make/cmake 都跑通
+# 工具链体检：还没写一行 C，先把这套家当验明正身
 
-## 引言：为什么第一件事是「体检」
+## 同一条命令，两个答案
 
-很多人学 C 的路径是这样的：在 Windows 上装个 Visual Studio，或者更老一点的 Dev C++、Code::Blocks 这类集成环境（IDE），新建个工程、点一下那个绿色的运行按钮，屏幕上蹦出 `hello world`，于是心满意足地觉得自己「环境配好了」。说实话，我当年差不多也是这么入坑的——这些 IDE 替你把编译器、链接器、调试器全打包好了，你压根不用知道它们叫什么、装在哪。这份省心是有代价的：哪天你换台机器、或者把代码丢进 CI（持续集成），同样的代码突然报一堆看不懂的错，你连该往哪儿看都不知道。而如果你用的是 VS Code 这种「轻壳」编辑器，它会更快逼你面对真相——**它不替你包办，你想让它能编译、能代码跳转、能下断点调试，就得自己去填 `tasks.json`、`c_cpp_properties.json`、`launch.json`，告诉它用哪个编译器、头文件在哪些目录、开哪些旗标、用哪个调试器**。绕来绕去，迟早都得把 gcc、ld、gdb 这一套命令行工具链当面认清楚：Dev C++ 背后是 MinGW 的 gcc，Visual Studio 背后是它自家的 MSVC，IDE 只是个壳。这一章，我们不绕了，主动把这套家当一件件认到。
+同一份源码、同一条命令行、同一台机器——gcc 认为自己在编 C23，clang 认为自己在编 C17。这不是谁坏了，是两家给「不传 `-std` 时按哪个标准编译」设定的默认值压根不一样。这个分歧，笔者打算放到全书第一篇就当面拆掉，因为后面每一章的每一段输出，都站在「工具链听指挥」这个前提上。
 
-所以这一章我们要做的事情特别朴素，但特别重要：**在本机上把这门课全程要用的工具链逐个验证一遍**，能亲口说出每件工具的版本和职责，并亲手敲出第一条真实的 `gcc hello.c -o hello`，把产物摆出来看。
+于是这一章正经的大程序一行都不急着写，咱们要做的事朴素得很：把这门课全程要用的家当逐件过一遍——能自报版本、能编出真程序、能在两个编译器手里表现一致。顺带立下全书第一条纪律，它就诞生于本章的一段真实输出。
 
-还有一层你必须现在就知道的理由：**本仓库的 CI 是同时跑 gcc 和 clang 两个编译器的**（一个矩阵 job，两个编译器各编一遍）。这意味着你的代码不能只在「你机器上的那个 gcc」上过得去，它还得在 clang 上也过得去。这两位对 C 标准的默认取值**根本不一样**——这是本章要当场拆给你看的第一个、也是最大的一个坑。先把这个雷排了，后面整本书才站得住。
+还有一层原因现在就得摆出来：**本仓库的 CI 同时跑 gcc 和 clang**（一个矩阵 job，两个编译器各编一遍，`.github/workflows/ci.yml` 里写得明明白白）。这意味着「在咱们机器上能编过」从来不算数——代码得两个编译器都伺候得住。
 
-## 工具链各件都是干什么的（带本机真实版本）
+## 家当清单：每件工具干什么
 
-我们先把这趟旅程要用的家当列清楚。下面这张表里的版本号不是我从网上抄的，是我在自己这台 WSL2 机器上现敲 `--version` 一个个抓出来的（下一节你就会看到怎么做）：
+很多朋友入坑是在 Windows 上装 Visual Studio 或者 Dev C++，新建工程、点绿色运行按钮，蹦出 hello world 就觉得「环境配好了」。这些 IDE 笔者也用过，省心是真的——但它们只是**壳子**：壳子自己一行机器码都不产，背后调用的永远是一整套编译器、链接器、调试器（Dev C++ 背后是 MinGW 的 gcc，Visual Studio 背后是 MSVC）。壳子把这套家当打包藏好，代价就是哪天换了机器、或者代码进了 CI，报错一出，咱们连该往哪儿看都不知道。本课程从头到尾一个姿态：**命令行能跑通，才算真的通。**
 
-| 工具 | 本机版本 | 干什么 |
+下面这张表的版本号不是从网上抄的，是笔者在自己这台 WSL2 机器上现敲 `--version` 抓出来的（快照抓于 2026-08-29；这台机器是 Arch 滚动更新，小版本号会随时间漂，各自机器上跑出更新的数字很正常——重点是每件工具都能自报家门）：
+
+| 工具 | 本机版本 | 职责 |
 |---|---|---|
 | **gcc** | 16.1.1 | 编译器，把 `.c` 翻成可执行。本仓 CI 的编译器之一。 |
-| **clang** | 22.1.6 | 另一个编译器，报错信息更友好。本仓 CI 的第二个编译器。 |
-| **make** | 4.4.1 | 构建自动化，读 `Makefile` 决定该编什么。 |
-| **cmake** | 4.3.4 | 构建系统「生成器」，产出 Makefile 或 ninja 文件。 |
-| **ninja** | 1.13.2 | 一个更快的构建后端，本仓 CI 用 cmake + ninja。 |
+| **clang** | 22.1.8 | 另一个编译器，报错信息更友好。CI 的第二个编译器。 |
+| **make** | 4.4.1 | 构建自动化，读 `Makefile` 决定编什么、按什么顺序。 |
+| **cmake** | 4.4.2 | 构建系统「生成器」，产出 Makefile 或 ninja 文件。 |
+| **ninja** | 1.13.2 | 更快的构建后端，本仓 CI 用 cmake + ninja。 |
 | **gdb** | 17.2 | 调试器，程序崩了靠它定位到源码行。 |
-| **clang-format** | 22.1.6 | 代码格式化，本仓用根目录的 `.clang-format` 统一风格。 |
-| **git** | 2.54.0 | 版本控制。 |
+| **clang-format** | 22.1.8 | 代码格式化，本仓用根目录 `.clang-format` 统一风格。 |
+| **git** | 2.55.0 | 版本控制。 |
 
-你不需要把版本背下来，但你得知道**每件工具的职责边界**：编译器（gcc/clang）负责翻译代码，构建工具（make/cmake/ninja）负责「哪些文件该重编、按什么顺序编」，调试器（gdb）负责出事之后查现场。这几件东西各管一摊，混为一谈是新手最常见的误解。
+版本号不用背，要长在身上的是**职责边界**：编译器（gcc/clang）管翻译，构建工具（make/cmake/ninja）管「哪些文件该重编、怎么串起来」，调试器（gdb）管出事之后查现场，格式化（clang-format）管风格统一。新手最常见的误解就是把这几摊混成一团——比如编译报错了去查 make 的配置。
 
-## 第一步：把版本都打一遍
+## 让每件工具自报家门
 
-体检嘛，最直接的就是让每件工具自报家门。`--version` 几乎是所有命令行工具的通用开关，这一点，各位朋友也可以用来做工具自检（常见的一种看环境是否安装成功的办法~）
+`--version` 几乎是所有命令行工具的通用自检开关，环境装没装好，敲一遍就知道。两位主角：
 
 ```text
-$ gcc --version
-gcc (GCC) 16.1.1 20260430
+$ gcc --version | head -2
+gcc (GCC) 16.1.1 20260728
 Copyright (C) 2026 Free Software Foundation, Inc.
-...
 
-$ clang --version
-clang version 22.1.6
+$ clang --version | head -2
+clang version 22.1.8
 Target: x86_64-pc-linux-gnu
-...
-
-$ make --version | head -1
-GNU Make 4.4.1
-
-$ cmake --version | head -1
-cmake version 4.3.4
-
-$ gdb --version | head -1
-GNU gdb (GDB) 17.2
 ```
 
-这里有个细节值得停一下：`gcc -dumpmachine` 和 `clang -dumpmachine` 能告诉你编译器的**目标三元组**（target triple），也就是它给哪种 CPU/系统产代码：
+构建、调试和配套工具也各报一遍：
+
+```text
+$ make --version | head -1
+GNU Make 4.4.1
+$ cmake --version | head -1
+cmake version 4.4.2
+$ ninja --version
+1.13.2
+$ gdb --version | head -1
+GNU gdb (GDB) 17.2
+$ clang-format --version
+clang-format version 22.1.8
+$ git --version
+git version 2.55.0
+```
+
+版本之外还有一串更值得记的信息：`-dumpmachine` 让编译器报出**目标三元组**（target triple），也就是它给哪种 CPU/系统产代码：
 
 ```text
 $ gcc -dumpmachine
@@ -78,24 +88,23 @@ $ clang -dumpmachine
 x86_64-pc-linux-gnu
 ```
 
-两个都是 `x86_64-pc-linux-gnu`——64 位 x86、Linux、GNU ABI。这一串后面看汇编、讲调用约定（参数走哪些寄存器）的时候会反复用到，先混个眼熟。
+两个都是 `x86_64-pc-linux-gnu`——64 位 x86、Linux、GNU ABI。这串名字后面讲汇编、讲调用约定（参数走哪些寄存器）时会反复出场，咱们先混个眼熟。
 
-这里有个特别容易混淆的点：别把「装了 IDE」等同于「装了工具链」。Visual Studio、Dev C++、VS Code 这些都是**前端壳子**——它们自己不会编译，背后调用的总是某一整套编译器/调试器（Dev C++ 用 MinGW 的 gcc、Visual Studio 用 MSVC、VS Code 则完全取决于你给它配了什么）。哪天你在纯命令行里敲 `gcc` 报 `command not found`，那就是底层工具链没装到位，IDE 装得再花哨也白搭。本课程从头到尾就一个姿态：**命令行能跑通，才算真的通**。
+## hello.c：两个编译器各编各跑
 
-## 第二步：hello.c 用 gcc 和 clang 各编各跑
-
-光看版本号不过瘾，我们真的编一个程序出来。下面这段 `hello.c` 大概是全宇宙最朴素的 C 程序了：
+光看版本不过瘾，咱们真的编一个程序出来。靶子是仓库里的 [examples/hello.c](../../examples/hello.c)，大概是全宇宙最朴素的 C 程序：
 
 ```c
 #include <stdio.h>
 
+/* 工具链体检(阶段 0 第 1 章)里第一条 gcc 命令的靶子程序 */
 int main(void) {
     printf("hello from C\n");
     return 0;
 }
 ```
 
-现在我们分别用 gcc 和 clang 把它编出来、跑一遍：
+在临时目录里（本课程的实验都在 `/tmp` 这类地方做，别污染源码树）分别用 gcc 和 clang 编出来、跑一遍：
 
 ```text
 $ gcc hello.c -o hello_gcc && ./hello_gcc
@@ -104,24 +113,40 @@ $ clang hello.c -o hello_clang && ./hello_clang
 hello from C
 ```
 
-两个编译器，同一份 `hello.c`，都吐出了 `hello from C`。到这一步，工具链的基本盘就算验过了。再看一眼产物本身是什么东西——`file` 命令能告诉你一个文件的真身：
+两个编译器、同一份 `hello.c`，都吐出 `hello from C`——基本盘验过了。但产物本身值得多看两眼，`file` 能报出一个文件的真身：
 
 ```text
 $ file hello_gcc
 hello_gcc: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV),
 dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2,
-BuildID[sha1]=f7a538cd..., for GNU/Linux 4.4.0, not stripped
+BuildID[sha1]=8161c8e94abdb632f3c884b3c396f64dcfe73cc1,
+for GNU/Linux 4.4.0, not stripped
+$ file hello_clang
+hello_clang: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV),
+dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2,
+BuildID[sha1]=5094530f9020904e4b09798b764b8f6bc2469e2e,
+for GNU/Linux 4.4.0, not stripped
 ```
 
-读一下这串信息：它是一个 **ELF** 格式（Linux 的可执行文件格式）的 **64 位**可执行文件，**动态链接**（运行时要找动态链接器 `/lib64/ld-linux-x86-64.so.2`），没被 strip（还带着符号，方便调试）。这些词后面讲链接、讲调试时会逐一展开，这里先有个印象：**`gcc hello.c -o hello` 产出的不是什么魔法，而是一个结构清清楚楚的 ELF 文件**。
+读这串信息：两边都是 **ELF**（Linux 的可执行文件格式）、64 位、PIE（地址无关可执行）、动态链接（运行时找 `/lib64/ld-linux-x86-64.so.2` 这个动态链接器）、未 strip（还带着符号，方便调试）。末尾的 `for GNU/Linux 4.4.0` 别误会成「只能在 4.4 内核上跑」——那是 ELF 里 `.note.ABI-tag` 段声明的「最早兼容的内核 ABI 版本」，工具链构建时写死的；笔者的内核是 6.x，照跑不误。
 
-> 顺手提一句：clang 编出来的 `hello_clang` 用 `file` 看结构几乎一模一样（同样是 ELF 64-bit pie、dynamically linked），唯独 `BuildID` 不同——**同一份源码，两个编译器产出的是两个不同的二进制**。这个直觉后面讲「为什么 CI 要跑两个编译器」时会用到。
+再盯一眼两个 `BuildID`：不一样。用 `stat` 和 `cmp` 把两个二进制放在一起对——尺寸只差 16 字节，内容却从第 41 个字节起就分道扬镳：
 
-## 真正的第一大坑：gcc 和 clang 默认的 C 标准根本不一样
+```text
+$ stat -c '%n %s bytes' hello_gcc hello_clang
+hello_gcc 15968 bytes
+hello_clang 15984 bytes
+$ cmp hello_gcc hello_clang
+hello_gcc hello_clang differ: byte 41, line 1
+```
 
-接下来这一段，是整本书我想让你最先记住的一件事。
+**同一份源码，两个编译器产出的是两个不同的二进制**——这个直觉先记下，等咱们聊到「CI 为什么要跑两个编译器」时它会再次出场。
 
-C 语言不是一成不变的死语法，它有一串还在演进的标准：C89 → C99 → C11 → C17 → C23，每一代都加特性、改规则。当你敲 `gcc hello.c` 的时候，gcc 会**默认**按某个标准来编译——问题是，**gcc 默认的那个标准，和 clang 默认的那个标准，并不一样**。空口无凭，我们写个小探针程序，让它把编译器当前认定的 C 标准版本号打印出来：
+## 最大的坑：gcc 和 clang 默认的 C 标准根本不一样
+
+接下来这段，是全书里笔者最想让咱们提前记住的东西。
+
+C 语言有一串还在演进的标准：C89 → C99 → C11 → C17 → C23，每一代都加特性、改规则。敲 `gcc hello.c` 时不传 `-std`，编译器会按某个**默认**标准来编——问题就在这：gcc 的默认和 clang 的默认，不是一个。空口无凭，咱们写个小探针，让它把编译器当前认定的标准版本号打印出来：
 
 ```c
 #include <stdio.h>
@@ -130,13 +155,15 @@ int main(void) {
 #ifdef __STDC_VERSION__
     printf("__STDC_VERSION__ = %ldL\n", __STDC_VERSION__);
 #else
-    printf("__STDC_VERSION__ 未定义（C89/90）\n");
+    printf("__STDC_VERSION__ 未定义(C89/90)\n");
 #endif
     return 0;
 }
 ```
 
-`__STDC_VERSION__` 是 C 标准预定义的一个宏（预定义宏，详见 ISO/IEC 9899），它的值就是当前编译器认定的 C 标准版本号，约定如下：C99 = `199901L`、C11 = `201112L`、C17 = `201710L`、C23 = `202311L`。我们**不传任何 `-std`**，让两个编译器都用各自的默认值来编它：
+`__STDC_VERSION__` 是 C 标准预定义的宏（预定义宏在 ISO/IEC 9899 里有专门一节：C99 到 C17 是 §6.10.8，C23 重编号成了 §6.10.9），它的值就是编译器当前认定的 C 标准版本号，取各版标准的定稿年月：C99 = `199901L`、C11 = `201112L`、C17 = `201710L`、C23 = `202311L`。顺带把一笔容易疑惑的账算平：C23 的正式标准号其实是 ISO/IEC 9899:2024，但它 2023 年 11 月就定稿了，宏值取定稿年月，所以是 `202311L`——C17 的 `201710L` 同理。
+
+**不传任何 `-std`**，让两个编译器各用各的默认值来编：
 
 ```text
 $ gcc std_probe.c -o std_gcc && ./std_gcc
@@ -145,11 +172,11 @@ $ clang std_probe.c -o std_clang && ./std_clang
 __STDC_VERSION__ = 201710L
 ```
 
-看出问题了吗？**同一份 `std_probe.c`、同一个命令行写法（都没传 `-std`），gcc 认为它在编 C23（`202311L`），clang 认为它在编 C17（`201710L`）。** 这不是 bug，是两个编译器各自的默认值就这么设定的——gcc 16 默认 `gnu23`，clang 22 默认 `gnu17`（`gnu` 表示在纯标准基础上开了 GNU 扩展，这个区别留到第 10 章细讲）。
+同一份 `std_probe.c`、同一类命令行，gcc 认为它在编 C23（`202311L`），clang 认为它在编 C17（`201710L`）。这不是 bug——gcc 16 的默认方言是 `gnu23`，clang 22 的默认是 `gnu17`，两家各自就这么设定的（`gnu` 前缀表示在纯标准之上开了 GNU 扩展，这层区别第 9 章细讲）。
 
-这意味着什么？意味着一段依赖较新标准特性的代码（比如 C23 才有的写法），在你机器上的 gcc 下能编过，丢进 CI 的 clang 那一格就炸了——反之亦然。**「在我机器上能跑」在这门课里不成立，因为我们的 CI 有两个编译器盯着你。**
+后果很具体：一段用了 C23 才有的写法的代码，在咱们机器的 gcc 下能编过，推进 CI 的 clang 那一格就红；反过来，一段默认指望老标准的代码，换了台新 gcc 的机器也可能不知不觉换了方言。**「在我机器上能编」这门课里从来就不成立，因为 CI 里有两个编译器盯着。**而且默认值还会随版本漂——gcc 15 才把默认从 `gnu17` 提到 `gnu23`，上一次变更是 gcc 8（`gnu11` → `gnu17`）；换台装着 gcc 11 的机器，默认就又是另一回事了。
 
-解药特别简单，也特别重要：**永远在命令行里显式钉死 `-std=cXX`**，别吃默认值。你看，一旦我们把标准显式钉到 `c11`，两个编译器立刻对齐了：
+解药简单得不像话：**永远在命令行里显式传 `-std=cXX`**，不吃任何默认值。传了，两个编译器立刻对齐——对齐到 C11：
 
 ```text
 $ gcc -std=c11 std_probe.c -o std_gcc_c11 && ./std_gcc_c11
@@ -158,13 +185,38 @@ $ clang -std=c11 std_probe.c -o std_clang_c11 && ./std_clang_c11
 __STDC_VERSION__ = 201112L
 ```
 
-两边都是 `201112L`（C11），齐刷刷的。从这一章起，本书所有示例都会显式写 `-std=cXX`，理由就是上面这两段真跑出来的输出。请把这个习惯也焊死成你的肌肉记忆。
+对齐到 C23 也一样齐刷刷：
 
-还有一层更阴的：默认的 `-std` 是会**随编译器版本漂移**的。gcc 16 默认 `gnu23`，但你换台装着 gcc 11 的机器，默认可能就是 `gnu17`。所以**永远别假设「不传 `-std` 就是某个固定标准」**——要么显式传，要么在构建脚本里写死。第 10 章我们会把 `-std`、`-O` 优化级别、`-g` 调试信息一起系统讲透。
+```text
+$ gcc -std=c23 std_probe.c -o std_gcc_c23 && ./std_gcc_c23
+__STDC_VERSION__ = 202311L
+$ clang -std=c23 std_probe.c -o std_clang_c23 && ./std_clang_c23
+__STDC_VERSION__ = 202311L
+```
 
-## 还有两个小坑，顺手排了
+从这一章起，全书所有示例都显式写 `-std`，依据就是上面这几段真跑输出。其实连探针程序都可以省——`-dM -E` 让预处理器把内置宏全部吐出来，一行命令就能问出默认方言：
 
-**「我用的 gcc 到底是哪个 gcc？」** `which` 能告诉你命令行里敲 `gcc` 时实际解析到哪个路径，而 CI 里真正调用的编译器则由 `CC` 环境变量决定，两者不一定一致：
+```text
+$ gcc -dM -E -x c /dev/null | grep __STDC_VERSION__
+#define __STDC_VERSION__ 202311L
+$ clang -dM -E -x c /dev/null | grep __STDC_VERSION__
+#define __STDC_VERSION__ 201710L
+```
+
+顺手把刚立的纪律用上：按 `-std=c17` 加上 `-Wall -Wextra` 把 `hello.c` 重编一遍，两个编译器都一声不吭、退出码 0——零警告，这一项体检才算绿：
+
+```text
+$ gcc -Wall -Wextra -std=c17 hello.c -o hello_gcc17; echo "exit=$?"
+exit=0
+$ clang -Wall -Wextra -std=c17 hello.c -o hello_clang17; echo "exit=$?"
+exit=0
+```
+
+⚠️ 从今天起把它焊进肌肉记忆：凡编译，显式传 `-std=cXX`——默认方言随厂家和版本各自漂移，读代码的人不该猜谜。
+
+## 本地能过、CI 却红：两个常识先立住
+
+**「命令行里的 gcc，和 CI 那一格用的编译器，未必是同一个东西。」**`which` 能报出敲 `gcc` 时实际解析到哪个路径；CI 里真正调用谁，则由 `CC` 环境变量说了算：
 
 ```text
 $ which gcc clang
@@ -174,19 +226,22 @@ $ echo "CC=[$CC]"
 CC=[]
 ```
 
-我这台机器上 `gcc` 解析到 `/usr/sbin/gcc`（你的机器很可能是 `/usr/bin/gcc`，这很正常）；而 `$CC` 当前是空的，说明我没有额外指定，命令行里敲 `gcc` 就用上面那个。CI 的情况不一样：它会在矩阵里把 `CC=gcc` 和 `CC=clang` 分别设进去，所以**「我本地敲的 gcc」和「CI 这一格用的编译器」可能是同一个名字、不同的实际二进制**。排查「本地过、CI 红」时，先确认两边用的是不是同一个编译器、同一个版本。
+笔者这台机器上 `gcc` 解析到 `/usr/sbin/gcc`（很多朋友的机器上是 `/usr/bin/gcc`，都正常）；`$CC` 是空的，说明没额外指定，命令行里敲 `gcc` 用的就是上面那个。CI 不一样：矩阵会把 `CC=gcc` 和 `CC=clang` 分别注入各格。所以「本地敲的 gcc」和「CI 这格调用的编译器」可能同名、不同二进制——排查「本地过、CI 红」时，头一件事是确认两边到底是不是同一个编译器、同一个版本。
 
-**「gcc 当成唯一编译器」** 这一章我们反复让 clang 露脸，不是凑数。本书 CI 的 build 矩阵就是 gcc × clang， sanitizer 那一格还专门用 clang。所以你写代码时要心里有数：**不是「gcc 能编就行」，是「gcc 和 clang 都得能编、行为还得一致」**——尤其是碰了实现定义行为（implementation-defined）的时候，两个编译器可能给出不同结果，那才是真正要小心的地方（这块在第 3 章的 UB 巡讲里会大量出现）。
+**「gcc 不是唯一裁判。」**本章反复让 clang 露脸，不是凑数——本仓 CI 的 build 矩阵就是 gcc × clang，sanitizer 那一格（让 UB 和内存错误在运行期现形的插桩工具，第 10 章专门讲）还专门用 clang。更得心里有数的是：一旦碰上实现定义行为（implementation-defined）乃至未定义行为（undefined behavior，UB），同一段代码在两个编译器手里完全可能给出不同结果——UB 之下标准撒手不管，崩、不崩、好像没事，哪种结果都不保证，那才是真正要小心的地方（第 9 章真跑过一个活样本：同一段靠溢出回绕「检测溢出」的代码，gcc 和 clang 在同一档 `-O` 下结论不同）。
 
 ## 小结
 
-到这里，工具链体检就做完了。现在你应该能不假思索地分清每件工具的职责——gcc/clang 是编译器，make/cmake/ninja 是构建，gdb 是调试，clang-format 是格式化，别混为一谈；也知道本仓 CI 同时跑 gcc 和 clang，代码得伺候两个、不是只伺候一个。最该带走的是这条：默认的 `-std` 会随编译器漂移、而且 gcc 和 clang 默认就不一样（本章真跑过 gcc 16 是 C23、clang 22 是 C17），所以**永远显式钉 `-std=cXX`**。另外两个容易忘的常识：IDE 不等于工具链，命令行能跑通才算真的通；以及你本地敲的 `gcc`（`which gcc`）未必是 CI 那一格真正调用的编译器——CI 由 `$CC` 决定，排查「本地过、CI 红」先对编译器。
+体检做完，几样东西应该已经长在身上了。gcc/clang 是编译器、make/cmake/ninja 是构建、gdb 是调试、clang-format 是格式化，各管一摊，不混为一谈；本仓 CI 双编译器伺候，代码从来不是只写给一个 gcc 的。最要紧的一条：默认 `-std` 随厂家和版本漂移，gcc 和 clang 默认还对不上（本章真跑：gcc 16 默认 C23、clang 22 默认 C17），所以**永远显式传 `-std=cXX`**。另外两个常识：IDE 不等于工具链，命令行跑得通才算真的通；`which gcc` 报的未必是 CI 那一格的编译器，排查「本地过、CI 红」时头一件事是对 `$CC`。
 
-体检过关，我们就可以开始撬开 gcc 这个黑盒了——下一章，我们用 `-save-temps` 把 `.c → .i → .s → .o → 可执行` 这四个阶段一次性全停下来给你看。
+体检过关，就可以撬 gcc 这个黑盒了。动刀之前有个更舒服的选择：下一章咱们把这套工具链原样接进 VSCode + Clangd，让跳转、补全、断点长在编辑器里（它属于「推荐」档）；急着看黑盒内部的读者也可以直接去第 3 章——那里用 `-save-temps` 把 `.c → .i → .s → .o → 可执行` 这四个阶段一次性全停下来给咱们看。
+
+想动手的话，阶段 0 的练习里有两道正对着本章：Homework 的 0.1-A（用两条命令报出本机 `gcc` 的位置和目标三元组）和 0.1-B（「本地 gcc 过、CI 的 clang 红」排障题，正好把本章的默认方言分歧用一遍）；Project 的收尾场景也会拿「本地 gcc ≠ CI 编译器」当排查线索。练习区随阶段收口统一回归上线，先把题记在这里。
 
 ## 参考资源
 
-- GCC 16 release notes（默认 `-std` 变更、各版本特性）
-- Clang 22 release notes（默认 `-std`、与 GCC 的差异）
-- ISO/IEC 9899 预定义宏 `__STDC_VERSION__`（各标准版本取值约定）
-- 本仓库 `.github/workflows/ci.yml`（gcc/clang 矩阵 job 的真实写法，第 17 章逐行拆）
+- [GCC 15 release notes](https://gcc.gnu.org/gcc-15/changes.html)——默认 C 方言从 `gnu17` 改成 `gnu23` 的变更起点；上一次默认值变更（`gnu11` → `gnu17`）记在 [GCC 8 changes](https://gcc.gnu.org/gcc-8/changes.html)
+- Clang 的默认 C 标准：release notes 不写，以 `man clang` 为准（原文「The default C language standard is gnu17」），或用 `clang -dM -E -x c /dev/null | grep __STDC_VERSION__` 当场实测（本章已实测）
+- ISO/IEC 9899 预定义宏 `__STDC_VERSION__`：C99–C17 见 §6.10.8，C23 起重编号为 §6.10.9
+- 本仓库 `.github/workflows/ci.yml`（gcc/clang 矩阵 job 的真实写法，第 15 章逐行拆）
+- 本仓库 `examples/hello.c`（本章靶子程序的仓库存档；`examples/stage0-compiling-and-debug/` 是第 3～7、13 章的配套实验）
