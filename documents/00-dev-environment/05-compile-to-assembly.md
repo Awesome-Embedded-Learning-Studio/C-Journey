@@ -125,6 +125,23 @@ sum6:
     addl   %edx, %eax
 ```
 
+同一段 `sum6`，用 `-masm=intel` 切到 Intel 语法再看一眼——第 3 章那四条换算规则这回全用上了（去 `%`/`$`、操作数顺序反过来、尺寸后缀换成显式的 `DWORD PTR`）。顺带认识一个新怪癖：**gcc 的 Intel 模式把位移写在方括号外面**，`-4(%rbp)` 写成 `-4[rbp]`，跟 Intel 手册里的 `[rbp-4]` 是一回事，读的时候别懵：
+
+```text
+sum6:
+    push   rbp
+    mov    rbp, rsp                    ← 函数序言:建立栈帧
+    mov    DWORD PTR -4[rbp], edi      ← a  来自 edi
+    mov    DWORD PTR -8[rbp], esi      ← b  来自 esi
+    mov    DWORD PTR -12[rbp], edx     ← c  来自 edx
+    mov    DWORD PTR -16[rbp], ecx     ← d  来自 ecx
+    mov    DWORD PTR -20[rbp], r8d     ← e  来自 r8d
+    mov    DWORD PTR -24[rbp], r9d     ← f  来自 r9d
+    ...                                (把 a~f 加起来,中间结果放 edx)
+    mov    eax, DWORD PTR 16[rbp]      ← g  从栈上取!
+    add    eax, edx
+```
+
 （`-O0` 下 gcc 老实地把每个寄存器参数先倒进栈帧里存着，再慢慢加，所以看起来啰嗦——重点不在它怎么加，在**前 6 个参数用寄存器、第 7 个参数用栈**这件事。）
 
 读出来就是 **x86-64 System V ABI** 的规矩：整型/指针参数**前 6 个**依次走寄存器 `rdi、rsi、rdx、rcx、r8、r9`（这里参数是 `int`，所以用它们 32 位的低位 `edi、esi、edx、ecx、r8d、r9d`）；**从第 7 个参数起**，多余的走**栈**。你看 `g` 就是 `movl 16(%rbp), %eax`——从栈帧偏移 `+16` 处取出来的。
@@ -173,6 +190,24 @@ compute:
     movl   %eax, -4(%rbp)     ← b  存到栈上 -4
 ```
 
+同一段在 Intel 语法下（生成命令只多一个 `-masm=intel` 旗标；位移照旧写在方括号前）：
+
+```text
+$ gcc -std=c11 -O0 -S -masm=intel opt.c -o opt_O0_intel.s   (看 compute 函数体)
+compute:
+    push   rbp
+    mov    rbp, rsp
+    mov    DWORD PTR -20[rbp], edi   ← x  存到栈上 -20
+    mov    edx, DWORD PTR -20[rbp]
+    mov    eax, edx
+    add    eax, eax
+    add    eax, edx                  ← 算出 a = x*3
+    mov    DWORD PTR -8[rbp], eax    ← a  存到栈上 -8
+    mov    eax, DWORD PTR -8[rbp]
+    add    eax, 1                    ← b = a+1
+    mov    DWORD PTR -4[rbp], eax    ← b  存到栈上 -4
+```
+
 在 `-O0` 下，`x`、`a`、`b` **三个局部变量老老实实全在栈帧里**（`-20(%rbp)`、`-8(%rbp)`、`-4(%rbp)`），每算一步就写回内存。这又慢又啰嗦，但有个天大的好处：**每个变量都在栈上有一个稳定的家，gdb 能停下来、能 `print a` 看到它的值**。这也是为什么我们调试时一律用 `-O0 -g`。
 
 现在把优化开到 `-O2`，再看同一个函数：
@@ -184,7 +219,15 @@ compute:
     ret
 ```
 
-`a` 和 `b` **整个消失了**。`leal 1(%rdi,%rid,2)` 一条指令就算出了 `rdi*3+1`（`%rdi,%rdi,2` 表示 `rdi + rdi*2 = 3*rdi`，再加 `1`），结果直接放进返回值寄存器 `%eax`，然后 `ret`。整个 `.text` 段从 `-O0` 的 185 字节缩到 `-O2` 的 127 字节（`compute` 这部分从十几条指令塌成两条）。
+Intel 语法版（`$ gcc -std=c11 -O2 -S -masm=intel opt.c -o opt_O2_intel.s`）：
+
+```text
+compute:
+    lea    eax, 1[rdi+rdi*2]       ← 整个函数就剩这一条
+    ret
+```
+
+`a` 和 `b` **整个消失了**。`leal 1(%rdi,%rdi,2)` 一条指令就算出了 `rdi*3+1`（`%rdi,%rdi,2` 表示 `rdi + rdi*2 = 3*rdi`，再加 `1`），结果直接放进返回值寄存器 `%eax`，然后 `ret`。Intel 版的 `lea eax, 1[rdi+rdi*2]` 是同一件事，只是把 `rdi + rdi*2 + 1` 直接摆在了操作数里。整个 `.text` 段从 `-O0` 的 185 字节缩到 `-O2` 的 127 字节（`compute` 这部分从十几条指令塌成两条）。
 
 变量去哪了？被优化器**吃掉了**——因为它判定 `a`、`b` 只是中间结果，不影响程序的「可观察行为」。这里有个重要的标准概念：**ISO C 的 as-if 规则**（程序执行 / 可观察行为，见 ISO/IEC 9899 §5.1.2.3）——只要最终的可观察行为（输入输出、volatile 访问、系统调用等）一致，编译器**爱怎么改就怎么改**你的代码，包括删掉变量、改写顺序、提前算好。`a`、`b` 不影响可观察行为，所以合法地没了。
 

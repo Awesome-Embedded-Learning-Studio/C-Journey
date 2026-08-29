@@ -220,6 +220,34 @@ sum:
     ...                          ← 把 xmm0 里的 4 个 int 水平归约成一个
 ```
 
+同一段的 Intel 语法版（`-masm=intel` 生成，换算规则还是第 3 章那四条；注意 `paddd` 这类双操作数指令也跟着换了序——AT&T 里写在后面的 `%xmm0` 才是目的，Intel 里目的提到前面）：
+
+```asm
+// -O2 的 sum():标量循环,一次累加一个 int
+sum:
+    test    esi, esi
+    jle     .L4
+    xor     eax, eax
+.L3:
+    add     eax, DWORD PTR [rdi]     ← 一次加一个 int
+    add     rdi, 4
+    cmp     rdi, rdx
+    jne     .L3
+    ret
+
+// -O3 的 sum():自动向量化,一次处理 4 个 int(SSE 的 paddd)
+sum:
+    ...
+    pxor    xmm0, xmm0               ← 128 位累加器清零
+.L6:
+    movdqu  xmm2, XMMWORD PTR [rax]  ← 一次读进 4 个 int(16 字节)
+    add     rax, 16
+    paddd   xmm0, xmm2               ← packed add:4 个 int 并行相加!
+    cmp     rax, rdx
+    jne     .L6
+    ...                              ← 把 xmm0 里的 4 个 int 水平归约成一个
+```
+
 `-O2` 是老老实实一个 `addl` 加一个 `int`、循环 8 次；`-O3` 用 SSE 的 `paddd`（packed add dword）一条指令同时加 4 个 `int`，循环次数直接砍到四分之一，最后再水平归约。这就是「`-O3` 比 `-O2` 多了什么」最具体的样子：**自动向量化**。代价就是上面看到的体积膨胀（2234 vs 1329）。把几档的定位收拢一下：
 
 | 级别 | 干什么 | 本课程什么时候用 |
@@ -282,6 +310,18 @@ check_overflow:
     movl    %edi, -4(%rbp)      ← 把参数 x 存一下
     movl    $0, %eax            ← 直接返回 0!整个 if 体被删光了
     popq    %rbp
+    ret
+```
+
+同一段的 Intel 语法版（`-masm=intel`；gcc 的这个模式把位移写在方括号前，`-4(%rbp)` 写成 `-4[rbp]`，第 5 章遇到过）：
+
+```asm
+check_overflow:
+    push    rbp
+    mov     rbp, rsp
+    mov     DWORD PTR -4[rbp], edi   ← 把参数 x 存一下
+    mov     eax, 0                   ← 直接返回 0!整个 if 体被删光了
+    pop     rbp
     ret
 ```
 
