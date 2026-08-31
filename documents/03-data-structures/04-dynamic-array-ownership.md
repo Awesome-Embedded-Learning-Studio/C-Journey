@@ -60,7 +60,7 @@ no_return.c: In function ‘my_realloc’:
 no_return.c:4:1: warning: no return statement in function returning non-void [-Wreturn-type]
 ```
 
-现在 [allocation.c](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/projects/journey_your_pack/common/src/internal/allocation.c) 里那一行 return 上头留着一行注释记着这桩旧案,笔者没舍得删:`// ← 原来这里忘了 return,返回的全是垃圾`。-Wall -Wextra 常开不是仪式感,就是替咱们盯这类不声不响的哑弹。
+现在 [allocation.c](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/projects/journey_your_pack/common/src/internal/allocation.c) 里那一行 return 上头留着一行注释记着这桩旧案,笔者没舍得删:`// ← 原来这里忘了 return,返回的全是垃圾`。-Wall -Wextra 常开,图的就是替咱们盯这类不声不响的哑弹。
 
 ## 数组不知道里面住的是谁
 
@@ -147,7 +147,7 @@ vector->data_begin_ = tmp;
 vector->capacity_ = new_cap;
 ```
 
-咱们这一版没做这个功课,而且所有函数都返回 void,连上报失败的通道都没留。补救的路子摆在练习里:allocation 层打日志后直接 abort,省心,牺牲的是优雅降级;reserve 改成返回错误码,诚实,代价是整条调用链跟着改;或者在文档里写明"内存不够就崩",把决定亮给使用者。三种在真实工程里都有人选,要紧的是这是个该被显式做出的决定,不该是被遗忘的默认。顺带一提,`new_cap * elem_size_` 在容量巨大时会溢出 size_t,一行 `if (new_cap > SIZE_MAX / elem_size_)` 的守卫也一并留给您。
+咱们这一版没做这个功课,而且所有函数都返回 void,连上报失败的通道都没留。补救的路子摆在练习里:allocation 层打日志后直接 abort,省心,牺牲的是优雅降级;reserve 改成返回错误码,诚实,代价是整条调用链跟着改;或者在文档里写明"内存不够就崩",把决定亮给使用者。三种在真实工程里都有人选,要紧的是这是个该被显式做出的决定,不该是被遗忘的默认。和 tmp 模式一起,还有个边角也留给您:`new_cap * elem_size_` 在容量巨大时会溢出 size_t,一行 `if (new_cap > SIZE_MAX / elem_size_)` 的守卫就能挡住。
 
 ⚠️ realloc 的结果永远先进临时变量判空,别直接盖回原指针,失败时原指针就是您仅剩的家当。
 

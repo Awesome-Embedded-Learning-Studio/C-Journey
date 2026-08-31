@@ -81,7 +81,7 @@ void jyp_reserve_vector(JYPVector* vector, size_t want)
 }
 ```
 
-咱们逐行过。want 已经装得下就直接回去,这一笔不花钱。新容量不在这里写死,问 `policy` 要:它是个函数指针,装在结构体里跟咱们走。`new_cap < want` 的兜底照顾两种情况:容量 0 起步时翻倍还是 0,策略步子太小时一口气要得更多,都直接抬到 want。最后一行注释的叹号不是白打的:reallocate 收的是字节数,容量是元素个数,乘 `elem_size_` 这一步忘了就是差四倍的灾难。扩容只动 `data_begin_` 和 `capacity_`,`current_count_` 原地不动,住户还是那些住户。
+咱们逐行过。want 已经装得下就直接回去,什么活都不用干。新容量不在这里写死,问 `policy` 要:它是个函数指针,装在结构体里跟咱们走。`new_cap < want` 的兜底照顾两种情况:容量 0 起步时翻倍还是 0,策略步子太小时一口气要得更多,都直接抬到 want。最后一行注释的叹号不是白打的:reallocate 收的是字节数,容量是元素个数,乘 `elem_size_` 这一步忘了就是差四倍的灾难。扩容只动 `data_begin_` 和 `capacity_`,`current_count_` 原地不动,住户还是那些住户。
 
 默认的策略在文件顶部,三行:
 
