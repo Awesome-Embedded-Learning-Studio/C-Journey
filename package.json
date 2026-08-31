@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vitepress dev documents",
     "build": "tsx scripts/build.ts",
-    "build:single": "vitepress build documents",
+    "check:links": "python3 scripts/check_links.py",
+    "build:single": "npm run check:links && vitepress build documents",
     "build:force": "tsx scripts/build.ts --force",
     "preview": "vitepress preview documents"
   },

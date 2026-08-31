@@ -613,7 +613,7 @@ matrix 200x200 (0.2 MiB)
 - [Brendan Gregg — Linux Performance](https://www.brendangregg.com/linuxperf.html)(perf、火焰图、性能分析的权威资料集)
 - [`perf` Wiki — Tutorial](https://perf.wiki.kernel.org/index.php/Tutorial)(`perf stat`/`record`/`report` 与 `perf_event_paranoid` 详解)
 - [Drepper — *What Every Programmer Should Know About Memory*](https://people.freebsd.org/~lstewart/articles/cpumemory.pdf)(cache/cacheline/局部性部分的进阶读物,本章微基准的理论背景)
-- 本仓库相关章节:[阶段 4·第 1 章头文件契约](`_POSIX_C_SOURCE` 解锁 POSIX 符号的纪律)、[阶段 0·第 10 章标准与优化](`-O2` 与编译期常量折叠,benchmark 必须 `argv` 驱动迭代的原因)、[阶段 0·第 11 章 Sanitizer 门禁](「别拿 sanitizer 二进制做 benchmark」那条红线的来由)
+- 本仓库相关章节:阶段 4 第 1 章头文件契约(`_POSIX_C_SOURCE` 解锁 POSIX 符号的纪律)、阶段 0 第 10 章标准与优化(`-O2` 与编译期常量折叠,benchmark 必须 `argv` 驱动迭代的原因)、阶段 0 第 11 章 Sanitizer 门禁(「别拿 sanitizer 二进制做 benchmark」那条红线的来由)
 
 ---
 *整理自作者笔记,按 C-Journey 写作规范重写;clock_gettime / gprof / 微基准数据均在 AMD Ryzen 7 5800H / gcc 16.1.1 + clang 22.1.6 本机实测捕获。perf 部分为概念指引(本机 WSL2 未安装 perf),其余输出均为真实运行结果。*

@@ -9,4 +9,5 @@
 - 改动前先读懂上下文;改动后用脚本自检:
   - `python3 scripts/build_examples.py`
   - `python3 scripts/validate_frontmatter.py`
+  - `python3 scripts/check_links.py`
 - 写 C 文档 / 示例前先读 `.claude/writing-style.md`;断言 C 行为前先写最小 `.c` 编译验证(见 AGENTS.md「C 专属铁律」)。

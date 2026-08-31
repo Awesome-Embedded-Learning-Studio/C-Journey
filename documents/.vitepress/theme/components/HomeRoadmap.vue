@@ -56,10 +56,10 @@ const stages: Stage[] = [
     no: '阶段 3',
     name: '数据结构与算法',
     dir: '03-data-structures',
-    chapters: 12,
-    desc: '单链表、双向链表、栈、队列、动态数组、二叉树、BST、哈希表、排序入门、快排归并、二分查找、大 O。',
+    chapters: 16,
+    desc: '动态数组手搓四部曲(容器、扩容、realloc、所有权)、单链表、双向链表、栈、队列、二叉树、BST、哈希表、排序入门、快排归并、二分查找、大 O。',
     status: 'done',
-    link: '/03-data-structures/01-singly-linked-list',
+    link: '/03-data-structures/00-what-is-dynamic-array',
   },
   {
     no: '阶段 4',

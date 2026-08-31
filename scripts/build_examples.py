@@ -92,7 +92,9 @@ def main():
             fatal_fail.append(cl.parent.relative_to(REPO))
 
     print("\n== projects/  (非遗留=硬门 / 遗留=报告模式) ==")
-    for cl in sorted((REPO / "projects").glob("**/CMakeLists.txt")):
+    # 只认每个工程的顶层 CMakeLists:子目录的(如 journey_your_pack/common)
+    # 是给顶层 add_subdirectory 用的,单独立配置必然失败。
+    for cl in sorted((REPO / "projects").glob("*/CMakeLists.txt")):
         rel_s = str(cl.parent.relative_to(REPO))
         is_legacy = rel_s in KNOWN_LEGACY or rel_s in SANITIZE_SOFT
         if not build_one(cl, fatal=not is_legacy):

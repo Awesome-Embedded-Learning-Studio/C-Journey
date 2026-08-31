@@ -1,8 +1,8 @@
 ---
 title: "队列:FIFO、环形缓冲与链表实现"
-description: '阶段3·第4章。队列是 FIFO(先进先出)结构,这一章用两种方式亲手实现它:先拿朴素数组(head/tail 都只往后走)真跑出"撞墙"坑——出几次队头部格子就废了、tail 撞到 N 写不进去;再用环形缓冲(circular buffer)把数组当环用、tail 在 N 处回绕到 0,真跑演示回绕(tail 从 4 回 0、push 60 写到 data[0]、最终 FIFO 出队得 30 40 50 60),并解决"满 vs 空都判 head==tail"的歧义——标准解法是"留一格不填"((tail+1)%N==head 判满、head==tail 判空),另附 size 计数对照方案;最后用带 head/tail 双指针的链表实现(入队 O(1) 尾插、出队 O(1) 头删、动态大小无"满"),ASan+UBSan 复核 free 无泄漏(退出码 0)。全程 gcc16+clang22 双跑,FIFO 出队 1 2 3 对照栈的 3 2 1。'
+description: '阶段3·第 8 章。队列是 FIFO(先进先出)结构,这一章用两种方式亲手实现它:先拿朴素数组(head/tail 都只往后走)真跑出"撞墙"坑——出几次队头部格子就废了、tail 撞到 N 写不进去;再用环形缓冲(circular buffer)把数组当环用、tail 在 N 处回绕到 0,真跑演示回绕(tail 从 4 回 0、push 60 写到 data[0]、最终 FIFO 出队得 30 40 50 60),并解决"满 vs 空都判 head==tail"的歧义——标准解法是"留一格不填"((tail+1)%N==head 判满、head==tail 判空),另附 size 计数对照方案;最后用带 head/tail 双指针的链表实现(入队 O(1) 尾插、出队 O(1) 头删、动态大小无"满"),ASan+UBSan 复核 free 无泄漏(退出码 0)。全程 gcc16+clang22 双跑,FIFO 出队 1 2 3 对照栈的 3 2 1。'
 chapter: 3
-order: 4
+order: 8
 tags:
   - host
   - data-structures
@@ -11,10 +11,10 @@ reading_time_minutes: 13
 platform: host
 c_standard: [99, 11]
 prerequisites:
-  - "阶段3·第3章:栈(LIFO 对照)"
-  - "第 10 章:数组(环形缓冲)、阶段3·第1章:单链表(链表队列)"
+  - "阶段3·第 7 章:栈(LIFO 对照)"
+  - "第 10 章:数组(环形缓冲)、阶段3·第 5 章:单链表(链表队列)"
 related:
-  - "阶段3·第12章:算法复杂度(enqueue/dequeue O(1))"
+  - "阶段3·第 15 章:算法复杂度(enqueue/dequeue O(1))"
 ---
 
 # 队列:FIFO、环形缓冲与链表实现
@@ -303,7 +303,7 @@ pop: 1 2 3 4
 
 ## 链表实现:动态大小,没有「满」
 
-数组实现的容量是写死的(`N`),满了就拒。如果队列大小事先猜不准——有时只排几个、有时要排几万个——写死容量要么浪费内存、要么动不动就满。链表实现的办法是:**每个元素现用现要**,`malloc` 一个节点装它,用 `free` 还回去,大小随入队出队动态增减,理论上只受堆内存限制,没有「满」这回事(只有 `malloc` 失败)。这一节我们用阶段3·第1章学过的单链表搭一个队列,关键点是**配 head 和 tail 两个指针**——这样入队(尾插)和出队(头删)都是 O(1),不用每次都从头遍历到尾。
+数组实现的容量是写死的(`N`),满了就拒。如果队列大小事先猜不准——有时只排几个、有时要排几万个——写死容量要么浪费内存、要么动不动就满。链表实现的办法是:**每个元素现用现要**,`malloc` 一个节点装它,用 `free` 还回去,大小随入队出队动态增减,理论上只受堆内存限制,没有「满」这回事(只有 `malloc` 失败)。这一节我们用阶段3·第 5 章学过的单链表搭一个队列,关键点是**配 head 和 tail 两个指针**——这样入队(尾插)和出队(头删)都是 O(1),不用每次都从头遍历到尾。
 
 ```c
 #include <stdio.h>
@@ -441,5 +441,5 @@ destroy 完成: head=(nil) tail=(nil)
 - ISO/IEC 9899:2011 §6.5.2.1(数组下标 `data[i]` 真跑环形缓冲访问)、§6.7.2.1(结构体 `Queue` 含数组与 head/tail 字段、`Node` 含 `next` 自引用指针)、§6.5.6p8(指针/下标算术回绕 `% N` 的语义)
 - K. N. King《C Programming: A Modern Approach》第 19 章·19.3-19.4(用栈 ADT 范例讲抽象数据类型的封装;队列作为章末练习 1/3/5 给出 FIFO 概念、数组实现用 size 计数、链表实现尾插头删)
 - Robert C. Seacord《Effective C》第 5 章·Dynamic Memory(本章链表队列的 `malloc`/`free` 配对、`queue_destroy` 逐节点释放,呼应阶段2·第6/7章动态内存)
-- 阶段3·第3章:栈(LIFO 对照、数组/链表双实现的范式)、第 1 章:单链表(`Node` 结构、`malloc` 节点、`free` 整表);阶段2·第 6 章:`malloc`/`free` 基础、第 7 章:ASan 抓 use-after-free/泄漏(本章链表 ASan 复核的方法论来源);阶段1·第 5 章:求值顺序坑(本章 size_queue 里连续 pop 的副作用提醒)
-- 阶段3·第 12 章:算法复杂度(enqueue/dequeue 的 O(1) 分析、环形缓冲 vs 链表队列的选型权衡)
+- 阶段3·第 7 章:栈(LIFO 对照、数组/链表双实现的范式)、第 5 章:单链表(`Node` 结构、`malloc` 节点、`free` 整表);阶段2·第 6 章:`malloc`/`free` 基础、第 7 章:ASan 抓 use-after-free/泄漏(本章链表 ASan 复核的方法论来源);阶段1·第 5 章:求值顺序坑(本章 size_queue 里连续 pop 的副作用提醒)
+- 阶段3·第 15 章:算法复杂度(enqueue/dequeue 的 O(1) 分析、环形缓冲 vs 链表队列的选型权衡)

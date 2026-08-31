@@ -2,7 +2,7 @@
 title: "单链表:节点、指针、把内存串成一条链"
 description: "阶段3 开篇。这一章用阶段2 攒下的「指针 + malloc」搭第一个真正的数据结构——单链表。先讲动机:数组连续、长度编译期定死、头插 O(n);链表离散、运行期动态增减、头插 O(1),靠每个节点里的 next 指针把散在堆上的节点串成一条链。然后逐个真跑每个操作:节点定义(自引用 struct Node* 而非 Node*——typedef 别名此刻没生效,这是个经典坑,就地讲)、new_node(malloc + 设 data + next=NULL,忘置 NULL 是野指针)、头插 push_front(新节点 next 指旧头、返回新头——返回是因为头可能变)、尾插 push_back(顺 next 走到 NULL 接上,空表特殊情况)、遍历 print_list、按值删除 remove(记前驱 prev,删头节点 prev==NULL 特殊分支)、释放整表 free_list(关键坑:先存 next 再 free 当前,否则 free 完读 next 就是 use-after-free——ASan 真跑 heap-use-after-free + gcc -Wuse-after-free 双重抓;正确写法 ASan 复核退出码 0 无泄漏)。所有代码块即真跑版,gcc16+clang22 双跑 -std=c11 -Wall,free 用 -fsanitize=address 复核无泄漏。"
 chapter: 3
-order: 1
+order: 5
 tags:
   - host
   - data-structures
@@ -17,8 +17,8 @@ prerequisites:
   - "阶段2·第6章:动态内存入门(malloc 一个节点、必查 NULL)"
   - "阶段2·第7章:动态内存的坑(free 整表的 use-after-free 坑、ASan)"
 related:
-  - "阶段3·第2章:双向链表(prev/next、O(1) 删除已知节点,对比单链表 O(n))"
-  - "阶段3·第12章:算法复杂度与大 O(链表头插 O(1) vs 数组头插 O(n) 的真跑对照)"
+  - "阶段3·第 6 章:双向链表(prev/next、O(1) 删除已知节点,对比单链表 O(n))"
+  - "阶段3·第 15 章:算法复杂度与大 O(链表头插 O(1) vs 数组头插 O(n) 的真跑对照)"
 ---
 
 # 单链表:节点、指针、把内存串成一条链
@@ -479,5 +479,5 @@ freed.
 - K. N. King《C Programming: A Modern Approach》第 17 章 Linked Lists(17.1 节点声明与自引用、17.2 创建节点、17.3 用头插建表、17.4 删除节点要记前驱、17.5 释放整表)
 - Brian W. Kernighan & Dennis M. Ritchie《The C Programming Language》第 6 章 Structures 第 6.5–6.7 节(self-referential structures、内存分配器例子里 `struct nlist *next` 自引用的实战)
 - Robert Sedgewick《Algorithms in C》第 3 章 Elementary Data Structures 的链表小节(头插 O(1)、尾插、删除前驱的图解,为阶段3·Ch12 大 O 分析铺垫)
-- 阶段2·第1章 指针是什么(next 指针装下一个节点的地址)、第3章 用指针改调用者的变量(push_front 为何返回新头)、第6章 malloc/free(节点申请、必查 NULL)、第7章 动态内存的坑(use-after-free、ASan)
-- 阶段3·第2章 双向链表(prev/next、O(1) 删除已知节点)、第3章 栈(单链表实现的 LIFO)、第12章 算法复杂度与大 O(头插 O(1) vs 数组 O(n) 的正式定义)
+- 阶段2·第1章 指针是什么(next 指针装下一个节点的地址)、第 3 章 用指针改调用者的变量(push_front 为何返回新头)、第 6 章 malloc/free(节点申请、必查 NULL)、第 7 章 动态内存的坑(use-after-free、ASan)
+- 阶段3·第 6 章 双向链表(prev/next、O(1) 删除已知节点)、第 7 章 栈(单链表实现的 LIFO)、第 15 章 算法复杂度与大 O(头插 O(1) vs 数组 O(n) 的正式定义)

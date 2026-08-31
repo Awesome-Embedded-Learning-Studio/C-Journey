@@ -19,156 +19,233 @@
       </a>
     </div>
 
-    <div class="online-compiler-demo__split">
-      <div class="online-compiler-demo__source-pane">
-        <div v-if="!editorOpen" class="online-compiler-demo__source-view">
-          <div
-            v-if="highlightedHtml"
-            class="online-compiler-demo__source-highlight"
-            v-html="highlightedHtml"
-          />
-          <pre v-else class="online-compiler-demo__source-code"><code>{{ source }}</code></pre>
-        </div>
-        <textarea
-          v-else
-          v-model="editorSource"
-          class="online-compiler-demo__textarea"
-          spellcheck="false"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
+    <!-- 默认态:只读源码 + "动手试一试" CTA。源码占满正文宽,不再两栏挤压 -->
+    <div class="online-compiler-demo__inline">
+      <div class="online-compiler-demo__source-view">
+        <div
+          v-if="highlightedHtml"
+          class="online-compiler-demo__source-highlight"
+          v-html="highlightedHtml"
         />
-
-        <p
-          v-if="!editorOpen && (sourceLoadState === 'loading' || sourceLoadState === 'error')"
-          class="online-compiler-demo__source-hint"
-        >
-          {{ sourceLoadState === 'error' ? '源码加载失败，可点上方源码链接查看' : '加载源码中…' }}
-        </p>
-
-        <div v-if="editorOpen" class="online-compiler-demo__editor-actions">
-          <button
-            class="online-compiler-demo__button online-compiler-demo__button--secondary"
-            type="button"
-            :disabled="Boolean(activeAction)"
-            @click="resetEditor"
-          >
-            还原源码
-          </button>
-          <button
-            class="online-compiler-demo__button online-compiler-demo__button--secondary"
-            type="button"
-            @click="closeEditor"
-          >
-            保存并收起
-          </button>
-        </div>
+        <pre v-else class="online-compiler-demo__source-code"><code>{{ source }}</code></pre>
       </div>
 
-      <div class="online-compiler-demo__control-pane">
-        <div class="online-compiler-demo__meta">
-          <span v-for="action in actions" :key="action.id">
-            {{ action.label }}: {{ action.compiler }} {{ action.options }}
-          </span>
-        </div>
+      <p
+        v-if="sourceLoadState === 'loading' || sourceLoadState === 'error'"
+        class="online-compiler-demo__source-hint"
+      >
+        {{ sourceLoadState === 'error' ? '源码加载失败，可点上方源码链接查看' : '加载源码中…' }}
+      </p>
 
-        <div class="online-compiler-demo__actions">
-          <button
-            v-for="action in actions"
-            :key="action.id"
-            class="online-compiler-demo__button"
-            type="button"
-            :disabled="Boolean(activeAction)"
-            @click="compile(action)"
-          >
-            <span v-if="activeAction === action.id">处理中...</span>
-            <span v-else>{{ action.label }}</span>
-          </button>
-          <button
-            v-if="actions.length"
-            class="online-compiler-demo__button online-compiler-demo__button--secondary"
-            type="button"
-            :disabled="Boolean(activeAction)"
-            @click="editorOpen ? closeEditor() : openEditor()"
-          >
-            {{ editorOpen ? '只读预览' : '编辑源码' }}
-          </button>
-          <button
-            class="online-compiler-demo__button online-compiler-demo__button--secondary"
-            type="button"
-            :disabled="Boolean(activeAction)"
-            @click="optionsOpen = !optionsOpen"
-          >
-            编译条件
-          </button>
-          <button
-            class="online-compiler-demo__button online-compiler-demo__button--secondary"
-            type="button"
-            :disabled="Boolean(activeAction)"
-            @click="openGodbolt"
-          >
-            打开 Godbolt
-          </button>
-        </div>
-
-        <div v-if="optionsOpen && actions.length" class="online-compiler-demo__options">
-          <div class="online-compiler-demo__options-header">
-            <strong>编译条件</strong>
-            <span>运行、汇编和 Godbolt 外链都会使用当前设置</span>
-          </div>
-          <div class="online-compiler-demo__option-list">
-            <label
-              v-for="action in actions"
-              :key="action.id"
-              class="online-compiler-demo__option-row"
-            >
-              <span class="online-compiler-demo__option-label">{{ action.label }}</span>
-              <input
-                v-model.trim="actionSettings[action.id].compiler"
-                class="online-compiler-demo__input"
-                type="text"
-                autocomplete="off"
-                spellcheck="false"
-                placeholder="compiler id"
-              />
-              <textarea
-                v-model="actionSettings[action.id].options"
-                class="online-compiler-demo__options-textarea"
-                rows="2"
-                autocomplete="off"
-                spellcheck="false"
-                placeholder="compiler options"
-              />
-            </label>
-          </div>
-          <div class="online-compiler-demo__editor-actions">
-            <button
-              class="online-compiler-demo__button online-compiler-demo__button--secondary"
-              type="button"
-              :disabled="Boolean(activeAction)"
-              @click="resetCompileOptions"
-            >
-              还原编译条件
-            </button>
-            <button
-              class="online-compiler-demo__button online-compiler-demo__button--secondary"
-              type="button"
-              @click="optionsOpen = false"
-            >
-              收起编译条件
-            </button>
-          </div>
-        </div>
-
-        <div v-if="result" class="online-compiler-demo__result">
-          <div class="online-compiler-demo__result-header">
-            <strong>{{ result.title }}</strong>
-            <span>{{ result.compiler }} {{ result.options }}</span>
-          </div>
-          <pre><code>{{ result.text }}</code></pre>
-        </div>
-      </div>
+      <button class="online-compiler-demo__cta" type="button" @click="openModal">
+        <span class="online-compiler-demo__cta-text">动手试一试</span>
+        <span class="online-compiler-demo__cta-arrow" aria-hidden="true">→</span>
+      </button>
     </div>
+
+    <!-- 浮层态:Teleport 到 body,灰色遮罩 + 比页面小一圈的卡片,完整 IDE -->
+    <Teleport to="body">
+      <div
+        v-if="modalOpen"
+        class="online-compiler-demo__overlay"
+        @click.self="closeModal"
+      >
+        <div
+          class="online-compiler-demo__modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ocd-modal-title"
+        >
+          <div class="online-compiler-demo__modal-header">
+            <div>
+              <p class="online-compiler-demo__eyebrow">Compiler Explorer</p>
+              <strong id="ocd-modal-title">{{ title }}</strong>
+            </div>
+            <button
+              class="online-compiler-demo__modal-close"
+              type="button"
+              aria-label="关闭"
+              @click="closeModal"
+            >✕</button>
+          </div>
+
+          <div class="online-compiler-demo__split">
+            <div class="online-compiler-demo__source-pane">
+              <div v-if="!editorOpen" class="online-compiler-demo__source-view">
+                <div
+                  v-if="highlightedHtml"
+                  class="online-compiler-demo__source-highlight"
+                  v-html="highlightedHtml"
+                />
+                <pre v-else class="online-compiler-demo__source-code"><code>{{ source }}</code></pre>
+              </div>
+              <div v-else class="online-compiler-demo__editor-wrap">
+                <div
+                  ref="editorBackdropRef"
+                  class="online-compiler-demo__source-highlight online-compiler-demo__editor-backdrop"
+                  v-html="editorHighlightedHtml"
+                />
+                <textarea
+                  ref="editorTextareaRef"
+                  v-model="editorSource"
+                  class="online-compiler-demo__textarea online-compiler-demo__editor-textarea"
+                  spellcheck="false"
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  wrap="off"
+                  @scroll="onEditorScroll"
+                />
+              </div>
+
+              <p
+                v-if="!editorOpen && (sourceLoadState === 'loading' || sourceLoadState === 'error')"
+                class="online-compiler-demo__source-hint"
+              >
+                {{ sourceLoadState === 'error' ? '源码加载失败，可点上方源码链接查看' : '加载源码中…' }}
+              </p>
+
+              <div v-if="editorOpen" class="online-compiler-demo__editor-actions">
+                <button
+                  class="online-compiler-demo__button online-compiler-demo__button--secondary"
+                  type="button"
+                  :disabled="Boolean(activeAction)"
+                  @click="resetEditor"
+                >
+                  还原源码
+                </button>
+                <button
+                  class="online-compiler-demo__button online-compiler-demo__button--secondary"
+                  type="button"
+                  @click="closeEditor"
+                >
+                  保存并收起
+                </button>
+              </div>
+            </div>
+
+            <div class="online-compiler-demo__control-pane">
+              <div class="online-compiler-demo__meta">
+                <span v-for="action in actions" :key="action.id">
+                  {{ action.label }}: {{ action.compiler }} {{ action.options }}
+                </span>
+              </div>
+
+              <div class="online-compiler-demo__actions">
+                <button
+                  v-for="action in actions"
+                  :key="action.id"
+                  class="online-compiler-demo__button"
+                  type="button"
+                  :disabled="Boolean(activeAction)"
+                  @click="compile(action)"
+                >
+                  <span v-if="activeAction === action.id">处理中...</span>
+                  <span v-else>{{ action.label }}</span>
+                </button>
+                <button
+                  v-if="actions.length"
+                  class="online-compiler-demo__button online-compiler-demo__button--secondary"
+                  type="button"
+                  :disabled="Boolean(activeAction)"
+                  @click="editorOpen ? closeEditor() : openEditor()"
+                >
+                  {{ editorOpen ? '只读预览' : '编辑源码' }}
+                </button>
+                <button
+                  class="online-compiler-demo__button online-compiler-demo__button--secondary"
+                  type="button"
+                  :disabled="Boolean(activeAction)"
+                  @click="optionsOpen = !optionsOpen"
+                >
+                  编译条件
+                </button>
+                <button
+                  class="online-compiler-demo__button online-compiler-demo__button--secondary"
+                  type="button"
+                  :disabled="Boolean(activeAction)"
+                  @click="openGodbolt"
+                >
+                  打开 Godbolt
+                </button>
+              </div>
+
+              <div v-if="optionsOpen && actions.length" class="online-compiler-demo__options">
+                <div class="online-compiler-demo__options-header">
+                  <strong>编译条件</strong>
+                  <span>运行、汇编和 Godbolt 外链都会使用当前设置</span>
+                </div>
+                <div class="online-compiler-demo__option-list">
+                  <label
+                    v-for="action in actions"
+                    :key="action.id"
+                    class="online-compiler-demo__option-row"
+                  >
+                    <span class="online-compiler-demo__option-label">{{ action.label }}</span>
+                    <input
+                      v-model.trim="actionSettings[action.id].compiler"
+                      class="online-compiler-demo__input"
+                      type="text"
+                      autocomplete="off"
+                      spellcheck="false"
+                      placeholder="compiler id"
+                    />
+                    <textarea
+                      v-model="actionSettings[action.id].options"
+                      class="online-compiler-demo__options-textarea"
+                      rows="2"
+                      autocomplete="off"
+                      spellcheck="false"
+                      placeholder="compiler options"
+                    />
+                  </label>
+                </div>
+                <div class="online-compiler-demo__editor-actions">
+                  <button
+                    class="online-compiler-demo__button online-compiler-demo__button--secondary"
+                    type="button"
+                    :disabled="Boolean(activeAction)"
+                    @click="resetCompileOptions"
+                  >
+                    还原编译条件
+                  </button>
+                  <button
+                    class="online-compiler-demo__button online-compiler-demo__button--secondary"
+                    type="button"
+                    @click="optionsOpen = false"
+                  >
+                    收起编译条件
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="result" class="online-compiler-demo__result">
+                <div class="online-compiler-demo__result-header">
+                  <strong>{{ result.title }}</strong>
+                  <span>{{ result.compiler }} {{ result.options }}</span>
+                </div>
+                <pre><code>{{ result.text }}</code></pre>
+              </div>
+              <!-- 编译进行中(activeAction 置位、result 尚未返回):shimmer 骨架,避免结果区整块消失干等 -->
+              <div v-else-if="activeAction" class="online-compiler-demo__result online-compiler-demo__result--skeleton">
+                <div class="online-compiler-demo__result-header">
+                  <span class="skel skel--title" />
+                  <span class="skel skel--meta" />
+                </div>
+                <div class="online-compiler-demo__skel-lines">
+                  <span
+                    v-for="(w, i) in [92, 78, 86, 58, 90, 72, 95, 48]"
+                    :key="i"
+                    class="skel skel--line"
+                    :style="{ width: w + '%' }"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <p v-if="error" class="online-compiler-demo__error">
       {{ error }}
@@ -250,7 +327,6 @@ const props = withDefaults(defineProps<{
 })
 
 // 内置默认 demo:仅当既没传 code、也没传 sourcePath 时兜底用。
-// 一段能体现 C 特色的小程序——指针改值 + printf。
 const DEFAULT_DEMO_SOURCE = `#include <stdio.h>
 
 int main(void) {
@@ -268,6 +344,10 @@ const error = ref('')
 const result = ref<CompileResult | null>(null)
 const editorOpen = ref(false)
 const highlightedHtml = ref('')
+// 编辑态高亮(overlay 技巧):编辑框背后垫一层 shiki 高亮,文字透明,光标/选区由 textarea 接管
+const editorHighlightedHtml = ref('')
+const editorBackdropRef = ref<HTMLElement | null>(null)
+const editorTextareaRef = ref<HTMLTextAreaElement | null>(null)
 const optionsOpen = ref(false)
 const editorSource = ref('')
 const sourceLoadState = ref<'idle' | 'loading' | 'loaded' | 'error'>('idle')
@@ -287,8 +367,6 @@ const hasSourcePath = computed(() => Boolean(props.sourcePath))
 // VitePress 把标签间的纯文本原样传进来(含换行),所以这是 .md 里写多行 C 最干净的方式。
 const slotSource = computed(() => {
   if (!slots.default) return ''
-  // 递归从 vnode 树里抽文本:markdown-it 可能把插槽内容包成文本节点、
-  // 也可能套进 <p> 等元素里,所以得深度遍历 children。
   const extract = (vnode: any): string => {
     if (vnode == null) return ''
     if (typeof vnode === 'string') return vnode
@@ -319,6 +397,26 @@ watch(source, async (code) => {
     highlightedHtml.value = ''
   }
 })
+
+// 编辑态:边打边重新高亮(overlay backdrop 跟随 editorSource)
+watch(editorSource, async (code) => {
+  editorHighlightedHtml.value = ''
+  if (!code) return
+  try {
+    editorHighlightedHtml.value = await highlightC(code)
+  } catch {
+    editorHighlightedHtml.value = ''
+  }
+})
+
+// textarea 与 backdrop 滚动同步(两层重叠,滚动必须一致,否则错位)
+function onEditorScroll() {
+  const ta = editorTextareaRef.value
+  const bd = editorBackdropRef.value
+  if (!ta || !bd) return
+  bd.scrollTop = ta.scrollTop
+  bd.scrollLeft = ta.scrollLeft
+}
 
 const actions = computed<DemoAction[]>(() => {
   const available: DemoAction[] = []
@@ -421,6 +519,33 @@ function closeEditor(): void {
   editorOpen.value = false
 }
 
+// ── 浮层(模态):默认只显源码,点"动手试一试"弹完整 IDE ──
+const modalOpen = ref(false)
+
+function onModalEsc(e: KeyboardEvent) {
+  if (e.key === 'Escape' && modalOpen.value) closeModal()
+}
+
+async function openModal(): Promise<void> {
+  modalOpen.value = true
+  document.body.style.overflow = 'hidden'
+  window.addEventListener('keydown', onModalEsc)
+  await openEditor() // 加载可编辑源码、置 editorOpen=true
+}
+
+function closeModal(): void {
+  // closeEditor 把编辑内容回写源码缓存 + editorOpen=false
+  closeEditor()
+  modalOpen.value = false
+  document.body.style.overflow = ''
+  window.removeEventListener('keydown', onModalEsc)
+}
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onModalEsc)
+  if (modalOpen.value) document.body.style.overflow = ''
+})
+
 async function resetEditor(): Promise<void> {
   activeAction.value = 'source'
   error.value = ''
@@ -468,29 +593,41 @@ function extractExecutionText(payload: any): string {
   const exec = payload.execResult ?? payload.executionResult ?? payload
   // godbolt executor 响应常把程序输出同时放在 execResult 和顶层(此时 exec===payload),
   // 每路只取第一份非空的,避免把同一份输出拼两遍。
+  if (isCompilationFailure(payload, linesToText(payload.asm))) {
+    const diag = gatherDiagnostics(payload)
+    return diag
+      ? `❌ 编译失败：\n${diag}`
+      : '❌ 编译失败，但 Compiler Explorer 没有返回诊断信息。检查源码语法、编译器 id 与参数，或点「打开 Godbolt」看完整输出。'
+  }
   const out = linesToText(exec.stdout) || linesToText(payload.stdout) || linesToText(payload.buildResult?.stdout)
   const err = linesToText(exec.stderr) || linesToText(payload.stderr) || linesToText(payload.buildResult?.stderr)
   const chunks = [out, err].filter(Boolean)
 
   if (exec.code !== undefined && exec.code !== 0) chunks.push(`exit code: ${exec.code}`)
   else if (payload.code !== undefined && payload.code !== 0) chunks.push(`exit code: ${payload.code}`)
-  return chunks.join('\n').trim()
+  return chunks.join('\n').trim() || '(程序无输出)'
+}
+
+// 收集编译/运行诊断(execResult → 顶层 → buildResult,stderr 优先再 stdout),每路第一份非空避免重复
+function gatherDiagnostics(payload: any): string {
+  const exec = payload.execResult ?? payload.executionResult ?? payload
+  const err = linesToText(exec.stderr) || linesToText(payload.stderr) || linesToText(payload.buildResult?.stderr)
+  const out = linesToText(exec.stdout) || linesToText(payload.stdout) || linesToText(payload.buildResult?.stdout)
+  return [err, out].filter(Boolean).join('\n')
 }
 
 function extractAsmText(payload: any): string {
   const asm = linesToText(payload.asm)
-  const diagnostics = [
-    linesToText(payload.stdout),
-    linesToText(payload.stderr),
-    linesToText(payload.buildResult?.stdout),
-    linesToText(payload.buildResult?.stderr),
-  ].filter(Boolean).join('\n')
-
   if (isCompilationFailure(payload, asm)) {
-    return (diagnostics || asm || '编译失败，但 Compiler Explorer 没有返回诊断信息。').trim()
+    // 顶层与 buildResult 可能同源,每路只取第一份非空。
+    const err = linesToText(payload.stderr) || linesToText(payload.buildResult?.stderr)
+    const out = linesToText(payload.stdout) || linesToText(payload.buildResult?.stdout)
+    const diag = [err, out].filter(Boolean).join('\n')
+    return diag
+      ? `❌ 编译失败：\n${diag}`
+      : '❌ 编译失败，但 Compiler Explorer 没有返回诊断信息。检查源码语法、编译器 id 与参数，或点「打开 Godbolt」看完整输出。'
   }
-
-  return (asm || diagnostics || 'Compiler Explorer 没有返回可显示的输出。').trim()
+  return (asm || 'Compiler Explorer 没有返回可显示的汇编输出。').trim()
 }
 
 function isCompilationFailure(payload: any, asm: string): boolean {
@@ -628,7 +765,7 @@ function toBase64(value: string): string {
   return btoa(binary)
 }
 
-// —— 懒加载:进入视口即加载主源码(仅 sourcePath 模式需要;插槽/内联 code 立即可用) ——
+// —— 懒加载:进入视口即加载主源码(仅 sourcePath 模式有网络开销;插槽/内联 code 立即可用) ——
 async function ensureSourceLoaded(): Promise<void> {
   if (source.value) {
     sourceLoadState.value = 'loaded'
