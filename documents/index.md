@@ -23,7 +23,7 @@ features:
     title: 每行代码都真跑过
     details: 没有伪代码——每个代码块都 gcc/clang 真编真跑、贴真实输出,照着敲一定能复现。
   - icon: 📚
-    title: 六阶段、85 章
+    title: 六阶段、90 章
     details: 0 工具链 → 1 C 基底 → 2 指针 → 3 数据结构 → 4 工程化 → 5 系统编程。
   - icon: 🛡️
     title: 写崩了能抓到根因

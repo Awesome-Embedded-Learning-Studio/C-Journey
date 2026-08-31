@@ -245,7 +245,7 @@ export default defineConfig({
       },
       {
         text: "阶段 3 · 数据结构",
-        link: "/03-data-structures/01-singly-linked-list",
+        link: "/03-data-structures/00-what-is-dynamic-array",
       },
       { text: "阶段 4 · 工程化", link: "/04-engineering/01-header-contracts" },
       {

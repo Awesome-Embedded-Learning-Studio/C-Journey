@@ -365,6 +365,7 @@ body.rs-resizing {
    样式从标杆 custom.css 同名区块搬来,保持视觉一致。
    ================================================================ */
 
+/* Online Compiler Demo */
 .online-compiler-demo {
   margin: 24px 0;
   padding: 16px;
@@ -373,6 +374,7 @@ body.rs-resizing {
   background: var(--vp-c-bg-soft);
 }
 
+/* 分栏：桌面左右、窄屏上下（断点见下方 @media） */
 .online-compiler-demo__split {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -386,6 +388,26 @@ body.rs-resizing {
   min-width: 0;
 }
 
+/* 源码 tab 切换（仅 arm-source-path 存在时出现） */
+.online-compiler-demo__source-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.online-compiler-demo__button--tab {
+  min-height: 28px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.online-compiler-demo__button--tab.is-active {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg);
+}
+
+/* 只读源码块：等宽，与「结果区」「编辑器」风格一致 */
 .online-compiler-demo__source-code {
   margin: 0;
   min-height: 260px;
@@ -409,6 +431,7 @@ body.rs-resizing {
   white-space: pre;
 }
 
+/* shiki 高亮输出（只读源码区）。高度/背景/字体对齐 fallback 的 .source-code，避免切换跳动 */
 .online-compiler-demo__source-view {
   min-width: 0;
 }
@@ -432,6 +455,8 @@ body.rs-resizing {
   background: transparent;
 }
 
+/* 双主题：默认走 light 变量，html.dark 下切 dark 变量
+   （VitePress 暗色即 <html class="dark">，正好对接 shiki 的 defaultColor:false 输出） */
 .online-compiler-demo__source-highlight .shiki,
 .online-compiler-demo__source-highlight .shiki span {
   color: var(--shiki-light);
@@ -556,6 +581,14 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   font-size: 13px;
 }
 
+.online-compiler-demo__editor {
+  margin-top: 14px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg);
+  overflow: hidden;
+}
+
 .online-compiler-demo__options {
   margin-top: 14px;
   border: 1px solid var(--vp-c-divider);
@@ -564,6 +597,7 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   overflow: hidden;
 }
 
+.online-compiler-demo__editor-header,
 .online-compiler-demo__options-header {
   display: flex;
   align-items: center;
@@ -575,6 +609,7 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   font-size: 12px;
 }
 
+.online-compiler-demo__editor-header strong,
 .online-compiler-demo__options-header strong {
   color: var(--vp-c-text-1);
 }
@@ -700,10 +735,263 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   white-space: pre;
 }
 
+/* ── 编译进行中骨架屏(shimmer):result 尚未返回时占位,避免结果区整块消失干等 ──
+   result--skeleton 复用 .online-compiler-demo__result 的边框/圆角/底;header 内的 strong/span
+   换成 .skel 条,pre 区换成 .skel-lines 多行条。shimmer 靠 background-position 扫光。 */
+.online-compiler-demo__skel-lines {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skel {
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+      var(--vp-c-divider) 0%,
+      var(--vp-c-bg-soft) 50%,
+      var(--vp-c-divider) 100%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+}
+
+.skel--title { width: 40%; height: 12px; }
+.skel--meta  { width: 28%; height: 12px; }
+.skel--line  { height: 10px; }
+
+@keyframes skel-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel {
+    animation: none;
+    background: var(--vp-c-bg-soft);
+  }
+}
+
 .online-compiler-demo__noscript {
   margin: 12px 0 0 !important;
   color: var(--vp-c-text-2);
   font-size: 13px;
+}
+
+/* ── 默认态 CTA("动手试一试")── */
+.online-compiler-demo__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 16px;
+  border: 1px solid var(--vp-c-brand-1);
+  border-radius: 8px;
+  background: var(--vp-c-brand-1);
+  color: var(--vp-c-white);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.online-compiler-demo__cta:hover {
+  background: var(--vp-c-brand-2);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.18);
+}
+
+.online-compiler-demo__cta:active {
+  transform: translateY(0);
+}
+
+.online-compiler-demo__cta-arrow {
+  transition: transform 0.2s ease;
+}
+
+.online-compiler-demo__cta:hover .online-compiler-demo__cta-arrow {
+  transform: translateX(4px);
+}
+
+/* ── 浮层:灰色遮罩 + 比页面小一圈的卡片(cap 1280px) ── */
+.online-compiler-demo__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3vh 5vw;          /* 比页面小一圈:纵向 3vh/横向 5vw 视口边距 */
+  overflow: auto;
+  animation: ocd-fade-in 0.2s ease;
+}
+
+.online-compiler-demo__modal {
+  background: var(--vp-c-bg);
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  width: 100%;
+  max-width: 1280px;
+  min-height: 80vh;          /* 内容少也至少 80vh 挺着,不缩成一小块 */
+  max-height: 94vh;          /* 留 3vh×2 边距,不顶满 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: ocd-pop-in 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.online-compiler-demo__modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.online-compiler-demo__modal-header strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 16px;
+  color: var(--vp-c-text-1);
+}
+
+.online-compiler-demo__modal-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-2);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.online-compiler-demo__modal-close:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+}
+
+/* 浮层里的 split:占满剩余高度,两栏各自滚动(textarea 撑满源码栏) */
+.online-compiler-demo__modal .online-compiler-demo__split {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr);  /* 行填满 split 的 flex 高度 */
+  align-items: stretch;                /* 覆盖原 split 的 align-items:start,让 pane 拉满行高 */
+}
+
+.online-compiler-demo__modal .online-compiler-demo__source-pane {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.online-compiler-demo__modal .online-compiler-demo__control-pane {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.online-compiler-demo__modal .online-compiler-demo__textarea {
+  flex: 1;
+  min-height: 320px;
+}
+
+/* ── 编辑态高亮 overlay:shiki backdrop + 透明文字 textarea,两层重叠对齐 ──
+   textarea 文本透明(看背后高亮)、光标/选区仍由 textarea 接管;两层 font/padding/行高一致
+   (均 padding 14 / mono / 12px / 1.55)保证字符位置完全重合。滚动靠 onEditorScroll 同步。 */
+.online-compiler-demo__editor-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 320px;
+  overflow: hidden;
+  background: var(--vp-code-block-bg);
+  border-radius: 8px;
+}
+
+.online-compiler-demo__editor-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  pointer-events: none;        /* 鼠标穿透到上层 textarea */
+  scrollbar-width: none;       /* 滚动条隐藏(滚动由 textarea 接管) */
+}
+
+.online-compiler-demo__editor-backdrop::-webkit-scrollbar {
+  display: none;
+}
+
+.online-compiler-demo__editor-backdrop .shiki {
+  margin: 0 !important;          /* 压掉 <pre> UA 的 margin-block-start(会顶下一行) */
+  min-height: auto !important;
+  max-height: none !important;
+  padding: 14px;                 /* 与 textarea 完全一致 → 字符位置重合 */
+  background: transparent !important;
+  border: 0;
+  border-radius: 0;
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 18.6px;           /* 像素级,与 textarea 确定性一致(避免 unitless 在块/表单控件间渲染差) */
+  tab-size: 4;                   /* 与 textarea 的 tab-size 一致,Tab 字符宽度对齐 */
+  white-space: pre;
+  font-variant-ligatures: none;  /* 关连字(==/!= 等),与 textarea 字符等宽对齐 */
+  letter-spacing: 0;
+  word-spacing: 0;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.online-compiler-demo__modal .online-compiler-demo__editor-textarea {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 14px;                       /* 与 backdrop pre 完全一致 */
+  border: 0;
+  background: transparent;
+  color: transparent;                  /* 文本透明,看背后高亮 */
+  -webkit-text-fill-color: transparent; /* Safari 兼容 */
+  caret-color: var(--vp-c-text-1);     /* 光标仍可见 */
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 18.6px;                 /* 像素级,与 backdrop 确定性一致 */
+  tab-size: 4;
+  white-space: pre;
+  font-variant-ligatures: none;        /* 关连字,与 backdrop 字符等宽对齐 */
+  letter-spacing: 0;
+  word-spacing: 0;
+  box-sizing: border-box;
+  resize: none;                        /* overlay 下尺寸由 wrap 决定 */
+  flex: none;
+  min-height: 0;
+}
+
+.online-compiler-demo__editor-textarea::selection {
+  background: var(--vp-c-brand-soft-2); /* 选区可见(brand soft 色) */
+}
+
+@keyframes ocd-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ocd-pop-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .online-compiler-demo__overlay,
+  .online-compiler-demo__modal {
+    animation: none;
+  }
 }
 
 @media (max-width: 911px) {
@@ -735,10 +1023,12 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
     display: block;
   }
 
+  .online-compiler-demo__editor-header,
   .online-compiler-demo__options-header {
     display: block;
   }
 
+  .online-compiler-demo__editor-header span,
   .online-compiler-demo__options-header span {
     display: block;
     margin-top: 4px;
@@ -763,125 +1053,6 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   }
 }
 
-/* ================================================================
-   Hero Image 槽:让终端卡(HomeHeroVisual)进正常文档流、不覆盖标题文字
-   VitePress 默认把 .image-container 设固定 320/392px 方形 + 给 .image 大负 margin
-   (为小装饰图 + 模糊背景设计)。放终端这种 content card 会溢出盖住 hero text
-   (尤其手机端)。这里 neutralize 那些默认值 + 用 flex order 控制堆叠。
-   移植自 ~/Tutorial_AwesomeModernCPP custom.css。
-   ================================================================ */
-
-/* 隐藏 VitePress 默认的 image 背景 blob(我们用终端卡,不要模糊背景) */
-.VPHero .image-bg {
-  display: none !important;
-}
-
-/* 移动端把标题(.container)置于终端(.image)上方:order 1 < 2(桌面本就是 container 左,不受影响) */
-.VPHero .container {
-  order: 1 !important;
-}
-
-/* 终端在标题下方(移动端)/右侧(桌面端);margin 留间隙 */
-.VPHero .image {
-  order: 2 !important;
-  margin: 40px auto 0 !important;
-}
-
-/* 取消 VitePress 给 image-container 的固定方形大小,让终端卡按内容撑开 */
-.VPHero .image-container {
-  width: auto !important;
-  height: auto !important;
-}
-
-@media (min-width: 640px) {
-  .VPHero .image {
-    margin: 40px auto 0 !important;
-  }
-}
-
-@media (min-width: 960px) {
-  /* 桌面端两列 Hero:image 列填满剩余宽度,终端卡居中 */
-  .VPHero .image {
-    flex-grow: 1;
-    margin: 0 !important;
-    min-height: 100%;
-  }
-  .VPHero .image-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100% !important;
-    height: 100% !important;
-    transform: none !important;
-  }
-}
-
-/* ================================================================
-   代码折叠 · vp-code-fold(plugins/code-fold-plugin.ts 产出)
-   超 20 行的 fence 被包成 <div class=vp-code-fold><details><summary/>
-   </details><代码/></div>,纯 CSS :has() 控展开,零 JS、关 JS/print 也能展开。
-   ================================================================ */
-.vp-code-fold {
-  margin: 16px 0;
-}
-.vp-code-fold > :not(details) {
-  display: none;            /* 默认折起:藏掉代码块(它是 details 的兄弟) */
-}
-.vp-code-fold:has(details[open]) > :not(details) {
-  display: block;           /* details 展开后:放出代码块 */
-}
-.vp-code-fold:has(details[open]) > details {
-  margin-bottom: 12px;
-}
-.vp-code-fold details {
-  position: relative;
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--vp-c-border);
-  border-radius: 10px;
-  background: var(--vp-c-bg-soft);
-  padding: 10px 14px;
-  cursor: pointer;
-  user-select: none;
-  transition: border-color 0.2s ease, background-color 0.2s ease,
-    box-shadow 0.2s ease, transform 0.08s ease;
-}
-/* hover:边框→锈橙、底色抬升、轻投影 */
-.vp-code-fold details:hover {
-  border-color: var(--vp-c-brand-1);
-  background: var(--vp-c-bg-soft-up);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-/* 展开态:持续抬升 + 锈橙边 + 更明显投影(Material 卡片「已升起」) */
-.vp-code-fold:has(details[open]) details {
-  border-color: var(--vp-c-brand-1);
-  background: var(--vp-c-bg-soft-up);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
-}
-/* 按下:轻微下沉的按压感 */
-.vp-code-fold details:active {
-  transform: translateY(1px);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-/* 键盘聚焦:锈橙焦点环 */
-.vp-code-fold summary:focus-visible {
-  outline: 2px solid var(--vp-c-brand-1);
-  outline-offset: 4px;
-  border-radius: 4px;
-}
-.vp-code-fold summary {
-  list-style: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--vp-font-family-mono);
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--vp-c-brand-1);
-  transition: color 0.2s ease;
-}
-.vp-code-fold summary::-webkit-details-marker { display: none; }
 /* chevron 指示器,展开时旋转 90° */
 .vp-code-fold summary::before {
   content: '▸';

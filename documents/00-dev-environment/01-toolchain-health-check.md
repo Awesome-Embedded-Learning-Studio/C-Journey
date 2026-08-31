@@ -89,7 +89,7 @@ x86_64-pc-linux-gnu
 
 ## hello.c：两个编译器各编各跑
 
-光看版本不过瘾，咱们真的编一个程序出来。靶子是仓库里的 [examples/hello.c](../../examples/hello.c)，大概是全宇宙最朴素的 C 程序：
+光看版本不过瘾，咱们真的编一个程序出来。靶子是仓库里的 [examples/hello.c](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey/blob/main/examples/hello.c)，大概是全宇宙最朴素的 C 程序：
 
 ```c
 #include <stdio.h>

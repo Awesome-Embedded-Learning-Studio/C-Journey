@@ -60,6 +60,8 @@ jobs:
         uses: DavidAnson/markdownlint-cli2-action@v18
         with:
           globs: 'documents/**/*.md'
+      - name: 死链检查
+        run: python3 scripts/check_links.py
 
   format-check:
     name: clang-format(examples)

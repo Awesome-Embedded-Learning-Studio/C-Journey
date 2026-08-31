@@ -25,7 +25,7 @@ related:
 
 **思路**：第一步（L1）先把 `Contact` 和打印跑通，第二步（L2）换上单链表引擎 + 命令循环。`add` 的健壮性检查从第一层就带上，后面三层不用回头补。
 
-**`include/phonebook.h`**——头文件契约：include guard + 类型与引擎声明。→ 知识点：[第 1 章：单链表:节点、指针、把内存串成一条链](/03-data-structures/01-singly-linked-list)（节点定义）、[第 13 章：结构体、联合、枚举与内存对齐](/01-c-basics/13-struct-union-enum)（结构体数组）
+**`include/phonebook.h`**——头文件契约：include guard + 类型与引擎声明。→ 知识点：[第 5 章：单链表:节点、指针、把内存串成一条链](/03-data-structures/05-singly-linked-list)（节点定义）、[第 13 章：结构体、联合、枚举与内存对齐](/01-c-basics/13-struct-union-enum)（结构体数组）
 
 ```c
 #ifndef PHONEBOOK_H
@@ -40,7 +40,7 @@ typedef struct {
     char phone[16];
 } Contact;
 
-/* 单链表节点(阶段3 第 1 章) */
+/* 单链表节点(阶段3 第 5 章) */
 typedef struct LNode {
     Contact contact;
     struct LNode* next;
@@ -61,7 +61,7 @@ void list_free(ContactList* l);
 #endif
 ```
 
-**`src/list_engine.c`**——单链表引擎：尾插（head/tail 双指针，空表时两个都指新节点）、线性查找、逐个 free（先存 next 再 free）。→ 知识点：[第 1 章](/03-data-structures/01-singly-linked-list)「头插与遍历」「释放整表」两节、[第 4 章：队列:FIFO、环形缓冲与链表实现](/03-data-structures/04-queue)（head/tail 双指针的对称边界）
+**`src/list_engine.c`**——单链表引擎：尾插（head/tail 双指针，空表时两个都指新节点）、线性查找、逐个 free（先存 next 再 free）。→ 知识点：[第 5 章](/03-data-structures/05-singly-linked-list)「头插与遍历」「释放整表」两节、[第 8 章：队列:FIFO、环形缓冲与链表实现](/03-data-structures/08-queue)（head/tail 双指针的对称边界）
 
 ```c
 void list_add(ContactList* l, const Contact* c) {
@@ -92,7 +92,7 @@ const Contact* list_find(const ContactList* l, int id) {
 }
 ```
 
-**`src/main.c`（核心版）**——命令循环：`fgets` 读行、`sscanf` 拆命令、按命令分派；`add` 解析三项、`id <= 0` 拒绝。→ 知识点：[第 11 章：C 字符串与不安全 libc](/01-c-basics/11-c-strings-and-libc)（`fgets` 与边界；`sscanf` 是**教材外补充**——`scanf` 的字符串版，返回值纪律与 `scanf` 相同）
+**`src/main.c`（核心版）**——命令循环：`fgets` 读行、`sscanf` 拆命令、按命令分派；`add` 解析三项、`id <= 0` 拒绝。→ 知识点：[第 14 章：C 字符串与不安全 libc](/01-c-basics/11-c-strings-and-libc)（`fgets` 与边界；`sscanf` 是**教材外补充**——`scanf` 的字符串版，返回值纪律与 `scanf` 相同）
 
 ```c
 static void do_add(const char* args) {
@@ -162,7 +162,7 @@ $ printf 'add 1001 Alice 13800000001\nadd 1002 Bob 13800000002\nadd 1003 Carol 1
 
 **思路**：`add/find/del/list/height` 全部改走 BST——`del` 把教材的三种情况完整搬进来，`list` 用中序，天然升序。
 
-**`src/bst_engine.c`**——`bst_insert`（递归返回新根）、`bst_search`、`bst_delete`（叶子 free 置 NULL / 单子先存孩子再 free / 双子找后继拷值递归删后继）、`bst_height`、`bst_count`、中序打印、后序释放。→ 知识点：[第 7 章：二叉搜索树 BST:左小右大、插入/查找/删除、中序得有序](/03-data-structures/07-bst)「插入」「删除:三种情况，逐个拆透」「退化」三节
+**`src/bst_engine.c`**——`bst_insert`（递归返回新根）、`bst_search`、`bst_delete`（叶子 free 置 NULL / 单子先存孩子再 free / 双子找后继拷值递归删后继）、`bst_height`、`bst_count`、中序打印、后序释放。→ 知识点：[第 10 章：二叉搜索树 BST:左小右大、插入/查找/删除、中序得有序](/03-data-structures/10-bst)「插入」「删除:三种情况，逐个拆透」「退化」三节
 
 ```c
 BNode* bst_insert(BNode* root, const Contact* c) {
@@ -254,7 +254,7 @@ $ printf 'add 5 eve 555\nadd 3 bob 333\nadd 8 alice 888\nadd 1 dave 111\nadd 4 f
 
 **思路**：哈希引擎按 id 把联系人拷进桶链，`find` 从此 O(1)；BST 留任「有序遍历」——哈希给不了序。双引擎同步是这一层的全部难点：增删两处都要动。
 
-**`src/hash_engine.c`**——动态桶数组链地址：`index_add` 先查重、负载因子超 0.75 沿质数表 `{5,11,23,47,97,199,409,821,1637,3271,6553,13121}` 扩容并 rehash（复用节点）；`index_remove` 是第 1 章「记前驱」删除在桶链上的应用。→ 知识点：[第 8 章：哈希表:链地址法、哈希函数、冲突与 O(1) 平均查找](/03-data-structures/08-hash-table)「负载因子与扩容」「释放」两节、[第 1 章](/03-data-structures/01-singly-linked-list)「按值删除:记好前驱」
+**`src/hash_engine.c`**——动态桶数组链地址：`index_add` 先查重、负载因子超 0.75 沿质数表 `{5,11,23,47,97,199,409,821,1637,3271,6553,13121}` 扩容并 rehash（复用节点）；`index_remove` 是第 5 章「记前驱」删除在桶链上的应用。→ 知识点：[第 11 章：哈希表:链地址法、哈希函数、冲突与 O(1) 平均查找](/03-data-structures/11-hash-table)「负载因子与扩容」「释放」两节、[第 5 章](/03-data-structures/05-singly-linked-list)「按值删除:记好前驱」
 
 ```c
 static int index_grow(ContactIndex* idx) {
@@ -308,7 +308,7 @@ int index_remove(ContactIndex* idx, int key) {
 }
 ```
 
-**`src/main.c`（双引擎版）的命令实现**——`add` 两个引擎都插、`del` 两个都删、`find` 走哈希、`list`/`height` 走 BST。→ 知识点：[第 8 章](/03-data-structures/08-hash-table)（哈希做索引）、[第 7 章](/03-data-structures/07-bst)（BST 管有序）
+**`src/main.c`（双引擎版）的命令实现**——`add` 两个引擎都插、`del` 两个都删、`find` 走哈希、`list`/`height` 走 BST。→ 知识点：[第 11 章](/03-data-structures/11-hash-table)（哈希做索引）、[第 10 章](/03-data-structures/10-bst)（BST 管有序）
 
 ```c
 static void do_add(const char* args) {
@@ -412,7 +412,7 @@ sanitizer 全程零报告、退出码 0——增删查、双引擎同步、三�
 
 **思路**：bench 把三代引擎拉到同一批数据上计时——链表 O(n)、BST O(log n)、哈希 O(1) 的差距一表看尽；stress 让 BST 与哈希两个独立实现互相出题、互相对答案。
 
-**`do_bench`**——`clock()` 计时 + rand 洗牌（**教材外补充**：洗牌用 rand 简单打乱插入顺序，只为让 BST 不退化、基准公平）。→ 知识点：[第 12 章：算法复杂度与大 O：一把尺子量遍前面所有算法](/03-data-structures/12-big-o-complexity)「真跑对比」两节（`clock()` 计时法）
+**`do_bench`**——`clock()` 计时 + rand 洗牌（**教材外补充**：洗牌用 rand 简单打乱插入顺序，只为让 BST 不退化、基准公平）。→ 知识点：[第 15 章：算法复杂度与大 O：一把尺子量遍前面所有算法](/03-data-structures/15-big-o-complexity)「真跑对比」两节（`clock()` 计时法）
 
 ```c
 static void bench_one(int n) {
@@ -448,7 +448,7 @@ static void bench_one(int n) {
 }
 ```
 
-**`do_stress`**——1000 次随机 add/find/del，find 交叉验证、每 100 次自检（**教材外补充**：随机压力测试手法；两引擎的数据结构均为教材内容）。→ 知识点：[第 7 章](/03-data-structures/07-bst)（中序得有序当自检判据）、[第 8 章](/03-data-structures/08-hash-table)（链地址查找）
+**`do_stress`**——1000 次随机 add/find/del，find 交叉验证、每 100 次自检（**教材外补充**：随机压力测试手法；两引擎的数据结构均为教材内容）。→ 知识点：[第 10 章](/03-data-structures/10-bst)（中序得有序当自检判据）、[第 11 章](/03-data-structures/11-hash-table)（链地址查找）
 
 ```c
 static void do_stress(void) {
