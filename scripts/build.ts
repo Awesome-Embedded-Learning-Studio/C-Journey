@@ -152,15 +152,22 @@ function hashFile(path: string): string {
 
 /**
  * 把所有「会影响 build 产物」的输入揉成一个 hash。
- * 标杆额外纳入 site/.vitepress(整段);这里把 config.ts、theme/、4 个阶段源目录、
- * documents/index.md、package.json、lockfile、本脚本自身都纳入 —— 任一变化即重建。
+ * 标杆额外纳入 site/.vitepress(整段);这里把 config.ts、theme/、plugins/、tags 三件
+ * (tags-manifest.ts / scripts/tags.json / documents/tags.md)、六阶段源目录、
+ * exercises/、changelog/、roadmap.md、documents/index.md、package.json、lockfile、
+ * 本脚本自身都纳入 —— 任一变化即重建。
  */
 function hashBuildInputs(): string {
   const h = createHash('sha256')
   const inputs: Array<[string, string]> = [
     ['config',     hashFile(join(VP_DIR, 'config.ts'))],
     ['theme',      hashDir(join(VP_DIR, 'theme'))],
+    ['plugins',    hashDir(join(VP_DIR, 'plugins'))],
+    ['tags-manifest', hashFile(join(VP_DIR, 'tags-manifest.ts'))],
+    ['tags-source',   hashFile(join(PROJECT_ROOT, 'scripts', 'tags.json'))],
+    ['tags-page',     hashFile(join(DOCUMENTS, 'tags.md'))],
     ['index',      hashFile(join(DOCUMENTS, 'index.md'))],
+    ['roadmap',    hashFile(join(DOCUMENTS, 'roadmap.md'))],
     ['package',    hashFile(join(PROJECT_ROOT, 'package.json'))],
     ['lockfile',   hashFile(join(PROJECT_ROOT, 'pnpm-lock.yaml'))],
     ['build-script', hashFile(join(PROJECT_ROOT, 'scripts', 'build.ts'))],
@@ -169,9 +176,12 @@ function hashBuildInputs(): string {
     const stageDir = join(DOCUMENTS, stage.dir)
     inputs.push([stage.dir, existsSync(stageDir) ? hashDir(stageDir) : ''])
   }
-  // exercises/(练习体系)不在六阶段目录内,但同样参与 build,必须纳入内容 hash,否则练习分批上线时缓存误命中。
+  // exercises/(练习体系)与 changelog/ 不在六阶段目录内,但同样参与 build(后者入标签索引),
+  // 必须纳入内容 hash,否则分批上线时缓存误命中。
   const exDir = join(DOCUMENTS, 'exercises')
   inputs.push(['exercises', existsSync(exDir) ? hashDir(exDir) : ''])
+  const clDir = join(DOCUMENTS, 'changelog')
+  inputs.push(['changelog', existsSync(clDir) ? hashDir(clDir) : ''])
   for (const [label, value] of inputs) {
     h.update(`${label}:${value}\n`)
   }

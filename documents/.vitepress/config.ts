@@ -3,10 +3,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { codeFoldPlugin } from "./plugins/code-fold-plugin";
+import { codeLabelPlugin } from "./plugins/code-label-plugin";
 import { kbdPlugin } from "./plugins/kbd-plugin";
 import { mermaidPlugin } from "./plugins/mermaid-plugin";
 import { cppTemplateEscapePlugin } from "./plugins/escape-cpp-templates";
 import { viteCppEscape } from "./plugins/vite-escape-cpp";
+import { applyTagsPageData } from "./tags-manifest";
+import { getBuildInfo } from "./build-info";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const docsRoot = path.resolve(__dirname, ".."); /* documents/ */
@@ -34,7 +37,13 @@ function sidebarLabel(filePath: string, fileName: string): string {
   const title = readTitle(filePath);
   const idx = title.search(/[:：]/);
   const core = idx >= 0 ? title.slice(0, idx).trim() : title;
-  return `第 ${parseInt(fileName, 10)} 章 ${core}`;
+  return `第 ${parseInt(fileName, 10)} 章 ${escapeHtml(core)}`;
+}
+
+/* 侧栏标签进 VPSidebarItem 的 v-html,标题里的 <stdio.h>/<pointer> 类尖括号
+   不转义会被当标签吃掉、文字凭空消失——C 教程标题的高频形状,必须转(手法对齐 TAMCPP sidebar.ts)。 */
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /* 练习体系:documents/exercises/ 下按阶段分目录,每阶段 homework/lab/project 各带题面与参考答案。
@@ -100,6 +109,28 @@ function buildSidebar() {
       ],
     },
   ];
+}
+
+/* 阶段概要(单一数据源):章数与首章链接由磁盘实时扫出,经 themeConfig.cjStages
+   供首页 HomeRoadmap 等客户端组件消费(useData().theme.cjStages),
+   消除组件里硬编码章数的漂移。 */
+function buildStageSummaries() {
+  return stages.map((stage, i) => {
+    const stageDir = path.join(docsRoot, stage.dir);
+    const files = fs
+      .readdirSync(stageDir)
+      .filter((f) => /^\d+-.*\.md$/.test(f))
+      .sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+    return {
+      no: `阶段 ${i}`,
+      dir: stage.dir,
+      name: stage.name,
+      chapters: files.length,
+      firstLink: files.length
+        ? `/${stage.dir}/${files[0].replace(/\.md$/, "")}`
+        : `/${stage.dir}/`,
+    };
+  });
 }
 
 export default defineConfig({
@@ -192,6 +223,10 @@ export default defineConfig({
       `(function(){try{var s=localStorage.getItem('vp-font-size')||'normal';if(s!=='xxsmall'&&s!=='small'&&s!=='normal'&&s!=='large'&&s!=='xxlarge'){s='normal';}document.documentElement.dataset.fontSize=s;}catch(e){}})()`,
     ],
   ],
+  /* 标签体系数据注入:/tags 页拿全站索引( SSR 即有内容),文章页拿 topicTags(章尾徽章) */
+  transformPageData(pageData) {
+    applyTagsPageData(pageData);
+  },
   vite: {
     build: { chunkSizeWarningLimit: 5000 }, // mermaid 独立 chunk 较大,放宽告警阈
     plugins: [viteCppEscape()], // 第一道:Vite 预处理,把 prose 里的 <optimized out>/<stdio.h>/<main> 等转义,防 Vue 误当标签
@@ -203,6 +238,7 @@ export default defineConfig({
     config(md) {
       cppTemplateEscapePlugin(md); // 第二道:markdown-it 渲染期再兜一次(双层保险)
       codeFoldPlugin(md);
+      codeLabelPlugin(md); // 语言标签文案化(c→C、text→终端);须在 codeFold 之后
       kbdPlugin(md);
       mermaidPlugin(md);
       // 内联反引号代码兜底加 v-pre:防 prose 里 `ci-${{ github.ref }}` 的 {{ }} 被 Vue
@@ -230,6 +266,13 @@ export default defineConfig({
   },
   themeConfig: {
     siteTitle: "C-Journey",
+    /* 页脚版本信息(真相源=git tag;VitePress footer 只在无侧栏的页面渲染,如首页) */
+    footer: (() => {
+      const bi = getBuildInfo();
+      return { message: `${bi.version} · ${bi.sha} · ${bi.date}` };
+    })(),
+    /* 首页 HomeRoadmap 消费:章数/首章链接磁盘实时扫,去组件硬编码双源 */
+    cjStages: buildStageSummaries(),
     nav: [
       {
         text: "阶段 0 · 开发环境",
@@ -255,6 +298,7 @@ export default defineConfig({
       { text: "更新日志", link: "/changelog/" },
       { text: "路线图", link: "/roadmap" },
       { text: "练习", link: "/exercises/" },
+      { text: "标签", link: "/tags" },
     ],
     sidebar: buildSidebar(),
     search: {
