@@ -1,0 +1,68 @@
+{
+  "_comment": "C-Journey 单一标签源(单一真相源)。标签的分类、中英文名、角色(topic=主题标签进标签墙 / platform=平台标签降级为正交筛选器)全部在这一个文件。Python 校验器(scripts/tags.py 薄加载,validate_frontmatter.py 消费)与 TS 生成器(documents/.vitepress/tags-manifest.ts)共读。改标签只改这里——标杆仓库吃过两份白名单漂移弄坏 CI 的教训。",
+  "categories": [
+    {
+      "key": "tooling",
+      "zh": "工具链与工程",
+      "en": "Toolchain & Engineering",
+      "role": "topic",
+      "tags": ["toolchain", "build", "make", "cmake", "gdb", "git", "engineering", "testing", "debug", "open-source", "linker"]
+    },
+    {
+      "key": "c-basics",
+      "zh": "C 语言基础",
+      "en": "C Language Basics",
+      "role": "topic",
+      "tags": ["syntax", "type", "operator", "control-flow", "function", "macro"]
+    },
+    {
+      "key": "pointers-memory",
+      "zh": "指针与内存",
+      "en": "Pointers & Memory",
+      "role": "topic",
+      "tags": ["pointers", "memory", "bit-manipulation", "volatile"]
+    },
+    {
+      "key": "data-structures",
+      "zh": "数据结构与算法",
+      "en": "Data Structures & Algorithms",
+      "role": "topic",
+      "tags": ["data-structures", "generics", "algorithm", "struct", "state-machine"]
+    },
+    {
+      "key": "systems",
+      "zh": "系统编程",
+      "en": "Systems Programming",
+      "role": "topic",
+      "tags": ["system-programming", "networking", "posix", "socket", "ipc", "thread", "concurrency", "file-io"]
+    },
+    {
+      "key": "lowlevel",
+      "zh": "OS 与低层",
+      "en": "OS & Low Level",
+      "role": "topic",
+      "tags": ["os", "asm", "boot", "advanced"]
+    },
+    {
+      "key": "embedded",
+      "zh": "嵌入式",
+      "en": "Embedded",
+      "role": "topic",
+      "tags": ["embedded", "interrupts", "driver"]
+    },
+    {
+      "key": "meta",
+      "zh": "站点元文档",
+      "en": "Site Meta",
+      "role": "topic",
+      "tags": ["meta"]
+    },
+    {
+      "key": "platform",
+      "zh": "平台",
+      "en": "Platform",
+      "role": "platform",
+      "tags": ["host", "stm32", "mcu51", "8051"]
+    }
+  ]
+}

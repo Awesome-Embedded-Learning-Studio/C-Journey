@@ -63,6 +63,149 @@
   --vp-c-border: #3D3225;
 }
 
+/* ================================================================
+   首页 Hero · 移植自 TAMCPP(锈橙化:渐变去掉 indigo/purple,只走 brand 系)
+   ================================================================ */
+
+.VPHero {
+  padding-bottom: 48px !important;
+}
+
+@media (min-width: 960px) {
+  .VPHero {
+    padding-bottom: 64px !important;
+  }
+}
+
+/* hero 区暖色 soft 渐变底 */
+.VPHome .VPHero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(135deg,
+      var(--vp-c-brand-soft) 0%,
+      transparent 50%,
+      var(--vp-c-brand-soft-2) 100%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* 站名渐变字:锈橙双色 */
+.VPHero .name.clip {
+  background: linear-gradient(135deg,
+      var(--vp-c-brand-1) 0%,
+      var(--vp-c-brand-3) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.VPHero .tagline {
+  font-weight: 400 !important;
+  color: var(--vp-c-text-2) !important;
+}
+
+/* ── Hero 按钮微调:主按钮尾部箭头(hover 前探),次按钮 ghost 化 + 前置代码图标 ──
+   (TAMCPP 的「两行制 strut」需 ≥3 个 action 才生效,本站目前 2 个,先不上;加入口时再搬) */
+
+.VPHero .actions .action:first-child .VPButton::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-left: 8px;
+  vertical-align: -1.5px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M12 5l7 7-7 7'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M12 5l7 7-7 7'/%3E%3C/svg%3E") no-repeat center / contain;
+  transition: transform 0.25s ease;
+}
+
+.VPHero .actions .action:first-child .VPButton:hover::after {
+  transform: translateX(3px);
+}
+
+/* 次按钮 ghost 化:透明底 + 描边,实底让给主按钮 */
+.VPHero .actions .action:not(:first-child) .VPButton.alt {
+  background-color: transparent;
+  border-color: var(--vp-c-border);
+  color: var(--vp-c-text-1);
+}
+
+.VPHero .actions .action:not(:first-child) .VPButton.alt:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+  background-color: var(--vp-c-brand-soft);
+}
+
+.VPHero .actions .action:not(:first-child) .VPButton.alt:active {
+  border-color: var(--vp-c-brand-2);
+  color: var(--vp-c-brand-2);
+  background-color: var(--vp-c-brand-soft-2);
+}
+
+/* 次按钮前置图标(代码 </>,currentColor 随文字变色) */
+.VPHero .actions .action:not(:first-child) .VPButton::before {
+  content: '';
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 7px;
+  vertical-align: -2px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m8 7-5 5 5 5m8-10 5 5-5 5m-3-14-2 18'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m8 7-5 5 5 5m8-10 5 5-5 5m-3-14-2 18'/%3E%3C/svg%3E") no-repeat center / contain;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .VPHero .actions .action:first-child .VPButton::after {
+    transition: none;
+  }
+}
+
+/* ── Hero Image Slot:让终端卡片回归正常文档流 ──
+   VitePress 把 .image-container 当 320/392px 定宽方块(配模糊背景小图的假设),
+   内容卡需要中和这些约束,否则卡片上溢 hero 文字/下压 ProofStrip。 */
+
+.VPHero .image-bg {
+  display: none !important;
+}
+
+/* 移动端标题在上、终端在下(order 1 < 2;桌面本就是 container 在左,不受影响) */
+.VPHero .container {
+  order: 1 !important;
+}
+
+.VPHero .image {
+  order: 2 !important;
+  margin: 40px auto 0 !important;
+}
+
+.VPHero .image-container {
+  width: auto !important;
+  height: auto !important;
+}
+
+@media (min-width: 960px) {
+  /* 桌面双栏:右列吃满剩余宽度,卡片居中 */
+  .VPHero .image {
+    flex-grow: 1;
+    margin: 0 !important;
+    min-height: 100%;
+  }
+
+  .VPHero .image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+  }
+}
+
 /* ── 首页 Features 容器 ─────────────────────────────────────── */
 
 .VPFeatures {
@@ -73,6 +216,8 @@
 /* ── 单个卡片:基础样式 + Hover 上移/边框/大阴影 ──────────────── */
 
 .VPFeature {
+  position: relative;        /* 给左缘 rail ::before 提供定位上下文 */
+  overflow: hidden;          /* 圆角裁 rail 左上/左下角,与卡片轮廓贴合 */
   border: 1px solid var(--vp-c-divider) !important;
   border-radius: 14px !important;
   background-color: var(--vp-c-bg) !important;
@@ -81,6 +226,58 @@
   transition: border-color 0.39s ease,
     box-shadow 0.39s ease,
     transform 0.39s ease;
+}
+
+/* ── 卡片左缘 rail:默认 3px 半透明锈橙,hover 加粗到 5px 并提亮 ──
+   (本站五卡无分层语义,统一锈橙单色;TAMCPP 的 green/purple 三档待 features 扩容有语义再上) */
+.VPFeature::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--vp-c-brand-1);
+  opacity: 0.35;
+  transition: opacity 0.39s ease, width 0.39s ease;
+}
+
+.VPFeature.link:hover::before {
+  opacity: 1;
+  width: 5px;
+}
+
+/* ── 入场动画:逐卡 78ms 步进上浮(stagger) ──────────────────── */
+
+@keyframes feature-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.VPFeatures .item {
+  animation: feature-fade-up 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.VPFeatures .item:nth-child(1) { animation-delay: 0ms; }
+.VPFeatures .item:nth-child(2) { animation-delay: 78ms; }
+.VPFeatures .item:nth-child(3) { animation-delay: 156ms; }
+.VPFeatures .item:nth-child(4) { animation-delay: 234ms; }
+.VPFeatures .item:nth-child(5) { animation-delay: 312ms; }
+.VPFeatures .item:nth-child(6) { animation-delay: 390ms; }
+.VPFeatures .item:nth-child(7) { animation-delay: 468ms; }
+.VPFeatures .item:nth-child(8) { animation-delay: 546ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .VPFeatures .item {
+    animation: none;
+  }
 }
 
 .VPFeature.link:hover {
@@ -800,7 +997,7 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
 .online-compiler-demo__cta:hover {
   background: var(--vp-c-brand-2);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.18);
+  box-shadow: 0 6px 16px rgba(154, 52, 18, 0.28);
 }
 
 .online-compiler-demo__cta:active {
@@ -1053,30 +1250,8 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   }
 }
 
-/* chevron 指示器,展开时旋转 90° */
-.vp-code-fold summary::before {
-  content: '▸';
-  display: inline-block;
-  font-size: 12px;
-  line-height: 1;
-  color: var(--vp-c-brand-1);
-  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.vp-code-fold:has(details[open]) summary::before {
-  transform: rotate(90deg);
-}
-.vp-code-fold summary em {
-  font-style: normal;
-  color: var(--vp-c-text-3);
-  font-weight: 500;
-}
-.vp-cf-open { display: none; }
-.vp-code-fold:has(details[open]) .vp-cf-closed { display: none; }
-.vp-code-fold:has(details[open]) .vp-cf-open { display: inline; }
-@media print {
-  .vp-code-fold > :not(details) { display: block; }  /* 打印时强制全展开 */
-  .vp-code-fold details { display: none; }
-}
+/* 代码折叠条(vp-cf-*)的皮肤与开关规则已迁至 article-code.css
+   (2026-09 对齐 TAMCPP:折叠卡与源码卡同材质,summary 结构化图标+行数徽标)。 */
 
 /* ================================================================
    键帽 · kbd(plugins/kbd-plugin.ts 把 [[Ctrl+C]] 渲染成 <kbd>)
@@ -1094,4 +1269,267 @@ kbd {
   border-radius: 6px;
   box-shadow: 0 2px 0 var(--vp-c-divider);
   white-space: nowrap;
+}
+
+/* ================================================================
+   正文元素增强 · 选区/滚动条/表格/链接/图片/hr/custom-block/打印
+   移植自 TAMCPP custom.css,全部走 var() 自动落锈橙皮肤。
+   ================================================================ */
+
+/* ── 选区配色(soft tint,明暗双模式都可读)── */
+::selection {
+  background: var(--vp-c-brand-soft-2);
+}
+
+/* ── 滚动条美化(WebKit + Firefox)── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--vp-c-divider);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--vp-c-text-3); }
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--vp-c-divider) transparent;
+}
+
+/* ── 行内代码 ── */
+.vp-doc :not(pre) > code {
+  font-size: 0.78em;
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+}
+
+/* ── 表格 ── */
+.vp-doc table {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.vp-doc table th {
+  font-weight: 600;
+  background-color: var(--vp-c-bg-soft);
+}
+.vp-doc table tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* ── 链接:点线下划线,悬停变实线 ── */
+.vp-doc a {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease;
+}
+.vp-doc a:hover {
+  text-decoration-style: solid;
+}
+
+/* ── 图片 ── */
+.vp-doc img {
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* ── 水平分隔线(hr)── */
+.vp-doc hr {
+  border: none;
+  border-top: 1px dashed var(--vp-c-divider);
+  margin: 2.5em 0;
+  opacity: 0.6;
+}
+
+/* ── custom-block(tip/warning 容器)圆角 ── */
+.vp-doc .custom-block {
+  border-radius: 8px;
+  margin: 1.2em 0;
+}
+
+/* ── 内容暗色适配 ── */
+.dark .vp-doc table tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+.dark .vp-doc img {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* ── 宽屏(≥1440px)收回 VitePress 塞进 sidebar 的动态缩进与箱子宽度 ──
+   VitePress 默认把居中布局的左侧留白整个塞进侧栏箱子:
+   width = (vw - (layout-max - 64))/2 + sidebar-width - 32,内容 padding 同步右移。
+   2557px 视口下箱子会被撑到 ~770px;TAMCPP 只钳了 padding(内容贴左、箱子仍宽),
+   超宽视口下右侧就是一大段死区(维护者 2026-09-21 反馈)。这里连 width 一起
+   钳回 var:任何视口下侧栏都是紧凑固定宽,拖拽手柄(ResizableSidebar 的左柄
+   JS 读 .VPSidebar 右缘定位)与滚动条自动对齐。重复类名用于压过组件 scoped CSS。 */
+@media (min-width: 1440px) {
+  .VPSidebar.VPSidebar {
+    padding-left: 32px;
+    width: var(--vp-sidebar-width);
+  }
+
+  .VPNavBar.has-sidebar .title.title {
+    padding-left: 32px;
+  }
+}
+
+/* ── 打印 ── */
+@media print {
+  .vp-doc {
+    font-size: 11pt;
+    line-height: 1.7;
+  }
+}
+
+/* ================================================================
+   Mermaid 图表 · 容器/CJK 标签/maximize 按钮/全屏 lightbox
+   移植自 TAMCPP custom.css(配色走 var() 自动落锈橙皮肤)。
+   ================================================================ */
+
+.mermaid-diagram {
+  margin: 1rem 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 节点/边标签:给足内边距与行高,避免 CJK 多行文字被节点框裁剪 */
+.mermaid-diagram .nodeLabel,
+.mermaid-diagram .edgeLabel {
+  padding: 0.15em 0.35em;
+  line-height: 1.45;
+}
+
+/* foreignObject 默认裁剪溢出内容;放开让标签自适应,不遮挡 */
+.mermaid-diagram foreignObject {
+  overflow: visible;
+}
+
+.mermaid-error {
+  padding: 12px;
+  border: 1px solid var(--vp-c-danger-2);
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.85em;
+}
+
+/* ── maximize 按钮:图被容器挤窄时浮现,点开进全屏模态 ── */
+
+.mermaid-diagram--zoomable {
+  position: relative;
+}
+
+.mermaid-maximize-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 6px;
+  background: var(--vp-c-bg-elv);
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+/* hover 图 / 键盘聚焦图内 → 按钮完全显形并高亮 */
+.mermaid-diagram--zoomable:hover .mermaid-maximize-btn,
+.mermaid-diagram--zoomable:focus-within .mermaid-maximize-btn {
+  opacity: 1;
+}
+
+.mermaid-maximize-btn:hover,
+.mermaid-maximize-btn:focus-visible {
+  opacity: 1;
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+  outline: none;
+}
+
+/* ── 全屏查看模态(MermaidLightbox.vue,Teleport 到 body) ── */
+
+.mermaid-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 12, 8, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.mermaid-lightbox__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--vp-c-bg-soft);
+  border-bottom: 1px solid var(--vp-c-border);
+  color: var(--vp-c-text-2);
+}
+
+.mermaid-lightbox__btn {
+  appearance: none;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 6px;
+  background: var(--vp-c-bg-elv);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  line-height: 1;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.mermaid-lightbox__btn:hover,
+.mermaid-lightbox__btn:focus-visible {
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+  outline: none;
+}
+
+.mermaid-lightbox__close {
+  margin-left: auto;
+}
+
+.mermaid-lightbox__hint {
+  font-size: 12px;
+  color: var(--vp-c-text-3);
+  margin-left: 8px;
+}
+
+.mermaid-lightbox__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 32px;
+}
+
+.mermaid-lightbox__target {
+  display: inline-block;
+  touch-action: none; /* panzoom 自己管 pointer,关掉浏览器默认触摸手势 */
+  user-select: none;
+}
+
+.mermaid-lightbox__target svg {
+  display: block;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  background: var(--vp-c-bg-elv);
+  border-radius: 4px;
 }

@@ -63,6 +63,25 @@ jobs:
       - name: 死链检查
         run: python3 scripts/check_links.py
 
+  docs-build:
+    name: 站点构建冒烟(vitepress)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 页脚 build-info(git describe)与 lastUpdated 需要历史
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # 内容门(frontmatter/markdownlint/死链)在 docs job;这里只管「站点能不能构建」——
+      # Vue 模板/主题 TS/组件层面的破坏(如 2026-09 弯引号进组件属性炸模板)在此拦下。
+      - run: pnpm exec vitepress build documents
+
   format-check:
     name: clang-format(examples)
     runs-on: ubuntu-latest

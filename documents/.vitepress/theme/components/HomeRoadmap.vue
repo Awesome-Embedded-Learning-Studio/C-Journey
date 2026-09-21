@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { withBase } from 'vitepress'
+import { withBase, useData } from 'vitepress'
 
 // 首页"学习路线图":展示 C-Journey 六阶段 + 进度状态。
-// TAMCPP 原版用 mermaid 画图,C-Journey 没装 mermaid —— 改成纯 HTML/CSS 的阶段卡列表,
+// TAMCPP 原版用 mermaid 画图,C-Journey 改成纯 HTML/CSS 的阶段卡列表,
 // 信息密度更高(每阶段带章数 + 简介 + 状态徽标),且零运行时依赖。
 // 状态:done = 已审核标杆 / reviewing = 已写待审 / planned = 规划中。
+// 章数与首章链接以构建期注入的 themeConfig.cjStages 为单一数据源(config.ts 扫磁盘),
+// 本地数字只作 cjStages 缺失时的兜底,不再手工同步。
 
 type Status = 'done' | 'reviewing' | 'planned'
 
@@ -80,6 +82,22 @@ const stages: Stage[] = [
     link: '/05-system-programming/01-file-io-and-fd',
   },
 ]
+
+/* 单一数据源合并:config.ts buildStageSummaries() 经 themeConfig.cjStages 注入,
+   章数/首章链接永远跟磁盘一致(新增/重命名章节自动跟上)。 */
+const { theme } = useData()
+const cjStages = (theme as Record<string, unknown>).cjStages as
+  | { dir: string; chapters: number; firstLink: string }[]
+  | undefined
+if (Array.isArray(cjStages)) {
+  for (const s of stages) {
+    const cj = cjStages.find((c) => c.dir === s.dir)
+    if (cj) {
+      s.chapters = cj.chapters
+      s.link = cj.firstLink
+    }
+  }
+}
 </script>
 
 <template>

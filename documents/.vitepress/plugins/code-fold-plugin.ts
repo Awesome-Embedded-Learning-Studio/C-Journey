@@ -45,10 +45,14 @@ export const codeFoldPlugin: PluginSimple = (md: MarkdownIt) => {
     const lineCount = body === '' ? 0 : body.split('\n').length
     if (lineCount <= FOLD_THRESHOLD) return html
 
+    /* 结构化 summary(对齐 TAMCPP):图标 + 标题(收/展开双态) + 行数徽标,
+       CSS 与皮肤在 article-code.css(折叠卡与源码卡同材质)。 */
     return (
       `<div class="vp-code-fold" data-lines="${lineCount}">` +
-      `<details><summary><span class="vp-cf-closed">展开代码 <em>(共 ${lineCount} 行)</em></span>` +
-      `<span class="vp-cf-open">收起代码</span></summary></details>` +
+      `<details><summary><span class="vp-cf-icon" aria-hidden="true"></span>` +
+      `<span class="vp-cf-title"><span class="vp-cf-closed">展开代码</span>` +
+      `<span class="vp-cf-open">收起代码</span></span>` +
+      `<span class="vp-cf-count">共 ${lineCount} 行</span></summary></details>` +
       html +
       `</div>`
     )
